@@ -1,0 +1,18 @@
+{
+  "converged": true,
+  "created_at": "2026-09-17T00:00:00+00:00",
+  "kind": "centrality",
+  "metric": "eigenvector",
+  "notes": "Centralidade de referência do dia 0; a da Frente C são as specs C-01/C-02.",
+  "params": {
+    "implementation": "networkx",
+    "max_iter": 1000,
+    "tol": 1e-10,
+    "weight": "weight"
+  },
+  "producer": "reference",
+  "projection_id": "student_simple",
+  "runtime_s": 0.0,
+  "schema_version": "1.0",
+  "stats": {}
+}

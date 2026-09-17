@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edugraph"
+version = "0.1.0"
+description = "Análise topológica e detecção de comunidades em redes educacionais bipartidas (TCC Grupo 16 — UniAnchieta)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Gabriel Luís Lopes" },
+    { name = "Pedro Alexandre dos Santos Chaves" },
+    { name = "Lucas Timponi Mercadante Castro" },
+]
+dependencies = [
+    "networkx>=3.4",
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "scipy>=1.13",
+    "python-louvain>=0.16",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "matplotlib>=3.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "httpx>=0.27",
+    "pandas-stubs",
+    "types-networkx",
+]
+
+[project.scripts]
+edugraph = "edugraph.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["edugraph*"]
+
+[tool.setuptools.package-data]
+edugraph = ["api/static/**/*"]
+
+# ---------------------------------------------------------------------
+# Ruff — lint e formatação
+# ---------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+extend-exclude = ["frontend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "PTH", "RUF"]
+ignore = [
+    "RUF001",  # caracteres ambíguos: docstrings em português usam acentuação
+    "RUF002",
+    "RUF003",
+    "N803",    # nomes matemáticos (G, B, Q) seguem a notação do artigo
+    "N806",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------------------------------------------------------------------
+# Mypy — estrito apenas sobre contracts/ (ver docs/testes/estrategia.md)
+# ---------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+files = ["src/edugraph"]
+ignore_missing_imports = true
+warn_unused_configs = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "edugraph.contracts.*"
+strict = true
+disallow_any_explicit = false
+
+# ---------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: execuções longas (Girvan-Newman completo, OULAD inteiro); fora da CI",
+    "oulad: exige o OULAD baixado em data/raw/oulad",
+    "dataset(name): exige que o dataset indicado exista sob alguma raiz de artefatos",
+]

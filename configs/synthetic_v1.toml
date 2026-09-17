@@ -1,0 +1,67 @@
+# Configuração de referência sobre a base secundária (gerador sintético).
+#
+# É a configuração que roda na CI e em qualquer máquina, sem download.
+# Serve de gabarito para as configurações do OULAD: mesma estrutura,
+# fonte diferente.
+#
+# Uso:  python -m edugraph run configs/synthetic_v1.toml
+
+name = "synthetic_v1"
+stages = ["data", "community", "centrality"]
+
+[source]
+kind = "synthetic"
+seed = 42
+students_per_group = 40
+
+[bipartite]
+dataset = "synthetic_dev"
+granularity = "module"
+edge_criterion = "score_threshold"
+threshold = 60.0
+seed = 42
+
+# As quatro projeções: dois lados × duas ponderações. A comparação entre
+# elas é uma das tabelas do capítulo 3 (spec A-05).
+[[projections]]
+side = "student"
+weighting = "simple"
+implementation = "manual"
+
+[[projections]]
+side = "student"
+weighting = "resource_allocation"
+implementation = "manual"
+
+[[projections]]
+side = "discipline"
+weighting = "simple"
+implementation = "manual"
+
+[[projections]]
+side = "discipline"
+weighting = "resource_allocation"
+implementation = "manual"
+
+[community]
+algorithms = ["louvain", "girvan_newman"]
+
+[community.louvain]
+seed = 42
+resolution = 1.0
+
+[community.girvan_newman]
+# Grafo pequeno: cabe folgado. Ver ADR-0006.
+time_budget_s = 300.0
+seed = 42
+
+[centrality]
+metrics = ["degree", "betweenness", "eigenvector"]
+
+[centrality.betweenness]
+weight_mode = "none"
+
+[centrality.eigenvector]
+implementation = "manual"
+max_iter = 1000
+tol = 1e-8

@@ -1,0 +1,69 @@
+# Uma coorte só: módulo BBB, apresentação 2013J.
+#
+# É o recorte que viabiliza o Girvan-Newman (O(m²n)) e que tem sentido
+# pedagógico: uma turma, não uma amostra aleatória. A comparação
+# Louvain × Girvan-Newman da spec B-04 — tabela principal do capítulo 3 —
+# sai daqui.
+#
+# Exige o OULAD baixado em data/raw/oulad (ver README).
+
+name = "oulad_cohort_bbb_2013j"
+stages = ["data", "community", "centrality"]
+
+[source]
+kind = "oulad"
+raw_dir = "data/raw/oulad"
+cache_dir = "data/interim"
+
+[bipartite]
+dataset = "oulad_bbb_2013j"
+granularity = "assessment"
+edge_criterion = "score_threshold"
+threshold = 40.0
+cohort = "BBB_2013J"
+
+[[projections]]
+side = "student"
+weighting = "simple"
+implementation = "manual"
+
+[[projections]]
+side = "student"
+weighting = "resource_allocation"
+implementation = "manual"
+
+[[projections]]
+side = "discipline"
+weighting = "simple"
+implementation = "manual"
+
+[[projections]]
+side = "discipline"
+weighting = "resource_allocation"
+implementation = "manual"
+
+[community]
+algorithms = ["louvain", "girvan_newman"]
+
+[community.louvain]
+seed = 42
+resolution = 1.0
+
+[community.girvan_newman]
+# Uma hora. Se estourar, o artefato sai com status="timeout" e isso vira
+# linha da tabela, não erro (ADR-0006).
+time_budget_s = 3600.0
+# Amostra determinística de alunos, para caber no orçamento (spec A-06).
+sample_nodes = 400
+seed = 42
+
+[centrality]
+metrics = ["degree", "betweenness", "eigenvector"]
+
+[centrality.betweenness]
+weight_mode = "none"
+
+[centrality.eigenvector]
+implementation = "manual"
+max_iter = 1000
+tol = 1e-8

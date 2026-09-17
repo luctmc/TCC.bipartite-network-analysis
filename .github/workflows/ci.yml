@@ -1,0 +1,110 @@
+# CI — precisa estar verde para mesclar em main (ADR-0009).
+#
+# Roda só o que é rápido e determinístico: os testes marcados `slow`
+# (Girvan-Newman completo, OULAD inteiro) ficam de fora e são executados
+# sob demanda.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: lint · tipos · testes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 é o mínimo declarado em pyproject; 3.13 é a versão que o
+        # grupo usa. Rodar as duas pega uso acidental de sintaxe nova.
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Instalar
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Formatação
+        run: ruff format --check .
+
+      - name: Tipos (estrito em contracts/)
+        run: mypy src/edugraph/contracts
+
+      - name: Testes
+        run: pytest -m "not slow" --tb=short
+
+      - name: Validar as fixtures
+        run: python -m edugraph validate --root data/fixtures
+
+  fixtures-deterministicas:
+    name: fixtures regeneram byte a byte
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Instalar
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # ADR-0011: regenerar as fixtures não pode produzir diff. Se
+      # produzir, ou o determinismo se perdeu, ou alguém editou a fixture
+      # à mão em vez de criar uma versão nova.
+      - name: Regenerar e comparar
+        run: |
+          python scripts/make_fixtures.py --force
+          git diff --exit-code --stat data/fixtures/ || {
+            echo "::error::Regenerar as fixtures produziu diff. Ver ADR-0011."
+            git diff data/fixtures/ | head -50
+            exit 1
+          }
+
+  frontend:
+    name: front-end (tipos e build)
+    runs-on: ubuntu-latest
+    # O front é opcional para a análise: a CLI e a API funcionam sem ele,
+    # e `GET /` explica como compilá-lo. Por isso este job **não bloqueia
+    # o merge** — ele avisa, não impede.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package.json
+
+      - name: Instalar
+        working-directory: frontend
+        run: npm install
+
+      - name: Tipos
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build

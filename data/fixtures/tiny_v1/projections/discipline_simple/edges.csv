@@ -1,0 +1,4 @@
+source,target,weight
+DA,DB,3.0
+DA,DC,1.0
+DB,DC,1.0

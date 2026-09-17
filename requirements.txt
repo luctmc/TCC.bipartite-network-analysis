@@ -1,0 +1,11 @@
+# Dependências de execução — versões conferidas pelo grupo (ver ADR-0011).
+# Instale com:  pip install -r requirements.txt -r requirements-dev.txt
+# ou, preferencialmente, com:  pip install -e ".[dev]"
+fastapi==0.141.1
+networkx==3.6.1
+numpy==2.4.4
+pandas==3.0.2
+python-louvain==0.16
+uvicorn==0.53.0
+scipy==1.17.0
+matplotlib==3.11.0

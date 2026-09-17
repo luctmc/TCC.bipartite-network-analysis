@@ -1,0 +1,11 @@
+source,target,weight
+DA,S1,82.0
+DA,S2,64.0
+DA,S3,77.0
+DA,S6,66.0
+DB,S1,71.0
+DB,S2,90.0
+DB,S3,68.0
+DC,S3,61.0
+DC,S4,85.0
+DC,S5,73.0

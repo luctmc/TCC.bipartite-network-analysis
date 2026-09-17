@@ -1,0 +1,135 @@
+# Decisões metodológicas — o que precisa estar no texto
+
+O briefing (§9) trata rastreabilidade como requisito funcional: cada
+escolha não-óbvia precisa estar registrada, porque vira parágrafo de
+justificativa e **pergunta de banca**.
+
+Este documento é a lista de coisas que o artigo precisa dizer, e onde
+cada uma está resolvida no repositório. Ele é atualizado conforme as
+specs fecham.
+
+## Já decididas
+
+### A restrição de não usar IA/ML
+
+**O que dizer.** Nenhum componente usa aprendizado de máquina. Louvain e
+Girvan-Newman são otimização combinatória e remoção iterativa de arestas
+sobre a estrutura do grafo: não há treino, não há rótulo de entrada, e o
+resultado é rastreável até as arestas.
+
+NMI, pureza e correlação de Spearman, usados na validação, são medidas de
+teoria da informação e estatística descritiva **entre partições e
+categorias já conhecidas** — nenhuma delas treina nada.
+
+**Onde está garantido.** ADR-0008; `tests/contract/test_no_ml.py` varre o
+código e as dependências declaradas.
+
+### Rótulos históricos fora do grafo
+
+**O que dizer.** O desfecho de cada matrícula entra **apenas** na
+validação a posteriori. Ele vive em `outcomes.csv`, separado do grafo, e
+só módulos `evaluate.py` podem lê-lo.
+
+**Onde está garantido.** ADR-0008;
+`tests/contract/test_outcomes_isolation.py`.
+
+### A ressalva do critério `final_result_pass`
+
+**O que dizer — e é preciso dizer.** Uma das configurações de aresta
+(`final_result_pass`) usa o desfecho para decidir se a aresta existe.
+Isso não é um algoritmo inferindo a partir do rótulo: é uma **definição
+declarada de aresta**, registrada em `BipartiteSpec` e visível no
+`meta.json` do artefato.
+
+A distinção é sutil, e a banca vai perguntar. Se o grupo preferir não se
+expor à discussão, a alternativa é usar só `score_threshold` e
+`vle_activity` e citar `final_result_pass` como configuração considerada
+e descartada — o que também é uma resposta defensável.
+
+**Onde está.** ADR-0007.
+
+### Granularidade do nó disciplina (decisão D1)
+
+**O que dizer.** O OULAD tem só 7 módulos. Com V = módulo, a projeção
+disciplina↔disciplina degenera: qualquer par de disciplinas compartilha
+algum aluno, o grafo vira completo, toda intermediação é zero e não há
+gargalo a identificar.
+
+**Isto foi verificado empiricamente, antes do OULAD.** Na fixture
+`synthetic_v1`, `discipline_simple` tem 7 nós e 21 arestas — K₇ exato.
+Registrado em `data/fixtures/synthetic_v1/REFERENCE.md`.
+
+A saída é granularidade mais fina: `module_presentation` (22 nós) como
+padrão, com `module` (7) como comparação, e `assessment` para as análises
+por coorte. A comparação entre granularidades **é resultado**, não
+detalhe de implementação.
+
+**Onde está.** ADR-0007; `configs/`.
+
+### Girvan-Newman e o orçamento de tempo
+
+**O que dizer.** O algoritmo é O(m²n) e não termina sobre a base
+completa. O trabalho o executa com orçamento de tempo declarado e
+reporta, para cada configuração, se ela terminou (`status`). O custo
+relativo ao Louvain é um resultado medido, não uma citação de notação
+assintótica.
+
+**Onde está.** ADR-0006; coluna `status` em `metrics/communities.csv`.
+
+### Determinismo
+
+**O que dizer.** Toda execução estocástica tem semente fixa, gravada no
+artefato. Mesma configuração, mesmo resultado.
+
+**A ressalva honesta:** um resultado que só vale para a seed 42 não é
+resultado. Os testes usam faixas, não igualdade exata, e onde a
+estabilidade importa (os valores de `tiny_v1`) os esperados foram
+derivados no papel, não copiados da biblioteca.
+
+**Onde está.** ADR-0011.
+
+### Implementações à mão
+
+**O que dizer.** Três algoritmos foram implementados sem usar a
+biblioteca, e cada um é comparado numericamente com a implementação do
+NetworkX: as projeções (A-04/A-05), a modularidade Q (B-03) e a
+centralidade de autovetor por iteração de potência (C-02).
+
+Brandes (intermediação) e Louvain **não** foram implementados à mão, e a
+razão é registrável: custo alto e retorno didático baixo perto das outras
+três.
+
+**Onde está.** ADR-0010.
+
+### Nós isolados removidos do bipartido
+
+**O que dizer.** Alunos que não satisfazem o critério de aresta em
+disciplina nenhuma viram nós de grau zero e são removidos. Em
+`synthetic_v1`, o gerador produz 120 alunos e o bipartido tem 98.
+
+**Consequência a reportar:** o starter kit relata ~25 comunidades; a
+fixture tem 3. As ~22 extras eram esses nós isolados, cada um virando
+comunidade de tamanho 1. Ao reportar `k` no artigo, **dizer quantas
+comunidades são unitárias** — um `k` alto de singletons diz algo muito
+diferente de um `k` alto de grupos reais.
+
+## A decidir nas specs
+
+| Pendência | Spec | Por que importa |
+|---|---|---|
+| Regra para aluno com mais de uma matrícula no mesmo módulo | A-02 | muda o número de arestas |
+| Ponderação da nota média pelo `weight` da avaliação | A-02 | muda quem passa do limiar |
+| `weight_mode` da intermediação (`none`/`inverse`/`raw`) | C-01 | **muda o ranking**; em NetworkX peso é distância, não afinidade |
+| Equivalência entre a alocação de recursos e a função do NetworkX | A-05 | se não forem equivalentes, a comparação precisa dizer isso |
+| Interpretação do resultado da validação a posteriori | B-06, C-06 | se a relação não aparecer, é achado a reportar, não fracasso |
+
+## O que o artigo não deve afirmar
+
+- Que as comunidades **predizem** evasão. Elas não predizem nada: são
+  descrição estrutural, e a relação com o desfecho é verificada depois.
+- Que uma disciplina de alta intermediação é "difícil". Ela é
+  estruturalmente central; se também é difícil, isso é a pergunta da
+  C-06, não a premissa.
+- Que os resultados generalizam para outras instituições. O OULAD é uma
+  universidade aberta britânica, com perfil de aluno e de currículo
+  particulares.

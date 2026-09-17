@@ -1,0 +1,35 @@
+# Fim de linha LF em todo o repositório, independentemente do sistema.
+#
+# Isto não é preferência de estilo: os artefatos de `data/fixtures/` são
+# escritos com `\n` por `contracts.io` (escrita canônica, ADR-0011) e
+# comparados **byte a byte** pelos testes de contrato. Sem esta regra, o
+# `core.autocrlf=true` do Windows converteria os CSV para CRLF no
+# checkout, e na primeira execução de `make_fixtures.py` o git acusaria a
+# árvore inteira como modificada — quebrando
+# `test_reescrita_nao_muda_a_fixture` e tornando inútil o sinal de que um
+# diff em `data/fixtures/` significa mudança real.
+* text=auto eol=lf
+
+# Artefatos de contrato: explícito, porque é o que mais importa.
+*.csv   text eol=lf
+*.json  text eol=lf
+
+# Código e documentação.
+*.py    text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+
+# Binários: o git não deve tocar.
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+*.ico   binary
+
+# Diff mais legível para os artefatos tabulares.
+*.csv   diff

@@ -1,0 +1,66 @@
+# OULAD com V = apresentação de módulo (22 nós) — a granularidade
+# recomendada pela decisão D1 para a projeção disciplina↔disciplina e
+# para a identificação de disciplinas críticas (spec C-03).
+#
+# Com V = módulo, a projeção disciplina↔disciplina degenera no grafo
+# completo: toda intermediação vira zero e não há gargalo a identificar.
+# Isso já é observável em data/fixtures/synthetic_v1 (ver o REFERENCE.md
+# de lá) e a configuração oulad_module_baseline.toml existe justamente
+# para reportar a degeneração como resultado.
+#
+# Exige o OULAD baixado em data/raw/oulad (ver README).
+
+name = "oulad_module_presentation"
+stages = ["data", "community", "centrality"]
+
+[source]
+kind = "oulad"
+raw_dir = "data/raw/oulad"
+cache_dir = "data/interim"
+
+[bipartite]
+dataset = "oulad_module_presentation"
+granularity = "module_presentation"
+edge_criterion = "score_threshold"
+threshold = 40.0   # limiar de aprovação do OULAD; conferir em A-02
+
+[[projections]]
+side = "student"
+weighting = "simple"
+implementation = "manual"
+# Corte por peso mínimo: a projeção aluno↔aluno da base inteira chega a
+# milhões de arestas (spec A-06). O corte fica registrado no artefato e
+# o validador confere que foi aplicado.
+min_weight = 2.0
+
+[[projections]]
+side = "student"
+weighting = "resource_allocation"
+implementation = "manual"
+
+[[projections]]
+side = "discipline"
+weighting = "simple"
+implementation = "manual"
+
+[[projections]]
+side = "discipline"
+weighting = "resource_allocation"
+implementation = "manual"
+
+[community]
+algorithms = ["louvain"]
+
+[community.louvain]
+seed = 42
+resolution = 1.0
+
+[centrality]
+metrics = ["degree", "betweenness", "eigenvector"]
+
+[centrality.betweenness]
+weight_mode = "none"
+# Intermediação exata é O(nm); na base inteira, usar amostragem de pivôs
+# e reportar que o valor é estimativa.
+k = 500
+seed = 42

@@ -4,11 +4,22 @@
 
 | | |
 |---|---|
-| **Estado** | rascunho para revisão — nenhum arquivo de código foi gerado ainda |
+| **Estado** | **aprovado e executado** — o repositório é a realização deste plano (17 de setembro de 2026) |
 | **Data** | 16 de setembro de 2026 |
-| **Base** | `BRIEFING.md` + starter kit em `reference/starter-kit/` |
+| **Base** | `docs/briefing.md` + starter kit em `reference/starter-kit/` |
 | **Ambiente conferido** | Python 3.14.7, networkx 3.6.1, pandas 3.0.2, numpy 2.4.4, python-louvain 0.16, fastapi 0.141.1 |
+| **Ambiente de execução** | Python 3.13.15 com as mesmas versões de biblioteca; `requires-python >= 3.11` |
 | **Versão em página** | https://claude.ai/artifact/B4AZgJzNvsTkXwYaGrcqet |
+
+> **Nota de estado.** Este documento é mantido como **registro do plano
+> aprovado**, não como descrição do estado atual. Onde a execução divergiu,
+> há uma nota marcada com ▸. O estado atual está em
+> [`arquitetura/visao-geral.md`](arquitetura/visao-geral.md), e as decisões
+> em [`adr/`](adr/README.md).
+>
+> **As quatro decisões da seção 11 foram resolvidas** (detalhe na própria
+> seção): D1, D2 e D4 conforme a recomendação; **D3 divergiu** — o grupo
+> escolheu React + Vite, registrado na ADR-0005.
 
 **Legenda de donos:** `[A]` Pedro — dados e modelagem · `[B]` Gabriel — comunidades · `[C]` Lucas — centralidade, API e front-end · `[T]` transversal, gerado no dia 0 e congelado depois.
 
@@ -214,66 +225,73 @@ São cinco contratos de dados e um de rótulos. Os nomes dos campos abaixo são 
 # src/edugraph/contracts/types.py (trecho)
 SCHEMA_VERSION = "1.0"
 
-NodeKind      = Literal["student", "discipline"]
-Weighting     = Literal["simple", "resource_allocation"]
-Granularity   = Literal["module", "module_presentation", "assessment"]
+NodeKind = Literal["student", "discipline"]
+Weighting = Literal["simple", "resource_allocation"]
+Granularity = Literal["module", "module_presentation", "assessment"]
 EdgeCriterion = Literal["score_threshold", "final_result_pass", "vle_activity"]
 
+
 @dataclass(frozen=True)
-class BipartiteSpec:                  # o que o grupo vai variar e comparar no cap. 3
-    dataset: str                      # "synthetic_v1", "oulad_bbb_2013j"
-    granularity: Granularity          # o que é um nó "disciplina"
-    edge_criterion: EdgeCriterion     # o que cria uma aresta aluno-disciplina
-    threshold: float | None = None    # nota mínima, cliques mínimos…
-    cohort: str | None = None         # subgrafo por apresentação (estratégia de escala)
-    seed: int | None = None           # só para dados sintéticos
+class BipartiteSpec:  # o que o grupo vai variar e comparar no cap. 3
+    dataset: str  # "synthetic_v1", "oulad_bbb_2013j"
+    granularity: Granularity  # o que é um nó "disciplina"
+    edge_criterion: EdgeCriterion  # o que cria uma aresta aluno-disciplina
+    threshold: float | None = None  # nota mínima, cliques mínimos…
+    cohort: str | None = None  # subgrafo por apresentação (estratégia de escala)
+    seed: int | None = None  # só para dados sintéticos
+
 
 @dataclass(frozen=True)
 class ProjectionSpec:
     side: NodeKind
     weighting: Weighting
     implementation: Literal["manual", "networkx"] = "manual"
-    projection_id: str                # derivado: "student_resource_allocation"
+    projection_id: str  # derivado: "student_resource_allocation"
+
 
 @dataclass
-class BipartiteBundle:                # nós str com attr kind; arestas com weight
+class BipartiteBundle:  # nós str com attr kind; arestas com weight
     graph: nx.Graph
     spec: BipartiteSpec
-    meta: Meta                        # schema_version, producer, created_at, stats
+    meta: Meta  # schema_version, producer, created_at, stats
+
 
 @dataclass
-class ProjectionBundle:               # grafo simples, sem laços, weight > 0, um só kind
+class ProjectionBundle:  # grafo simples, sem laços, weight > 0, um só kind
     graph: nx.Graph
     spec: ProjectionSpec
     source: BipartiteSpec
     meta: Meta
 
+
 @dataclass
-class Partition:                      # saída da Frente B
+class Partition:  # saída da Frente B
     algorithm: Literal["louvain", "girvan_newman"]
     projection_id: str
-    membership: dict[str, int]        # nó → comunidade, ids densos 0..k-1
+    membership: dict[str, int]  # nó → comunidade, ids densos 0..k-1
     modularity: float
     n_communities: int
     runtime_s: float
-    params: dict[str, Any]            # seed, resolution, time_budget_s, sample…
+    params: dict[str, Any]  # seed, resolution, time_budget_s, sample…
     status: Literal["ok", "timeout", "skipped"]
     meta: Meta
 
+
 @dataclass
-class CentralityResult:               # saída da Frente C, uma por métrica
+class CentralityResult:  # saída da Frente C, uma por métrica
     projection_id: str
     metric: Literal["degree", "betweenness", "eigenvector"]
     scores: dict[str, float]
-    params: dict[str, Any]            # normalized, weight, max_iter, tol, implementation
+    params: dict[str, Any]  # normalized, weight, max_iter, tol, implementation
     runtime_s: float
     converged: bool
     meta: Meta
 
+
 @dataclass
-class Outcomes:                       # rótulos históricos: NUNCA entram no grafo
-    final_result: dict[str, str]      # aluno → Pass / Fail / Withdrawn / Distinction
-    planted_group: dict[str, int] | None   # só sintético: ground truth
+class Outcomes:  # rótulos históricos: NUNCA entram no grafo
+    final_result: dict[str, str]  # aluno → Pass / Fail / Withdrawn / Distinction
+    planted_group: dict[str, int] | None  # só sintético: ground truth
 ```
 
 ### 4.2 Protocolos
@@ -284,18 +302,25 @@ Cada frente registra suas implementações contra estas interfaces. O runner gen
 # src/edugraph/contracts/protocols.py
 class ProjectionAlgorithm(Protocol):
     name: str
+
     def project(self, bipartite: BipartiteBundle, spec: ProjectionSpec) -> ProjectionBundle: ...
+
 
 class CommunityAlgorithm(Protocol):
     name: str
+
     def run(self, projection: ProjectionBundle, **params: Any) -> Partition: ...
+
 
 class CentralityMetric(Protocol):
     name: str
+
     def compute(self, projection: ProjectionBundle, **params: Any) -> CentralityResult: ...
 
-class Stage(Protocol):                # o comando `run` só conhece isto
-    name: str                         # "data" | "community" | "centrality"
+
+class Stage(Protocol):  # o comando `run` só conhece isto
+    name: str  # "data" | "community" | "centrality"
+
     def run(self, roots: list[Path], out: Path, config: RunConfig) -> list[Path]: ...
 ```
 
@@ -521,6 +546,24 @@ Formato MADR curto: contexto, decisão, alternativas consideradas, consequência
 
 Quatro pontos mudam o que será gerado. Cada um vem com recomendação; se o grupo escolher diferente, o plano continua válido, muda só o indicado.
 
+> ▸ **Resolvidas em 17/09/2026.**
+>
+> | | Decisão do grupo | Onde ficou registrada |
+> |---|---|---|
+> | **D1** | conforme a recomendação: granularidade parametrizada | ADR-0007 · `configs/` |
+> | **D2** | conforme a recomendação: pacote `edugraph`, código em inglês, docs em português | sem ADR (não precisa) |
+> | **D3** | **divergiu da recomendação**: React + Vite, não página estática | **ADR-0005** |
+> | **D4** | conforme a recomendação: API somente leitura | ADR-0004 |
+>
+> **Sobre a D1, um achado antecipado.** A degeneração prevista foi
+> **confirmada empiricamente na fixture, antes do OULAD**: em
+> `synthetic_v1`, a projeção `discipline_simple` tem 7 nós e 21 arestas —
+> o grafo completo K₇, com intermediação zero em todos os nós. O efeito
+> aparece já no gerador do starter kit, ao contrário do que este
+> documento supunha. Registrado em
+> `data/fixtures/synthetic_v1/REFERENCE.md`, e os testes da spec C-01
+> **afirmam a degeneração** em vez de contorná-la.
+
 ### D1 `[A]` — O que é um nó "disciplina" no OULAD
 
 **Problema.** O OULAD tem só 7 módulos (AAA a GGG) em 22 apresentações, e a maior parte dos ~28,8 mil alunos aparece em uma única matrícula. Com V = módulo, a projeção disciplina↔disciplina tem 7 nós quase completos, e a projeção aluno↔aluno vira sete cliques gigantes ligadas por poucos alunos: Louvain "descobre" os módulos, o que não é resultado. O gerador do starter kit não mostra isso porque cada aluno sintético cursa de 2 a 4 disciplinas.
@@ -541,6 +584,20 @@ Quatro pontos mudam o que será gerado. Cada um vem com recomendação; se o gru
 
 **Se escolherem diferente.** React + Vite dá mais espaço para crescer, mas adiciona toolchain e uma pasta `frontend/` com CI própria. Dash entrega rápido, mas é outro framework para citar e justificar.
 
+> ▸ **O grupo escolheu React + Vite**, e a razão é boa: a defesa é uma
+> apresentação, e transições controladas melhoram a legibilidade do que
+> está sendo mostrado na banca — algo que em JavaScript imperativo à mão
+> sai caro.
+>
+> O que muda em relação ao plano: existe `frontend/` com React 18, Vite 5,
+> TypeScript, Cytoscape.js e `framer-motion`; o build vai para
+> `src/edugraph/api/static/`, que passa a ser **ignorado pelo git**; e o
+> projeto ganha **Node 18+ como requisito de máquina** para quem for mexer
+> na interface. A CLI e a API continuam funcionando sem o front compilado,
+> e `GET /` explica como gerar um. A CI do Python não depende dele.
+>
+> Registrado na **ADR-0005**. Detalhes de uso em `frontend/README.md`.
+
 ### D4 `[C]` — API somente leitura
 
 **Recomendação.** A API serve o que está em disco e nada mais. Um endpoint `POST /runs` que dispare cálculo pode ser adicionado depois sem mudar os contratos, mas não entra no escopo inicial.
@@ -553,6 +610,21 @@ Quatro pontos mudam o que será gerado. Cada um vem com recomendação; se o gru
 - Fixtures de partição e centralidade em `synthetic_v1` geradas pela biblioteca no dia 0 e rotuladas como referência (não como saída das frentes).
 - Manter python-louvain como implementação principal de Louvain, com `nx.community.louvain_communities` disponível para comparação em B-01.
 - CI em GitHub Actions com Python 3.14, e `requires-python >= 3.11` no pacote.
+
+> ▸ **Todas feitas**, com três ajustes:
+>
+> - `BRIEFING.md` foi movido para `docs/briefing.md`. **Não havia
+>   `__pycache__` commitado** em `reference/starter-kit/` — nada a remover.
+> - **O starter kit inteiro foi removido** (decisão do grupo, 17/09/2026),
+>   depois de cumprir o seu papel: as conclusões estão nas ADRs e os
+>   números foram reproduzidos pelas fixtures. `reference/README.md`
+>   preserva a citação que o briefing §13 exige, registra o que ele mediu
+>   e diz como recuperá-lo do commit `a5c3377`. As referências em prosa a
+>   ele, aqui e nas ADRs, continuam válidas como registro histórico.
+> - A CI roda em **Python 3.11 e 3.13**, não 3.14. A máquina de
+>   desenvolvimento do grupo tem a 3.13, e rodar as duas pontas da faixa
+>   suportada pega uso acidental de sintaxe nova. `requires-python >= 3.11`
+>   como planejado.
 
 ---
 

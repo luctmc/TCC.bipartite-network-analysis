@@ -1,7 +1,0 @@
-fastapi==0.141.1
-httpx==0.28.1
-networkx==3.6.1
-numpy==2.4.4
-pandas==3.0.2
-python-louvain==0.16
-uvicorn==0.53.0

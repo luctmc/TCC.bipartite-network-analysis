@@ -1,0 +1,158 @@
+/*
+ * Tema escuro por padrão: a apresentação é em projetor, e grafo claro
+ * em sala escura come contraste. Cores em variáveis porque o
+ * GraphView as consome via `var(--...)` no estilo do Cytoscape.
+ */
+:root {
+  --bg: #0f1216;
+  --surface: #171b21;
+  --surface-2: #1e242c;
+  --border: #2a323c;
+  --text: #e6e9ee;
+  --text-muted: #9aa5b1;
+  --accent: #6ea8fe;
+  --node-student: #6ea8fe;
+  --node-discipline: #f0a868;
+  --edge: #3c4654;
+  --erro: #f2777a;
+  --ok: #7ec699;
+
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; }
+
+.app {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "topo   topo"
+    "painel palco"
+    "rodape rodape";
+  min-height: 100vh;
+}
+
+.topo {
+  grid-area: topo;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.topo h1 { margin: 0; font-size: 1.15rem; letter-spacing: -0.01em; }
+.subtitulo { margin: 0.15rem 0 0; font-size: 0.8rem; color: var(--text-muted); }
+
+.status-api { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; }
+
+.pill {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  border: 1px solid var(--border);
+}
+.pill-on { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.pill-off { color: var(--erro); border-color: color-mix(in srgb, var(--erro) 40%, transparent); }
+
+.painel {
+  grid-area: painel;
+  padding: 1rem;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.painel h2 {
+  margin: 0 0 0.45rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.painel select {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.inventario {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem 0.5rem;
+  margin: 0;
+  font-size: 0.82rem;
+}
+.inventario dt { color: var(--text-muted); }
+.inventario dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+.palco { grid-area: palco; position: relative; display: flex; }
+.palco-conteudo { flex: 1; display: flex; }
+
+.graph-view { flex: 1; display: flex; flex-direction: column; }
+.graph-canvas { flex: 1; min-height: 420px; }
+
+.vazio {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.aviso {
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.dim { color: var(--text-muted); font-size: 0.8rem; }
+.erro { color: var(--erro); font-size: 0.82rem; line-height: 1.5; }
+
+code {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+.rodape {
+  grid-area: rodape;
+  padding: 0.6rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-areas: "topo" "painel" "palco" "rodape";
+  }
+  .painel { border-right: none; border-bottom: 1px solid var(--border); }
+}
