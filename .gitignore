@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Dados: só data/fixtures/ é versionado (ver docs/plano-arquitetura.md)
+data/raw/
+data/interim/
+data/processed/
+
+# Sistema e editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
