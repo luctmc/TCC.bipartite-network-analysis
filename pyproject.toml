@@ -14,24 +14,34 @@ authors = [
     { name = "Pedro Alexandre dos Santos Chaves" },
     { name = "Lucas Timponi Mercadante Castro" },
 ]
+# Pinadas, não floors (ADR-0011): mesmas versões de requirements.txt.
+# CI e `pip install -e ".[dev]"` precisam resultar no mesmo ambiente que
+# `pip install -r requirements.txt` — senão os dois caminhos divergem e
+# um "funciona na minha máquina" vira bug de CI (foi o que aconteceu:
+# numpy>=2.0 deixava a CI puxar 2.5.x, cujos stubs usam sintaxe do
+# Python 3.12 e quebravam o mypy configurado para 3.11).
 dependencies = [
-    "networkx>=3.4",
-    "numpy>=2.0",
-    "pandas>=2.2",
-    "scipy>=1.13",
-    "python-louvain>=0.16",
-    "fastapi>=0.115",
-    "uvicorn>=0.30",
-    "matplotlib>=3.9",
+    "networkx==3.6.1",
+    "numpy==2.4.4",
+    "pandas==3.0.2",
+    "scipy==1.17.1",
+    "python-louvain==0.16",
+    "fastapi==0.141.1",
+    "uvicorn==0.53.0",
+    "matplotlib==3.11.2",
 ]
 
 [project.optional-dependencies]
+# Mesmas versões de requirements-dev.txt, pelo mesmo motivo acima.
+# pandas-stubs e types-networkx ficam sem pin: são só stubs de tipo,
+# atualizados com frequência, e o que importa é que casem com as
+# versões pinadas de pandas/networkx acima — não com um número fixo.
 dev = [
-    "pytest>=8.0",
-    "pytest-cov>=5.0",
-    "ruff>=0.6",
-    "mypy>=1.11",
-    "httpx>=0.27",
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "ruff==0.16.8",
+    "mypy==2.3.1",
+    "httpx==0.28.1",
     "pandas-stubs",
     "types-networkx",
 ]

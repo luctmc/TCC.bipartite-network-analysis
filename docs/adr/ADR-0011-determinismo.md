@@ -52,6 +52,26 @@ quebra na primeira troca de versão da biblioteca sem que nada esteja
 errado. Onde a estabilidade importa de verdade (valores de `tiny_v1`), os
 esperados foram derivados no papel, não copiados da saída da biblioteca.
 
+**Um limite descoberto na prática: seed fixa não basta entre versões do
+Python.** Regenerar `synthetic_v1` sob Python 3.11 e sob 3.13 dá Q
+diferente nas projeções de peso fracionário — não nas de peso inteiro. A
+causa, isolada por instrumentação: `python-louvain.induced_graph()`
+itera `set(partition.values())`, e a ordem de iteração de `set` **não é
+parte do contrato de linguagem** do Python — ao contrário de `dict`
+(ordem de inserção garantida desde a 3.7), sets são documentados como
+não ordenados, e a implementação interna do CPython pode (e mudou) variar
+entre versões. Empates reais de ganho — mais comuns com pesos
+fracionários que com pesos inteiros — acabam desempatados por essa
+ordem, e o desempate se propaga para o resto do algoritmo.
+
+Isso não é bug nosso e não dá para corrigir sem reescrever a parte
+interna da biblioteca. A mitigação é de processo: **as fixtures
+commitadas são geradas e regeneradas sob uma única versão fixa (Python
+3.13)**, documentada em `scripts/make_fixtures.py` e
+`data/fixtures/README.md`, e o job `fixtures-deterministicas` da CI fixa
+essa mesma versão — de propósito, ele não é uma matriz como o job
+`qualidade`, que só lê fixtures já commitadas e por isso não é afetado.
+
 **O que muda no código.** `contracts/io.py` (escrita canônica);
 `scripts/make_fixtures.py` (`FIXTURE_CREATED_AT`, `FIXTURE_RUNTIME_S`);
 `DEFAULT_SEED` em `community/louvain.py`; `requirements.txt`;

@@ -59,6 +59,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # NÃO transformar em matriz (ver ADR-0011): python-louvain itera um
+      # set() de ids de comunidade em induced_graph(), cuja ordem não é
+      # garantida estável entre versões do CPython. Com peso fracionário
+      # (resource_allocation), isso pode mudar qual empate de ganho vence
+      # e dar um Louvain ligeiramente diferente entre 3.11 e 3.13 — sem
+      # que nada esteja errado. As fixtures commitadas foram geradas em
+      # 3.13, e é a versão que precisa regenerá-las aqui.
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"

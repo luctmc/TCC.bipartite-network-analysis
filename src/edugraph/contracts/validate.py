@@ -145,8 +145,11 @@ def validate_projection(bundle: ProjectionBundle) -> None:
             "esperado número finito e positivo",
         )
         if min_weight is not None:
+            # `weight is not None` já foi garantido por _finite_positive acima;
+            # repetir aqui é o que permite ao mypy estreitar o tipo antes do
+            # float() — sem ele, weight seria `Any | None`.
             _require(
-                float(weight) >= min_weight,
+                weight is not None and float(weight) >= min_weight,
                 f"{where}: aresta ({source!r}, {target!r}) tem weight={weight!r} "
                 f"abaixo do corte min_weight={min_weight}",
             )

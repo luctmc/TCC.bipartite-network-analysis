@@ -19,6 +19,16 @@ fixtures é justamente um dos testes de aceite daquelas specs.
 Os artefatos de comunidade e centralidade de ``synthetic_v1`` são
 gerados pela biblioteca e marcados com ``producer="reference"`` no
 ``meta.json`` — ninguém deve confundi-los com saída da Frente B ou C.
+
+**Regenere sob Python 3.13.** Com peso fracionário (``resource_
+allocation``), o Louvain do ``python-louvain`` pode devolver uma
+partição diferente (mesma seed, Q muda no 4º decimal) conforme a versão
+do Python — não por bug nosso: ``induced_graph()`` da biblioteca itera
+``set(partition.values())``, e ordem de iteração de ``set`` não é
+garantida estável entre versões do CPython (ao contrário de ``dict``,
+garantido desde a 3.7). As fixtures commitadas foram geradas em 3.13, e
+é a versão que o job ``fixtures-deterministicas`` da CI fixa — não a
+transforme em matriz. Ver ADR-0011.
 """
 
 from __future__ import annotations

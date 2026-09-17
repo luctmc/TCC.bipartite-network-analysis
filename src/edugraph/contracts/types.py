@@ -200,7 +200,7 @@ class BipartiteBundle:
     ``[A]``, consumido por ``[B]`` (caracterização) e ``[C]`` (API).
     """
 
-    graph: nx.Graph
+    graph: nx.Graph[Any]
     spec: BipartiteSpec
     meta: Meta = field(default_factory=Meta)
 
@@ -222,7 +222,7 @@ class ProjectionBundle:
     ``[C]``. É o contrato mais usado do projeto.
     """
 
-    graph: nx.Graph
+    graph: nx.Graph[Any]
     spec: ProjectionSpec
     source: BipartiteSpec
     meta: Meta = field(default_factory=Meta)

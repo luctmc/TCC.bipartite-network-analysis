@@ -7,5 +7,5 @@ numpy==2.4.4
 pandas==3.0.2
 python-louvain==0.16
 uvicorn==0.53.0
-scipy==1.17.0
-matplotlib==3.11.0
+scipy==1.17.1
+matplotlib==3.11.2

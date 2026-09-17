@@ -160,7 +160,7 @@ def _check_schema_version(payload: dict[str, Any], where: Path) -> None:
         )
 
 
-def _graph_rows(graph: nx.Graph) -> tuple[list[list[Any]], list[list[Any]]]:
+def _graph_rows(graph: nx.Graph[Any]) -> tuple[list[list[Any]], list[list[Any]]]:
     """Nós e arestas em ordem canônica."""
     nodes = [
         [node, data.get("kind", ""), data.get("label", node)]
@@ -176,8 +176,10 @@ def _graph_rows(graph: nx.Graph) -> tuple[list[list[Any]], list[list[Any]]]:
     return nodes, edges
 
 
-def _graph_from_rows(node_rows: list[dict[str, str]], edge_rows: list[dict[str, str]]) -> nx.Graph:
-    graph = nx.Graph()
+def _graph_from_rows(
+    node_rows: list[dict[str, str]], edge_rows: list[dict[str, str]]
+) -> nx.Graph[Any]:
+    graph: nx.Graph[Any] = nx.Graph()
     for row in node_rows:
         graph.add_node(row["id"], kind=row.get("kind", ""), label=row.get("label", row["id"]))
     for row in edge_rows:
