@@ -77,7 +77,18 @@ def cmd_synthetic(args: argparse.Namespace) -> int:
 
 
 def cmd_bipartite(args: argparse.Namespace) -> int:
-    raise NotImplementedError("A-03: ver docs/specs/frente-a/A-03-bipartido-parametrizavel.md")
+    """Constrói o bipartido e o ``outcomes.csv`` de um TOML (spec A-03).
+
+    Só a camada ``bipartite/``; as projeções saem por ``data project`` ou
+    pelo comando ``run``.
+    """
+    from edugraph.data.pipeline import load_run_config, run_data_stage
+
+    config = load_run_config(args.config)
+    written = run_data_stage(config, args.out, projections=False)
+    for path in written:
+        print(f"[data] gravado: {path}")
+    return 0
 
 
 def cmd_project(args: argparse.Namespace) -> int:

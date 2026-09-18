@@ -2,7 +2,7 @@
 
 **Frente:** A
 **Dono:** Pedro
-**Status:** não iniciada
+**Status:** concluída (18/09/2026)
 
 ## Objetivo
 
@@ -45,17 +45,17 @@ Ver `docs/contratos/bipartite.md`.
 
 ## Critérios de aceite
 
-- [ ] Dada uma tabela com notas 82 e 41 e `threshold=60`, quando
+- [x] Dada uma tabela com notas 82 e 41 e `threshold=60`, quando
       construir com `score_threshold`, então existe aresta para o
       primeiro aluno e não para o segundo.
-- [ ] Dada a mesma tabela, quando construir com `granularity="module"`,
+- [x] Dada a mesma tabela, quando construir com `granularity="module"`,
       então o nó é `DAAA`; com `module_presentation`, `DAAA_2024J`.
-- [ ] Dado `cohort="BBB_2013J"`, quando construir, então só matrículas
+- [x] Dado `cohort="BBB_2013J"`, quando construir, então só matrículas
       daquela apresentação entram.
-- [ ] Dado qualquer `spec`, quando construir, então nenhum nó tem
+- [x] Dado qualquer `spec`, quando construir, então nenhum nó tem
       atributo além de `kind` e `label` (ADR-0008).
-- [ ] Dado o resultado, quando validar, então `validate_bipartite` passa.
-- [ ] Sobre as mesmas entradas de `tiny_v1` e `synthetic_v1`, o grafo
+- [x] Dado o resultado, quando validar, então `validate_bipartite` passa.
+- [x] Sobre as mesmas entradas de `tiny_v1` e `synthetic_v1`, o grafo
       produzido é **idêntico** ao das fixtures — é o que prova que a
       implementação de referência do dia 0 pode ser aposentada.
 
@@ -72,8 +72,17 @@ Ver `docs/contratos/bipartite.md`.
 
 - `src/edugraph/data/bipartite.py`.
 - `src/edugraph/data/cli.py` — `cmd_bipartite`.
-- `src/edugraph/data/stage.py` — parte do estágio `data`.
-- `tests/data/test_bipartite.py` — remover os `xfail`.
+- `src/edugraph/data/stage.py` — estágio `data` completo, delegando a
+  `src/edugraph/data/pipeline.py` (novo): fonte → bipartido → outcomes →
+  projeções, compartilhado com `data bipartite` e `data synthetic`.
+- `tests/data/test_bipartite.py` — `xfail` removidos; +10 testes (assessment,
+  AVA, coorte, agregação, isolados contados, reprodução de `tiny_v1` e
+  `synthetic_v1`, `run --only data` e `data bipartite` de ponta a ponta).
+
+**Decisão registrada.** Agregação por (aluno, disciplina): média da nota,
+soma dos cliques, aprovado se alguma linha aprovou. Peso da aresta é a
+grandeza que o critério olhou (nota, cliques ou 1,0). Ver
+`docs/artigo/decisoes-metodologicas.md`.
 
 ## Impacto no artigo
 

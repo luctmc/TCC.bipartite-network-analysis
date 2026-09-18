@@ -19,28 +19,20 @@ from edugraph.data.projection import manual, networkx_ref  # noqa: F401
 
 
 class DataStage:
-    """ETL → bipartido → projeções, gravando sob ``out``."""
+    """Fonte → bipartido → outcomes → projeções, gravando sob ``out``.
+
+    A lógica vive em :func:`edugraph.data.pipeline.run_data_stage`, que
+    é compartilhada com os comandos ``data bipartite`` e ``data synthetic``.
+    """
 
     name = "data"
 
     def run(self, roots: list[Path], out: Path, config: RunConfig) -> list[Path]:
-        """Executa a Frente A inteira para uma configuração.
+        from edugraph.data.pipeline import run_data_stage
 
-        Notes
-        -----
-        A implementar conforme as specs A-01 a A-04 forem fechando:
-
-        1. Carregar a fonte declarada em ``config.source`` (sintética ou
-           OULAD).
-        2. ``build_bipartite(table, config.bipartite)`` e gravar.
-        3. Para cada ``ProjectionSpec`` de ``config.projections``,
-           projetar e gravar.
-        4. Gravar ``outcomes.csv`` e devolver os caminhos escritos.
-        """
-        raise NotImplementedError(
-            "A-03/A-04: estágio 'data'. Até lá, use --from community sobre artefatos "
-            "já existentes em disco (fixtures ou data/processed)."
-        )
+        # ``roots`` não é usado: a Frente A é a origem do pipeline e lê só
+        # a fonte declarada em ``config.source``, nunca artefatos.
+        return run_data_stage(config, out)
 
 
 STAGES.register("data", DataStage())
