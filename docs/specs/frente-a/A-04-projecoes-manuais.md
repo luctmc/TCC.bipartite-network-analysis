@@ -2,7 +2,7 @@
 
 **Frente:** A
 **Dono:** Pedro
-**Status:** não iniciada
+**Status:** concluída (18/09/2026)
 
 ## Objetivo
 
@@ -48,19 +48,21 @@ Ver `docs/contratos/projection.md`.
 
 ## Critérios de aceite
 
-- [ ] Dado `tiny_v1`, quando projetar `student_simple`, então os pesos
+- [x] Dado `tiny_v1`, quando projetar `student_simple`, então os pesos
       batem com `expected/student_simple.csv` (derivado no papel).
-- [ ] Dado `tiny_v1`, quando projetar `student_resource_allocation`,
+- [x] Dado `tiny_v1`, quando projetar `student_resource_allocation`,
       então os pesos batem com `expected/student_resource_allocation.csv`.
-- [ ] Dado `tiny_v1`, os pares S1-S6 e S3-S4 **empatam** na projeção
+- [x] Dado `tiny_v1`, os pares S1-S6 e S3-S4 **empatam** na projeção
       simples e **se separam** na alocação de recursos (0,25 < 1/3) — é o
       contraexemplo do viés de grau.
-- [ ] Dado `discipline_simple` sobre `tiny_v1`, os pesos batem com
+- [x] Dado `discipline_simple` sobre `tiny_v1`, os pesos batem com
       `expected/discipline_simple.csv`.
-- [ ] Dado `synthetic_v1`, a projeção produzida é idêntica à da fixture.
-- [ ] Dado o resultado, `validate_projection` passa.
+- [x] Dado `synthetic_v1`, a projeção produzida é idêntica à da fixture.
+- [x] Dado o resultado, `validate_projection` passa.
 - [ ] Sobre a projeção aluno↔aluno de uma coorte do OULAD, a execução
-      termina em tempo aceitável — **medir e registrar**.
+      termina em tempo aceitável — **medir e registrar**. *Pendente: exige
+      o OULAD normalizado (A-02) e o recorte por coorte (A-06); a
+      implementação já é O(nº de arestas da projeção), não O(|S|²).*
 
 ## Testes exigidos
 
@@ -73,8 +75,11 @@ Ver `docs/contratos/projection.md`.
 
 - `src/edugraph/data/projection/manual.py`.
 - `src/edugraph/data/cli.py` — `cmd_project`.
-- `src/edugraph/data/stage.py`.
-- `tests/data/test_projections.py` — remover os `xfail`.
+- `src/edugraph/data/stage.py` — *ficou para a A-03: o estágio `data` precisa
+  do bipartido construído a partir do TOML antes de projetar.*
+- `tests/data/test_projections.py` — `xfail` removidos; +12 testes (lado
+  disciplina em alocação de recursos, contrato, reprodução da fixture
+  `synthetic_v1`, nó isolado, `min_weight`, ponderação errada).
 
 ## Impacto no artigo
 

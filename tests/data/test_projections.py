@@ -1,13 +1,11 @@
-"""Projeções à mão  ``[A]`` — specs A-04 e A-05.
-
-Todos ``xfail(strict=True)``: falham hoje porque a implementação é stub,
-e **passam a falhar por passarem** quando a spec fechar — é o que avisa
-o Pedro de que pode tirar o marcador.
+"""Projeções à mão  ``[A]`` — specs A-04 (fechada) e A-05.
 
 Os valores esperados vêm de ``data/fixtures/tiny_v1/expected/``, que foi
 derivado no papel (ver o README de lá). Comparar a implementação com a
 fixture gerada pelo NetworkX seria comparar duas bibliotecas; comparar
 com a derivação à mão é verificar o algoritmo.
+
+O teste da A-05 continua ``xfail(strict=True)`` até a spec fechar.
 """
 
 from __future__ import annotations
@@ -15,10 +13,15 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+import networkx as nx
 import pytest
 
+from edugraph.contracts import io
+from edugraph.contracts.paths import ArtifactRoots
 from edugraph.contracts.types import BipartiteBundle, ProjectionSpec
+from edugraph.contracts.validate import validate_projection
 from edugraph.data.projection.manual import (
+    PRODUCER,
     ResourceAllocationProjection,
     SimpleProjection,
 )
@@ -33,7 +36,15 @@ def _expected_edges(path: Path) -> dict[tuple[str, str], float]:
         }
 
 
-@pytest.mark.xfail(reason="A-04 não implementada", raises=NotImplementedError, strict=True)
+def _edges_of(bundle) -> dict[tuple[str, str], float]:
+    return {tuple(sorted((u, v))): d["weight"] for u, v, d in bundle.graph.edges(data=True)}
+
+
+# ---------------------------------------------------------------------
+# A-04 — valores derivados no papel
+# ---------------------------------------------------------------------
+
+
 def test_projecao_simples_aluno_bate_com_o_calculo_a_mao(
     tiny_bipartite: BipartiteBundle, tiny_expected: Path
 ) -> None:
@@ -42,11 +53,9 @@ def test_projecao_simples_aluno_bate_com_o_calculo_a_mao(
     bundle = SimpleProjection().project(tiny_bipartite, spec)
 
     esperado = _expected_edges(tiny_expected / "student_simple.csv")
-    obtido = {tuple(sorted((u, v))): data["weight"] for u, v, data in bundle.graph.edges(data=True)}
-    assert obtido == pytest.approx(esperado)
+    assert _edges_of(bundle) == pytest.approx(esperado)
 
 
-@pytest.mark.xfail(reason="A-04 não implementada", raises=NotImplementedError, strict=True)
 def test_alocacao_de_recursos_bate_com_o_calculo_a_mao(
     tiny_bipartite: BipartiteBundle, tiny_expected: Path
 ) -> None:
@@ -55,11 +64,9 @@ def test_alocacao_de_recursos_bate_com_o_calculo_a_mao(
     bundle = ResourceAllocationProjection().project(tiny_bipartite, spec)
 
     esperado = _expected_edges(tiny_expected / "student_resource_allocation.csv")
-    obtido = {tuple(sorted((u, v))): data["weight"] for u, v, data in bundle.graph.edges(data=True)}
-    assert obtido == pytest.approx(esperado)
+    assert _edges_of(bundle) == pytest.approx(esperado)
 
 
-@pytest.mark.xfail(reason="A-04 não implementada", raises=NotImplementedError, strict=True)
 def test_projecao_disciplina_disciplina_existe(
     tiny_bipartite: BipartiteBundle, tiny_expected: Path
 ) -> None:
@@ -69,11 +76,20 @@ def test_projecao_disciplina_disciplina_existe(
     bundle = SimpleProjection().project(tiny_bipartite, spec)
 
     esperado = _expected_edges(tiny_expected / "discipline_simple.csv")
-    obtido = {tuple(sorted((u, v))): data["weight"] for u, v, data in bundle.graph.edges(data=True)}
-    assert obtido == pytest.approx(esperado)
+    assert _edges_of(bundle) == pytest.approx(esperado)
 
 
-@pytest.mark.xfail(reason="A-04 não implementada", raises=NotImplementedError, strict=True)
+def test_alocacao_de_recursos_no_lado_disciplina(
+    tiny_bipartite: BipartiteBundle, tiny_expected: Path
+) -> None:
+    """DA-DB = 1/2 + 1/2 + 1/3: S1 e S2 (grau 2) pesam mais que S3 (grau 3)."""
+    spec = ProjectionSpec(side="discipline", weighting="resource_allocation")
+    bundle = ResourceAllocationProjection().project(tiny_bipartite, spec)
+
+    esperado = _expected_edges(tiny_expected / "discipline_resource_allocation.csv")
+    assert _edges_of(bundle) == pytest.approx(esperado)
+
+
 def test_as_duas_ponderacoes_ordenam_pares_de_forma_diferente(
     tiny_bipartite: BipartiteBundle,
 ) -> None:
@@ -93,6 +109,106 @@ def test_as_duas_ponderacoes_ordenam_pares_de_forma_diferente(
 
     assert simples.graph["S1"]["S6"]["weight"] == simples.graph["S3"]["S4"]["weight"]
     assert ra.graph["S1"]["S6"]["weight"] < ra.graph["S3"]["S4"]["weight"]
+
+
+# ---------------------------------------------------------------------
+# A-04 — contrato e coerência com a fixture
+# ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("side", ["student", "discipline"])
+@pytest.mark.parametrize("weighting", ["simple", "resource_allocation"])
+def test_projecao_passa_no_validador_de_contrato(
+    tiny_bipartite: BipartiteBundle, side: str, weighting: str
+) -> None:
+    """Sem laço, um só lado, peso finito e positivo."""
+    algorithm = SimpleProjection() if weighting == "simple" else ResourceAllocationProjection()
+    bundle = algorithm.project(tiny_bipartite, ProjectionSpec(side=side, weighting=weighting))  # type: ignore[arg-type]
+    validate_projection(bundle)
+    assert bundle.meta.producer == PRODUCER
+    assert bundle.source == tiny_bipartite.spec
+
+
+@pytest.mark.dataset("synthetic_v1")
+@pytest.mark.parametrize("side", ["student", "discipline"])
+@pytest.mark.parametrize("weighting", ["simple", "resource_allocation"])
+def test_reproduz_a_fixture_synthetic_v1(
+    artifact_roots: ArtifactRoots, side: str, weighting: str
+) -> None:
+    """A implementação da frente produz o mesmo grafo que a referência do dia 0.
+
+    É o critério que permite aposentar ``project_reference`` de
+    ``scripts/make_fixtures.py`` quando a A-03 fechar: se os dois
+    concordam em 98 nós e 1.971 arestas com pesos fracionários, o
+    algoritmo está certo além do caso conferível à mão.
+    """
+    bipartite = io.load_bipartite(artifact_roots, "synthetic_v1")
+    spec = ProjectionSpec(side=side, weighting=weighting)  # type: ignore[arg-type]
+    algorithm = SimpleProjection() if weighting == "simple" else ResourceAllocationProjection()
+    produzido = algorithm.project(bipartite, spec)
+    fixture = io.load_projection(artifact_roots, "synthetic_v1", spec.projection_id)
+
+    assert set(produzido.graph.nodes) == set(fixture.graph.nodes)
+    assert _edges_of(produzido) == pytest.approx(_edges_of(fixture), abs=1e-12)
+
+
+def test_no_isolado_permanece_na_projecao() -> None:
+    """Um aluno que não compartilha disciplina com ninguém continua sendo nó.
+
+    Ele existe no bipartido, então existe na projeção — só não tem
+    aresta. Removê-lo mudaria ``n_nodes`` entre bipartido e projeção e
+    quebraria o cruzamento que o validador de partição faz.
+    """
+    from edugraph.contracts.types import BipartiteSpec
+
+    graph = nx.Graph()
+    graph.add_node("S1", kind="student", label="1")
+    graph.add_node("S2", kind="student", label="2")
+    graph.add_node("S3", kind="student", label="3")
+    graph.add_node("DA", kind="discipline", label="A")
+    graph.add_node("DB", kind="discipline", label="B")
+    graph.add_edge("S1", "DA", weight=70.0)
+    graph.add_edge("S2", "DA", weight=70.0)
+    graph.add_edge("S3", "DB", weight=70.0)  # S3 está sozinho em DB
+
+    bundle = SimpleProjection().project(
+        BipartiteBundle(graph=graph, spec=BipartiteSpec(dataset="t")),
+        ProjectionSpec(side="student", weighting="simple"),
+    )
+    assert set(bundle.graph.nodes) == {"S1", "S2", "S3"}
+    assert bundle.graph.degree("S3") == 0
+    assert bundle.graph["S1"]["S2"]["weight"] == 1.0
+
+
+def test_min_weight_e_honrado_quando_declarado(tiny_bipartite: BipartiteBundle) -> None:
+    """Com ``min_weight`` na spec, nenhuma aresta abaixo sobrevive.
+
+    A estratégia de escala é a A-06; aqui só se garante que um
+    ``ProjectionSpec`` com corte nunca gera artefato inválido.
+    """
+    spec = ProjectionSpec(side="student", weighting="simple", min_weight=2.0)
+    bundle = SimpleProjection().project(tiny_bipartite, spec)
+
+    assert all(d["weight"] >= 2.0 for _, _, d in bundle.graph.edges(data=True))
+    assert bundle.graph.number_of_edges() == 3  # só S1-S2, S1-S3, S2-S3
+    validate_projection(bundle)
+
+
+def test_algoritmo_recusa_ponderacao_errada(tiny_bipartite: BipartiteBundle) -> None:
+    """``manual_simple`` não aceita uma spec de alocação de recursos, e vice-versa."""
+    with pytest.raises(ValueError, match="simple"):
+        SimpleProjection().project(
+            tiny_bipartite, ProjectionSpec(side="student", weighting="resource_allocation")
+        )
+    with pytest.raises(ValueError, match="resource_allocation"):
+        ResourceAllocationProjection().project(
+            tiny_bipartite, ProjectionSpec(side="student", weighting="simple")
+        )
+
+
+# ---------------------------------------------------------------------
+# A-05 — ainda aberta
+# ---------------------------------------------------------------------
 
 
 @pytest.mark.xfail(reason="A-05 não implementada", raises=NotImplementedError, strict=True)
