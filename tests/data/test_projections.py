@@ -207,11 +207,10 @@ def test_algoritmo_recusa_ponderacao_errada(tiny_bipartite: BipartiteBundle) -> 
 
 
 # ---------------------------------------------------------------------
-# A-05 — ainda aberta
+# A-05 — à mão × NetworkX
 # ---------------------------------------------------------------------
 
 
-@pytest.mark.xfail(reason="A-05 não implementada", raises=NotImplementedError, strict=True)
 def test_manual_e_networkx_batem_ate_1e9(tiny_bipartite: BipartiteBundle) -> None:
     """A comparação que vira tabela do capítulo 3 (ADR-0010)."""
     from edugraph.data.projection.compare import TOLERANCE, compare
@@ -224,3 +223,130 @@ def test_manual_e_networkx_batem_ate_1e9(tiny_bipartite: BipartiteBundle) -> Non
     )
     assert resultado["max_abs_diff"] < TOLERANCE
     assert resultado["equal_within_tolerance"] is True
+
+
+@pytest.mark.dataset("synthetic_v1")
+@pytest.mark.parametrize("side", ["student", "discipline"])
+@pytest.mark.parametrize("weighting", ["simple", "resource_allocation"])
+def test_as_quatro_projecoes_batem_com_a_referencia(
+    artifact_roots: ArtifactRoots, side: str, weighting: str
+) -> None:
+    """Em synthetic_v1 (98 nós, 1.971 arestas), as duas implementações concordam."""
+    from edugraph.data.projection.compare import TOLERANCE, compare_implementations
+
+    bipartite = io.load_bipartite(artifact_roots, "synthetic_v1")
+    row = compare_implementations(bipartite, ProjectionSpec(side=side, weighting=weighting))  # type: ignore[arg-type]
+
+    assert row["equal_within_tolerance"] is True
+    assert row["max_abs_diff"] < TOLERANCE
+    assert row["n_edges_manual"] == row["n_edges_networkx"]
+    assert row["runtime_manual_s"] >= 0 and row["runtime_networkx_s"] >= 0
+
+
+def test_collaboration_do_networkx_nao_e_alocacao_de_recursos(
+    tiny_bipartite: BipartiteBundle,
+) -> None:
+    """Newman (1/(k−1)) ≠ Zhou (1/k): a spec A-05 exigia verificar, não supor.
+
+    Em ``tiny_v1``, DA tem grau 4: contribui 1/3 por Newman e 1/4 por
+    Zhou. Se este teste um dia passar a falhar, é porque o NetworkX mudou
+    a fórmula — e a documentação precisa ser revista.
+    """
+    from edugraph.data.projection.networkx_ref import newman_collaboration_projection
+
+    spec = ProjectionSpec(side="student", weighting="resource_allocation")
+    zhou = ResourceAllocationProjection().project(tiny_bipartite, spec)
+    newman = newman_collaboration_projection(tiny_bipartite, spec)
+
+    # S1-S6 só compartilham DA (grau 4)
+    assert zhou.graph["S1"]["S6"]["weight"] == pytest.approx(1 / 4)
+    assert newman.graph["S1"]["S6"]["weight"] == pytest.approx(1 / 3)
+    assert _edges_of(zhou) != pytest.approx(_edges_of(newman))
+
+
+def test_aresta_faltante_e_diferenca_infinita(tiny_bipartite: BipartiteBundle) -> None:
+    """Uma aresta presente em uma e ausente na outra não pode virar 'peso zero'."""
+    from edugraph.data.projection.compare import compare
+
+    spec = ProjectionSpec(side="student", weighting="simple")
+    a = SimpleProjection().project(tiny_bipartite, spec)
+    b = SimpleProjection().project(tiny_bipartite, spec)
+    b.graph.remove_edge("S4", "S5")
+
+    row = compare(a, b)
+    assert row["max_abs_diff"] == float("inf")
+    assert row["equal_within_tolerance"] is False
+    assert row["n_edges_manual"] == row["n_edges_networkx"] + 1
+
+
+def test_compare_recusa_projecoes_incomparaveis(tiny_bipartite: BipartiteBundle) -> None:
+    from edugraph.contracts.errors import ContractError
+    from edugraph.data.projection.compare import compare
+
+    student = SimpleProjection().project(
+        tiny_bipartite, ProjectionSpec(side="student", weighting="simple")
+    )
+    discipline = SimpleProjection().project(
+        tiny_bipartite, ProjectionSpec(side="discipline", weighting="simple")
+    )
+    with pytest.raises(ContractError, match="incompar"):
+        compare(student, discipline)
+
+
+def test_metrics_projections_e_idempotente(tiny_bipartite: BipartiteBundle, tmp_path: Path) -> None:
+    """Rodar duas vezes atualiza as 4 linhas em vez de duplicá-las."""
+    from edugraph.data.projection.compare import METRICS_COLUMNS, compare_all, write_metrics
+
+    rows = compare_all(tiny_bipartite)
+    write_metrics(rows, tmp_path, "tiny_v1")
+    write_metrics(rows, tmp_path, "tiny_v1")
+
+    lidas = io.load_metrics([tmp_path], "tiny_v1", "projections")
+    assert len(lidas) == 4
+    assert set(lidas[0]) == set(METRICS_COLUMNS)
+    assert {r["projection_id"] for r in lidas} == {
+        "student_simple",
+        "student_resource_allocation",
+        "discipline_simple",
+        "discipline_resource_allocation",
+    }
+    assert all(r["equal_within_tolerance"] == "true" for r in lidas)
+
+
+def test_weight_distribution_soma_as_arestas(tiny_bipartite: BipartiteBundle) -> None:
+    from edugraph.data.projection.compare import weight_distribution
+
+    bundle = ResourceAllocationProjection().project(
+        tiny_bipartite, ProjectionSpec(side="student", weighting="resource_allocation")
+    )
+    hist = weight_distribution(bundle, bins=5)
+    assert len(hist["bin_edges"]) == 6
+    assert sum(hist["counts"]) == bundle.graph.number_of_edges() == 9
+
+
+def test_figura_das_ponderacoes_e_gravada(tiny_bipartite: BipartiteBundle, tmp_path: Path) -> None:
+    """PNG e SVG saem com o nome canônico; sem teste de aparência."""
+    from edugraph.data.report import figure_weight_distributions
+
+    simple = SimpleProjection().project(
+        tiny_bipartite, ProjectionSpec(side="student", weighting="simple")
+    )
+    ra = ResourceAllocationProjection().project(
+        tiny_bipartite, ProjectionSpec(side="student", weighting="resource_allocation")
+    )
+    png = figure_weight_distributions(simple, ra, tmp_path)
+
+    assert png.name == "fig3-ponderacoes-tiny_v1-student.png"
+    assert png.exists() and png.stat().st_size > 0
+    assert png.with_suffix(".svg").exists()
+
+
+def test_data_compare_grava_tabela_e_figura(tmp_path: Path) -> None:
+    from edugraph.__main__ import main
+
+    code = main(["data", "compare", "--root", "data/fixtures", "--dataset", "tiny_v1",
+                 "--out", str(tmp_path), "--figures", str(tmp_path / "fig")])  # fmt: skip
+    assert code == 0
+    assert (tmp_path / "tiny_v1" / "metrics" / "projections.csv").exists()
+    assert (tmp_path / "fig" / "fig3-ponderacoes-tiny_v1-student.png").exists()
+    assert (tmp_path / "fig" / "fig3-ponderacoes-tiny_v1-discipline.png").exists()

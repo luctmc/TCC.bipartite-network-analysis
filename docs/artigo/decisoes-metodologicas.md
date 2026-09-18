@@ -139,13 +139,36 @@ existência da aresta.
 `meta.stats["n_isolated_removed"]` registra quantos alunos saíram por não
 satisfazer o critério em disciplina nenhuma (22 dos 120 em `synthetic_v1`).
 
+### A referência NetworkX para a alocação de recursos — decidida na A-05
+
+**O que dizer.** A projeção simples é comparada com
+`nx.bipartite.weighted_projected_graph`, que é exatamente a contagem de
+vizinhos em comum. Para a alocação de recursos **não existe função
+pronta no NetworkX**: `collaboration_weighted_projected_graph` é a
+ponderação de Newman (2001), em que cada vizinho comum contribui
+`1/(grau − 1)`, e **não** a de Zhou et al. (2007), que contribui
+`1/grau`. Em `tiny_v1` a disciplina DA (grau 4) contribui 1/3 por Newman
+e 1/4 por Zhou — as duas divergem em toda aresta, e um teste garante que
+isso continua sendo verdade.
+
+A referência usada é `generic_weighted_projected_graph` com a fórmula de
+Zhou fornecida por nós: a biblioteca faz a projeção (interseção de
+vizinhanças, nós, atributos) e nós damos só o peso. É a comparação mais
+independente possível, e o texto deve dizer isso em vez de afirmar que
+"o NetworkX implementa a alocação de recursos".
+
+**Resultado.** Nas quatro projeções de `synthetic_v1` (98 nós, 1.971
+arestas), a implementação à mão e a referência concordam com diferença
+máxima abaixo de 1e-9. Tabela em `metrics/projections.csv`.
+
+**Onde está.** `edugraph.data.projection.networkx_ref`; ADR-0010.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |
 |---|---|---|
 | Ponderação da nota média pelo `weight` da avaliação | A-02 | muda quem passa do limiar |
 | `weight_mode` da intermediação (`none`/`inverse`/`raw`) | C-01 | **muda o ranking**; em NetworkX peso é distância, não afinidade |
-| Equivalência entre a alocação de recursos e a função do NetworkX | A-05 | se não forem equivalentes, a comparação precisa dizer isso |
 | Interpretação do resultado da validação a posteriori | B-06, C-06 | se a relação não aparecer, é achado a reportar, não fracasso |
 
 ## O que o artigo não deve afirmar
