@@ -163,11 +163,38 @@ máxima abaixo de 1e-9. Tabela em `metrics/projections.csv`.
 
 **Onde está.** `edugraph.data.projection.networkx_ref`; ADR-0010.
 
+### As três regras do ETL do OULAD — decididas na A-02
+
+**O que dizer.**
+
+1. **Nota da matrícula = média ponderada pelo `weight` da avaliação.**
+   No OULAD as avaliações contínuas (TMA/CMA) somam 100 e o exame vale
+   100 à parte; a média simples daria peso igual a um teste de 5% e ao
+   exame. Quando todos os pesos das avaliações entregues são zero (só
+   CMAs sem peso), a nota é a média simples, e a linha fica marcada
+   (`score_weighted = false`) para que o texto possa dizer quantas são.
+2. **Matrícula sem nota e sem clique no AVA é descartada.** Não há
+   evidência de participação; ela não geraria aresta em critério nenhum.
+   Reportar quantas foram descartadas.
+3. **Um desfecho por aluno = o da apresentação mais recente**; empate na
+   mesma apresentação, o módulo de código maior. É o "estado final" do
+   aluno na base. A regra de desempate é arbitrária e por isso está
+   escrita; alternativas (qualquer aprovação; o pior desfecho) mudariam
+   a tabela de validação da B-06 e devem ser citadas como sensibilidade.
+
+**O que o ETL não lê, de propósito.** Gênero, região, faixa etária,
+escolaridade, IMD e deficiência de `studentInfo` não entram em
+`usecols`. A forma mais segura de não vazar um atributo demográfico para
+o grafo (ADR-0008) é não carregá-lo.
+
+**Onde está.** `edugraph.data.oulad.etl` (docstring do módulo);
+`edugraph.data.oulad.schema.SCHEMAS`; testes em `tests/data/test_etl.py`
+sobre `oulad_mini`.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |
 |---|---|---|
-| Ponderação da nota média pelo `weight` da avaliação | A-02 | muda quem passa do limiar |
 | `weight_mode` da intermediação (`none`/`inverse`/`raw`) | C-01 | **muda o ranking**; em NetworkX peso é distância, não afinidade |
 | Interpretação do resultado da validação a posteriori | B-06, C-06 | se a relação não aparecer, é achado a reportar, não fracasso |
 

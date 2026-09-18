@@ -76,7 +76,13 @@ def load_source(config: RunConfig) -> tuple[pd.DataFrame, Outcomes]:
 
         raw_dir = Path(source.get("raw_dir", "data/raw/oulad"))
         cache_dir = Path(source["cache_dir"]) if "cache_dir" in source else None
-        table = etl.normalize(raw_dir, cache_dir=cache_dir)
+        # A granularidade decide o grão da tabela: por matrícula (módulo ou
+        # módulo_apresentação) ou por avaliação. O desfecho por aluno sai
+        # da mesma tabela, pela regra documentada em etl.to_outcomes.
+        if config.bipartite.granularity == "assessment":
+            table = etl.normalize_assessments(raw_dir, cache_dir=cache_dir)
+        else:
+            table = etl.normalize(raw_dir, cache_dir=cache_dir)
         outcomes = Outcomes(final_result=etl.to_outcomes(table))
         return table, outcomes
 
