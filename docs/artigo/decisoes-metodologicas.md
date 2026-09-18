@@ -113,11 +113,24 @@ comunidade de tamanho 1. Ao reportar `k` no artigo, **dizer quantas
 comunidades são unitárias** — um `k` alto de singletons diz algo muito
 diferente de um `k` alto de grupos reais.
 
+### Agregação por (aluno, disciplina) — decidida na A-03
+
+**O que dizer.** Quando um aluno tem mais de uma matrícula na mesma
+disciplina (repetiu o módulo em outra apresentação e a granularidade é
+`module`), as linhas são agregadas assim: **média** da nota, **soma** dos
+cliques no AVA, e aprovado se **alguma** das matrículas foi `Pass` ou
+`Distinction`. O peso da aresta é a grandeza que o critério de aresta
+olhou — nota média, cliques ou 1,0 — e as projeções o ignoram: usam só a
+existência da aresta.
+
+**Onde está.** `edugraph.data.bipartite.normalize_table`;
+`meta.stats["n_isolated_removed"]` registra quantos alunos saíram por não
+satisfazer o critério em disciplina nenhuma (22 dos 120 em `synthetic_v1`).
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |
 |---|---|---|
-| Regra para aluno com mais de uma matrícula no mesmo módulo | A-02 | muda o número de arestas |
 | Ponderação da nota média pelo `weight` da avaliação | A-02 | muda quem passa do limiar |
 | `weight_mode` da intermediação (`none`/`inverse`/`raw`) | C-01 | **muda o ranking**; em NetworkX peso é distância, não afinidade |
 | Equivalência entre a alocação de recursos e a função do NetworkX | A-05 | se não forem equivalentes, a comparação precisa dizer isso |
