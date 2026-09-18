@@ -219,7 +219,28 @@ def cmd_compare(args: argparse.Namespace) -> int:
 
 
 def cmd_etl(args: argparse.Namespace) -> int:
-    raise NotImplementedError("A-02: ver docs/specs/frente-a/A-02-etl-oulad.md")
+    """Normaliza o OULAD bruto e grava o cache em ``--cache`` (spec A-02).
+
+    Exige o download manual em ``--raw`` (ver README). Falha cedo, com
+    tabela e coluna nomeadas, se o esquema não bater.
+    """
+    from edugraph.data.oulad import download, etl
+
+    download.verify(args.raw, strict=True)
+    table = etl.normalize(args.raw, cache_dir=args.cache)
+    fine = etl.normalize_assessments(args.raw, cache_dir=args.cache)
+
+    n_students = table["id_student"].nunique()
+    n_modules = table["code_module"].nunique()
+    com_nota = int(table["score_media"].notna().sum())
+    ponderadas = int(table["score_weighted"].sum())
+    print(f"[etl] {len(table)} matrículas de {n_students} alunos em {n_modules} módulos")
+    print(
+        f"[etl] {com_nota} com nota ({com_nota / len(table):.0%}); {ponderadas} com média ponderada"
+    )
+    print(f"[etl] {len(fine)} linhas por avaliação")
+    print(f"[etl] cache em {args.cache}")
+    return 0
 
 
 def cmd_report(args: argparse.Namespace) -> int:

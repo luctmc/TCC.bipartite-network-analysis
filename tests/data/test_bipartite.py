@@ -299,11 +299,4 @@ def test_oulad_mini_usa_o_esquema_real() -> None:
         assert not faltando, f"{name}.csv não tem as colunas {sorted(faltando)}"
 
 
-@pytest.mark.xfail(reason="A-02 não implementada", raises=NotImplementedError, strict=True)
-def test_etl_produz_a_tabela_normalizada() -> None:
-    """Sete tabelas → uma linha por (aluno, disciplina, apresentação)."""
-    from edugraph.data.oulad.etl import NORMALIZED_COLUMNS, normalize
-
-    table = normalize(OULAD_MINI)
-    assert set(NORMALIZED_COLUMNS) <= set(table.columns)
-    assert not table.duplicated(subset=["id_student", "code_module", "code_presentation"]).any()
+# O ETL em si (normalize, cache, to_outcomes, download) está em test_etl.py.

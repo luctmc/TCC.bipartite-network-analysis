@@ -2,7 +2,7 @@
 
 **Frente:** A
 **Dono:** Pedro
-**Status:** não iniciada
+**Status:** concluída contra `oulad_mini` (18/09/2026); rodada na base completa pendente do download
 
 ## Objetivo
 
@@ -51,18 +51,26 @@ esquema, (b) normalização.
 
 ## Critérios de aceite
 
-- [ ] Dado `tests/data/oulad_mini/`, quando rodar `normalize`, então a
+- [x] Dado `tests/data/oulad_mini/`, quando rodar `normalize`, então a
       tabela tem as colunas de `NORMALIZED_COLUMNS` e nenhuma duplicata
       de (aluno, módulo, apresentação).
-- [ ] Dada uma tabela sem uma coluna esperada, quando ler, então falha
+- [x] Dada uma tabela sem uma coluna esperada, quando ler, então falha
       com mensagem que nomeia a tabela e a coluna.
-- [ ] Dado o OULAD completo, quando rodar com `cache_dir`, então a
-      segunda execução não relê `studentVle.csv`.
+- [x] Dado o OULAD completo, quando rodar com `cache_dir`, então a
+      segunda execução não relê `studentVle.csv`. *Mecanismo pronto e
+      testado sobre `oulad_mini` (o teste remove o `studentVle.csv` entre
+      as duas chamadas e a segunda ainda responde do cache; alterar a
+      fonte expira o cache). A confirmação na base completa é parte da
+      rodada manual.*
 - [ ] Dado o OULAD completo, quando rodar, então o pico de memória cabe
-      num notebook de 8 GB — **medir e registrar**.
-- [ ] A nota média por matrícula é ponderada pelo `weight` da avaliação,
+      num notebook de 8 GB — **medir e registrar**. *Pendente do download
+      (passo manual). `studentVle` é lida em blocos de 1 milhão de linhas
+      com `usecols`/`dtype`; o pico esperado é o de um bloco (~40 MB)
+      mais a tabela final. Medir com `python -m edugraph data etl` e
+      anotar aqui.*
+- [x] A nota média por matrícula é ponderada pelo `weight` da avaliação,
       e a escolha está registrada em `docs/artigo/`.
-- [ ] `to_outcomes` produz um desfecho por aluno, com a regra de
+- [x] `to_outcomes` produz um desfecho por aluno, com a regra de
       desempate documentada.
 
 ## Testes exigidos
@@ -73,13 +81,24 @@ esquema, (b) normalização.
   duplicatas; matrícula cancelada vira `Withdrawn`; avaliação sem data
   não quebra a leitura.
 - **Lento** (`@pytest.mark.slow` + `@pytest.mark.oulad`): rodada sobre a
-  base completa.
+  base completa — *a escrever junto com a rodada manual, quando houver
+  números de referência para afirmar.*
+- **Escritos:** `tests/data/test_etl.py`, 17 testes sobre `oulad_mini` —
+  esquema das sete tabelas, atributos demográficos não carregados,
+  mensagens de erro, média ponderada (e simples quando Σpeso = 0),
+  cliques, leitura em blocos, descarte sem evidência, cache e expiração,
+  tabela por avaliação, regra de desfecho, `verify`/`download` sem rede,
+  comando `data etl`.
 
 ## Arquivos criados ou alterados
 
 - `src/edugraph/data/oulad/download.py`, `schema.py`, `etl.py`.
 - `src/edugraph/data/cli.py` — `cmd_etl`.
-- `scripts/download_oulad.py`.
+- `scripts/download_oulad.py` (já existia; usa `download.py`).
+- `src/edugraph/data/pipeline.py` — fonte `oulad` escolhe a tabela pelo grão
+  (`assessment` → tabela por avaliação).
+- `OULAD_SHA256` em `download.py` fica **vazio até o primeiro download real**;
+  `download()` imprime o hash para preencher.
 - `tests/data/test_bipartite.py`.
 
 ## Impacto no artigo
