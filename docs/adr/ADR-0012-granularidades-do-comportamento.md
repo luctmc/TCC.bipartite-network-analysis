@@ -1,6 +1,6 @@
 # ADR-0012: Acrescentar as granularidades do comportamento ao contrato
 
-**Status:** proposta
+**Status:** aceita
 **Data:** 2026-09-18
 **Decidido por:** Pedro, Gabriel, Lucas
 **Frente:** [A]
