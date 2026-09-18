@@ -30,7 +30,7 @@ from edugraph.contracts.registry import PROJECTIONS
 from edugraph.contracts.types import BipartiteBundle, Outcomes, RunConfig
 from edugraph.data.bipartite import build_bipartite
 from edugraph.data.projection import manual, networkx_ref  # noqa: F401  (registro)
-from edugraph.data.synthetic import SyntheticSpec, generate
+from edugraph.data.synthetic import SyntheticSpec, generate, make_groups
 
 __all__ = ["load_run_config", "load_source", "run_data_stage"]
 
@@ -53,11 +53,17 @@ def load_source(config: RunConfig) -> tuple[pd.DataFrame, Outcomes]:
     kind = source.get("kind", "synthetic")
 
     if kind == "synthetic":
-        spec = SyntheticSpec(
-            seed=int(source.get("seed", config.bipartite.seed or 42)),
-            students_per_group=int(source.get("students_per_group", 40)),
-        )
-        dataset = generate(spec)
+        kwargs: dict[str, Any] = {
+            "seed": int(source.get("seed", config.bipartite.seed or 42)),
+            "students_per_group": int(source.get("students_per_group", 40)),
+        }
+        if source.get("sparsity") is not None:
+            kwargs["sparsity"] = float(source["sparsity"])
+        if "n_groups" in source or "modules_per_group" in source:
+            kwargs["groups"] = make_groups(
+                int(source.get("n_groups", 3)), int(source.get("modules_per_group", 2))
+            )
+        dataset = generate(SyntheticSpec(**kwargs))
         table = pd.DataFrame(dataset.enrollments)
         outcomes = Outcomes(
             final_result=dict(dataset.final_result),

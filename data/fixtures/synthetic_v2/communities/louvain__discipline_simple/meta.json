@@ -1,0 +1,19 @@
+{
+  "algorithm": "louvain",
+  "created_at": "2026-09-17T00:00:00+00:00",
+  "kind": "partition",
+  "modularity": 0.22944444444444445,
+  "n_communities": 3,
+  "notes": "Partição de referência do dia 0; a da Frente B é a spec B-01.",
+  "params": {
+    "implementation": "python_louvain",
+    "seed": 42,
+    "weight": "weight"
+  },
+  "producer": "reference",
+  "projection_id": "discipline_simple",
+  "runtime_s": 0.0,
+  "schema_version": "1.0",
+  "stats": {},
+  "status": "ok"
+}

@@ -31,6 +31,17 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
     synthetic.add_argument("--dataset", default="synthetic_dev", help="nome do dataset de saída")
     synthetic.add_argument("--out", type=Path, default=Path("data/processed"))
     synthetic.add_argument("--students-per-group", type=int, default=40, dest="students_per_group")
+    synthetic.add_argument(
+        "--sparsity",
+        type=float,
+        default=None,
+        help="fração de alunos reduzidos a uma matrícula (esparsidade tipo OULAD)",
+    )
+    synthetic.add_argument("--n-groups", type=int, default=None, dest="n_groups")
+    synthetic.add_argument("--modules-per-group", type=int, default=None, dest="modules_per_group")
+    synthetic.add_argument(
+        "--threshold", type=float, default=60.0, help="nota mínima para a aresta"
+    )
     synthetic.set_defaults(func=cmd_synthetic)
 
     bipartite = actions.add_parser(
@@ -66,14 +77,46 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
 
 
 def cmd_synthetic(args: argparse.Namespace) -> int:
-    """Gera o dataset sintético e grava o bipartido e as projeções.
+    """Gera o dataset sintético e grava bipartido, outcomes e as 4 projeções (A-01).
 
-    Notes
-    -----
-    O gerador (:mod:`edugraph.data.synthetic`) já funciona; o que falta é
-    o caminho dele até os artefatos, que depende de A-03 e A-04.
+    Monta uma :class:`~edugraph.contracts.types.RunConfig` em memória com
+    os mesmos parâmetros que um TOML de ``configs/`` teria e delega ao
+    pipeline — o artefato sai idêntico ao que ``run`` produziria.
     """
-    raise NotImplementedError("A-01/A-03: ver docs/specs/frente-a/")
+    from edugraph.contracts.types import BipartiteSpec, ProjectionSpec, RunConfig
+    from edugraph.data.pipeline import run_data_stage
+
+    source: dict[str, object] = {
+        "kind": "synthetic",
+        "seed": args.seed,
+        "students_per_group": args.students_per_group,
+    }
+    if args.sparsity is not None:
+        source["sparsity"] = args.sparsity
+    if args.n_groups is not None or args.modules_per_group is not None:
+        source["n_groups"] = args.n_groups or 3
+        source["modules_per_group"] = args.modules_per_group or 2
+
+    config = RunConfig(
+        name=args.dataset,
+        bipartite=BipartiteSpec(
+            dataset=args.dataset,
+            granularity="module",
+            edge_criterion="score_threshold",
+            threshold=args.threshold,
+            seed=args.seed,
+        ),
+        projections=[
+            ProjectionSpec(side=side, weighting=weighting)  # type: ignore[arg-type]
+            for side in ("student", "discipline")
+            for weighting in ("simple", "resource_allocation")
+        ],
+        source=source,
+    )
+    written = run_data_stage(config, args.out)
+    for path in written:
+        print(f"[data] gravado: {path}")
+    return 0
 
 
 def cmd_bipartite(args: argparse.Namespace) -> int:

@@ -64,7 +64,19 @@ padrão, com `module` (7) como comparação, e `assessment` para as análises
 por coorte. A comparação entre granularidades **é resultado**, não
 detalhe de implementação.
 
-**Onde está.** ADR-0007; `configs/`.
+**Segundo achado, da spec A-01: a degeneração depende também da
+esparsidade.** `synthetic_v2` tem os mesmos 7 módulos e a mesma seed de
+`synthetic_v1`, mas 70% dos alunos reduzidos a uma única matrícula — o
+perfil do OULAD. Nela, `discipline_simple` tem **16 de 21 arestas**: não
+é mais completa, e a intermediação passa a discriminar. Isso muda o que
+o texto deve dizer: com V = módulo, a projeção disciplina↔disciplina é
+completa quando os alunos cursam muitas disciplinas (`synthetic_v1`) e
+deixa de ser quando cursam poucas (`synthetic_v2`, OULAD). No OULAD real
+as duas forças atuam: poucos módulos *e* poucas matrículas por aluno. O
+número real só a A-02/A-06 dirão.
+
+**Onde está.** ADR-0007; `configs/`;
+`data/fixtures/synthetic_v2/REFERENCE.md`.
 
 ### Girvan-Newman e o orçamento de tempo
 

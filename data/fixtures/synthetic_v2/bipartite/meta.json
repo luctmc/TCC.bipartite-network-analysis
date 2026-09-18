@@ -1,0 +1,20 @@
+{
+  "created_at": "2026-09-17T00:00:00+00:00",
+  "kind": "bipartite",
+  "notes": "Implementação de referência do dia 0; a da Frente A é a spec A-03.",
+  "producer": "make_fixtures",
+  "schema_version": "1.0",
+  "spec": {
+    "cohort": null,
+    "dataset": "synthetic_v2",
+    "edge_criterion": "score_threshold",
+    "granularity": "module",
+    "seed": 42,
+    "threshold": 60.0
+  },
+  "stats": {
+    "n_disciplines": 7,
+    "n_edges": 105,
+    "n_students": 81
+  }
+}

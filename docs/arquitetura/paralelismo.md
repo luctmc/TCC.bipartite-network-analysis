@@ -55,11 +55,29 @@ Os testes usam **faixas**, não igualdade exata: Louvain é estocástico e
 uma troca de versão da biblioteca move o quarto decimal sem que nada
 esteja errado.
 
+### `synthetic_v2` `[A]` — a fixture com esparsidade tipo OULAD
+
+Mesma seed e mesmos três grupos de `synthetic_v1`, mas com
+`sparsity = 0.7`: 70% dos alunos ficam com **uma** matrícula só — o
+perfil do OULAD, onde a maioria dos alunos aparece uma única vez
+(decisão D1). Criada pela spec A-01.
+
+O que muda, e por que ela existe: 81 alunos, 105 arestas, mediana de uma
+matrícula por aluno. A projeção disciplina↔disciplina **deixa de ser
+completa** (16 de 21 arestas) e a intermediação passa a discriminar —
+em `synthetic_v1` ela é K₇ e toda intermediação é zero. A pureza do
+Louvain de referência contra o grupo plantado cai para 0,86: as áreas
+continuam recuperáveis, com perda. Números em
+`data/fixtures/synthetic_v2/REFERENCE.md`.
+
+É a fixture certa para a spec C-03 (disciplinas críticas) exercitar um
+ranking que discrimina, e para a B-06 medir o custo da esparsidade na
+recuperação das comunidades.
+
 ### Fixtures são imutáveis
 
-Quem precisar de outra cria `synthetic_v2` — por exemplo, uma sintética
-com a esparsidade do OULAD (spec A-01). As versões anteriores continuam
-existindo para os testes que dependem delas.
+Quem precisar de outra cria `synthetic_v3`. As versões anteriores
+continuam existindo para os testes que dependem delas.
 
 Isso elimina a classe inteira de conflitos "a fixture mudou e meu teste
 quebrou".

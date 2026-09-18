@@ -61,9 +61,9 @@ class SyntheticSpec:
     risk_rate: float = 0.30
     cross_group_prob: float = 0.35
     first_student_id: int = 100000
-    #: Fração de matrículas a remover para imitar a esparsidade do OULAD,
-    #: onde a maior parte dos alunos aparece em uma única matrícula.
-    #: Implementar em A-01 (ver decisão D1 do plano de arquitetura).
+    #: Fração de alunos reduzidos a **uma** matrícula, para imitar a
+    #: esparsidade do OULAD (decisão D1). ``None`` reproduz o starter kit.
+    #: Ver :func:`_apply_sparsity`.
     sparsity: float | None = None
 
     @property
@@ -105,15 +105,12 @@ def generate(spec: SyntheticSpec | None = None) -> SyntheticDataset:
 
     Raises
     ------
-    NotImplementedError
-        Quando ``spec.sparsity`` é usado — é a extensão da spec A-01.
+    ValueError
+        Se ``spec.sparsity`` estiver fora de ``[0, 1]``.
     """
     spec = spec or SyntheticSpec()
-    if spec.sparsity is not None:
-        raise NotImplementedError(
-            "A-01: esparsidade tipo OULAD ainda não implementada. "
-            "Ver docs/specs/frente-a/A-01-gerador-sintetico.md e a decisão D1."
-        )
+    if spec.sparsity is not None and not 0.0 <= spec.sparsity <= 1.0:
+        raise ValueError(f"sparsity deve estar em [0, 1]; recebeu {spec.sparsity!r}")
 
     rng = random.Random(spec.seed)
     enrollments: list[dict[str, object]] = []
@@ -126,6 +123,7 @@ def generate(spec: SyntheticSpec | None = None) -> SyntheticDataset:
             student_id += 1
             at_risk = rng.random() < spec.risk_rate
             rows = _generate_student(rng, student_id, modules, at_risk, spec)
+            rows = _apply_sparsity(rng, rows, spec)
             enrollments.extend(rows)
 
             key = f"S{student_id}"
@@ -195,3 +193,47 @@ def _sample_performance(rng: random.Random, at_risk: bool) -> tuple[float, str]:
             weights=[0.55, 0.20, 0.15, 0.10],
         )[0]
     return score, result
+
+
+def _apply_sparsity(
+    rng: random.Random, rows: list[dict[str, object]], spec: SyntheticSpec
+) -> list[dict[str, object]]:
+    """Esparsidade tipo OULAD: parte dos alunos fica com **uma** matrícula só.
+
+    No OULAD, a maior parte dos ~28,8 mil alunos aparece em uma única
+    matrícula (decisão D1). O gerador do starter kit não mostra isso —
+    todo aluno cursa de 2 a 4 módulos — e é por isso que ``synthetic_v1``
+    tem a projeção disciplina↔disciplina completa.
+
+    Com probabilidade ``sparsity``, o aluno mantém só uma das suas
+    matrículas, sorteada. O grupo plantado **não muda**: o aluno continua
+    pertencendo à área, só deixa pouca evidência disso no grafo — que é
+    exatamente o que torna a recuperação das comunidades mais difícil e
+    mais parecida com a base real.
+
+    Sem ``sparsity`` (``None``) nada é sorteado, e o fluxo do gerador fica
+    **idêntico** ao do dia 0 — ``synthetic_v1`` continua reproduzível
+    byte a byte.
+    """
+    if spec.sparsity is None or spec.sparsity <= 0.0:
+        return rows
+    if rng.random() < spec.sparsity:
+        return [rng.choice(rows)]
+    return rows
+
+
+def make_groups(n_groups: int, modules_per_group: int) -> dict[str, tuple[str, ...]]:
+    """Áreas sintéticas com módulos ``AAA``, ``BBB``, … distribuídos entre elas.
+
+    >>> make_groups(2, 3)
+    {'grupo_0': ('AAA', 'BBB', 'CCC'), 'grupo_1': ('DDD', 'EEE', 'FFF')}
+    """
+    if n_groups < 1 or modules_per_group < 1:
+        raise ValueError("n_groups e modules_per_group precisam ser >= 1")
+    if n_groups * modules_per_group > 26:
+        raise ValueError("no máximo 26 módulos no total (códigos AAA…ZZZ)")
+    codes = [chr(ord("A") + i) * 3 for i in range(n_groups * modules_per_group)]
+    return {
+        f"grupo_{g}": tuple(codes[g * modules_per_group : (g + 1) * modules_per_group])
+        for g in range(n_groups)
+    }

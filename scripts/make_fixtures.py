@@ -38,6 +38,7 @@ import itertools
 import shutil
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -58,7 +59,7 @@ from edugraph.contracts.types import (
     ProjectionBundle,
     ProjectionSpec,
 )
-from edugraph.data.synthetic import SyntheticSpec, generate
+from edugraph.data.synthetic import SyntheticDataset, SyntheticSpec, generate
 
 FIXTURES_ROOT = Path(__file__).resolve().parents[1] / "data" / "fixtures"
 
@@ -482,15 +483,168 @@ def _write_tiny_expected(out: Path) -> None:
 # =====================================================================
 
 
-def make_synthetic_v1(out_root: Path) -> dict[str, Any]:
-    """Gera ``synthetic_v1`` e devolve os números de referência."""
-    dataset = generate(SyntheticSpec(seed=42))
+#: Esparsidade de ``synthetic_v2``: fração de alunos reduzidos a uma única
+#: matrícula. No OULAD a maioria dos alunos tem uma só; 0,7 deixa 30% com
+#: a estrutura completa, o bastante para as áreas ainda serem detectáveis
+#: e pouco o bastante para o efeito da decisão D1 aparecer.
+SYNTHETIC_V2_SPARSITY = 0.7
+
+#: Seções finais do REFERENCE.md de ``synthetic_v1`` — texto congelado:
+#: a fixture é imutável e regenerar não pode mudar um byte (ADR-0011).
+V1_SECTIONS: list[str] = [
+    "## Comparação com o starter kit",
+    "",
+    "O starter kit reporta, sobre o mesmo gerador com seed 42:",
+    "120 alunos, 7 disciplinas, 197 arestas, Louvain com Q ~ 0,47 e",
+    "~25 comunidades. O número de arestas e o Q batem; o número de",
+    "comunidades, não, e a diferença é explicada:",
+    "",
+    "- **98 alunos, não 120.** Os 22 que ficaram sem nenhuma nota ≥ 60",
+    "  viram nós isolados e são removidos pelo contrato — um aluno sem",
+    "  aresta não participa de projeção nenhuma.",
+    "- **3 comunidades, não ~25.** As ~22 comunidades extras do starter",
+    "  kit eram exatamente esses nós isolados, cada um virando uma",
+    "  comunidade de tamanho 1. As três comunidades grandes são as três",
+    "  áreas plantadas pelo gerador, que é o resultado esperado.",
+    "- **Q com peso.** A modularidade acima usa `weight`; sem peso o",
+    "  valor muda no terceiro decimal.",
+    "",
+    "O starter kit foi removido do repositório depois de cumprir esse",
+    "papel; `reference/README.md` registra o que ele mediu e como",
+    "recuperá-lo do histórico do git.",
+    "",
+    "## Projeção disciplina↔disciplina: o caso degenerado da decisão D1",
+    "",
+    "`discipline_simple` tem **7 nós e 21 arestas** — é o grafo completo",
+    "K₇. Toda intermediação é 0 e todo grau normalizado é 1: com sete",
+    "disciplinas e alunos cursando de 2 a 4 delas, qualquer par de",
+    "disciplinas compartilha algum aluno.",
+    "",
+    "Isto **confirma empiricamente a decisão D1** do plano de",
+    "arquitetura, antes mesmo do OULAD: com V = módulo, a projeção",
+    "disciplina↔disciplina não discrimina nada, e a identificação de",
+    "disciplinas críticas (spec C-03, saída obrigatória) precisa de uma",
+    "granularidade mais fina — `module_presentation` (22 nós) ou",
+    "`assessment`. Só o **peso** das arestas distingue os pares, e é por",
+    "isso que o autovetor ponderado acima ainda ordena as disciplinas",
+    "enquanto grau e intermediação empatam tudo.",
+    "",
+    "Consequência prática para a spec C-01: **nenhum teste deve afirmar",
+    "que uma disciplina específica lidera a intermediação em",
+    "`synthetic_v1`** — nesta fixture, todas empatam em zero. O teste",
+    "correto verifica o empate e a degeneração.",
+    "",
+]
+
+
+def _enrollment_stats(dataset: SyntheticDataset) -> dict[str, float]:
+    """Mediana e média de matrículas por aluno — a medida da esparsidade."""
+    por_aluno: dict[object, int] = {}
+    for row in dataset.enrollments:
+        por_aluno[row["id_student"]] = por_aluno.get(row["id_student"], 0) + 1
+    contagens = sorted(por_aluno.values())
+    n = len(contagens)
+    mediana = (
+        float(contagens[n // 2]) if n % 2 else (contagens[n // 2 - 1] + contagens[n // 2]) / 2.0
+    )
+    return {
+        "median": mediana,
+        "mean": round(sum(contagens) / n, 3),
+        "share_single": round(sum(1 for c in contagens if c == 1) / n, 3),
+    }
+
+
+def _purity(membership: dict[str, int], planted: dict[str, int]) -> float:
+    """Pureza: fração de nós na maioria plantada da sua comunidade.
+
+    Medida entre duas partições conhecidas — não é aprendizado. A versão
+    da Frente B (spec B-06) é a oficial; esta existe só para o número de
+    referência da fixture.
+    """
+    por_comunidade: dict[int, dict[int, int]] = {}
+    for node, com in membership.items():
+        grupo = planted.get(node)
+        if grupo is None:
+            continue
+        por_comunidade.setdefault(com, {})
+        por_comunidade[com][grupo] = por_comunidade[com].get(grupo, 0) + 1
+    total = sum(sum(c.values()) for c in por_comunidade.values())
+    acertos = sum(max(c.values()) for c in por_comunidade.values())
+    return acertos / total if total else 0.0
+
+
+def _v2_sections(reference: dict[str, Any]) -> list[str]:
+    """Seções do REFERENCE.md de ``synthetic_v2``, com os números medidos."""
+    eps = reference["enrollments_per_student"]
+    completo = reference["complete_graph"]
+    pureza = reference["planted_purity"]
+    disc = reference["projections"]["discipline_simple"]
+    n = disc["n_nodes"]
+    return [
+        "## Esparsidade tipo OULAD",
+        "",
+        f"Gerada com `sparsity = {SYNTHETIC_V2_SPARSITY}`: com essa probabilidade, cada",
+        "aluno fica com **uma** matrícula só. É a forma sintética do que a",
+        "decisão D1 aponta no OULAD, onde a maior parte dos alunos aparece",
+        "em uma única matrícula.",
+        "",
+        "| medida | valor |",
+        "|---|---:|",
+        f"| matrículas por aluno (mediana) | {eps['median']:g} |",
+        f"| matrículas por aluno (média) | {eps['mean']:g} |",
+        f"| alunos com uma só matrícula | {eps['share_single']:.0%} |",
+        "",
+        "Em `synthetic_v1` a mediana é 2, a média 2,5, e nenhum aluno tem só uma.",
+        "",
+        "## O efeito da esparsidade na projeção disciplina↔disciplina",
+        "",
+        (
+            f"`discipline_simple` tem {n} nós e {disc['n_edges']} arestas; "
+            f"K{n} teria {n * (n - 1) // 2}. "
+            + (
+                "**Continua completo**: mesmo com 70% dos alunos reduzidos a uma "
+                "matrícula, os 30% restantes bastam para ligar todo par de "
+                "disciplinas. A degeneração da decisão D1 não é sensível a "
+                "esparsidade neste tamanho — com 7 módulos, só a granularidade "
+                "resolve."
+                if completo["discipline_simple"]
+                else "**Deixou de ser completo**: a esparsidade removeu pares de "
+                "disciplinas sem aluno em comum, e a intermediação passa a "
+                "discriminar. Compare com `synthetic_v1`, onde é K₇."
+            )
+        ),
+        "",
+        "## Recuperação das áreas plantadas",
+        "",
+        "Pureza da partição Louvain de referência contra o grupo plantado",
+        "(fração de alunos na maioria plantada da sua comunidade):",
+        "",
+        "| projeção | pureza |",
+        "|---|---:|",
+        *[f"| `{pid}` | {p:.3f} |" for pid, p in pureza.items()],
+        "",
+        "É o número que a spec B-06 vai medir com NMI. Se a pureza aqui for",
+        "baixa, isso não é bug: é o achado de que, com pouca evidência por",
+        "aluno, a estrutura plantada deixa de ser recuperável — e vai para",
+        "o texto do artigo como limitação do método.",
+        "",
+    ]
+
+
+def _make_synthetic(
+    out_root: Path,
+    name: str,
+    synthetic_spec: SyntheticSpec,
+    sections: Callable[[dict[str, Any]], list[str]],
+) -> dict[str, Any]:
+    """Gera uma fixture sintética completa e devolve os números de referência."""
+    dataset = generate(synthetic_spec)
     spec = BipartiteSpec(
-        dataset="synthetic_v1",
+        dataset=name,
         granularity="module",
         edge_criterion="score_threshold",
         threshold=SCORE_THRESHOLD,
-        seed=42,
+        seed=synthetic_spec.seed,
     )
     bipartite = build_bipartite_reference(dataset.enrollments, spec, producer="make_fixtures")
     io.save_bipartite(bipartite, out_root)
@@ -504,7 +658,7 @@ def make_synthetic_v1(out_root: Path) -> dict[str, Any]:
             planted_group={k: v for k, v in dataset.planted_group.items() if k in survivors},
         ),
         out_root,
-        "synthetic_v1",
+        name,
     )
 
     reference: dict[str, Any] = {
@@ -516,6 +670,7 @@ def make_synthetic_v1(out_root: Path) -> dict[str, Any]:
         "centrality": {},
     }
 
+    partitions: dict[str, Partition] = {}
     for projection_spec in PROJECTION_SPECS:
         projection = project_reference(bipartite, projection_spec)
         io.save_projection(projection, out_root)
@@ -525,7 +680,8 @@ def make_synthetic_v1(out_root: Path) -> dict[str, Any]:
         }
 
         partition = louvain_reference(projection)
-        io.save_partition(partition, out_root, "synthetic_v1")
+        partitions[projection.projection_id] = partition
+        io.save_partition(partition, out_root, name)
         reference["communities"][projection.projection_id] = {
             "modularity": round(partition.modularity, 4),
             "n_communities": partition.n_communities,
@@ -534,17 +690,41 @@ def make_synthetic_v1(out_root: Path) -> dict[str, Any]:
 
         metric_summary: dict[str, Any] = {}
         for result in centrality_reference(projection):
-            io.save_centrality(result, out_root, "synthetic_v1")
+            io.save_centrality(result, out_root, name)
             metric_summary[result.metric] = [
                 [node, round(score, 4)] for node, score in result.top(3)
             ]
         reference["centrality"][projection.projection_id] = metric_summary
 
-    _write_reference_md(out_root / "synthetic_v1" / "REFERENCE.md", reference)
+    reference["enrollments_per_student"] = _enrollment_stats(dataset)
+    reference["complete_graph"] = {
+        pid: st["n_edges"] == st["n_nodes"] * (st["n_nodes"] - 1) // 2
+        for pid, st in reference["projections"].items()
+    }
+    reference["planted_purity"] = {
+        pid: round(_purity(part.membership, dataset.planted_group), 4)
+        for pid, part in partitions.items()
+        if pid.startswith("student_")
+    }
+
+    _write_reference_md(out_root / name / "REFERENCE.md", name, reference, sections(reference))
     return reference
 
 
-def _write_reference_md(path: Path, reference: dict[str, Any]) -> None:
+def make_synthetic_v1(out_root: Path) -> dict[str, Any]:
+    """``synthetic_v1``: porta fiel do starter kit (seed 42, sem esparsidade)."""
+    return _make_synthetic(out_root, "synthetic_v1", SyntheticSpec(seed=42), lambda _: V1_SECTIONS)
+
+
+def make_synthetic_v2(out_root: Path) -> dict[str, Any]:
+    """``synthetic_v2``: mesma seed e mesmos grupos, com esparsidade tipo OULAD (A-01)."""
+    spec = SyntheticSpec(seed=42, sparsity=SYNTHETIC_V2_SPARSITY)
+    return _make_synthetic(out_root, "synthetic_v2", spec, _v2_sections)
+
+
+def _write_reference_md(
+    path: Path, name: str, reference: dict[str, Any], extra_sections: list[str]
+) -> None:
     """Registra os números de referência recalculados na geração.
 
     Os testes usam **faixas**, não igualdade: Louvain depende do gerador
@@ -553,7 +733,7 @@ def _write_reference_md(path: Path, reference: dict[str, Any]) -> None:
     grande apareça na revisão, não para travar a suíte.
     """
     lines = [
-        "# `synthetic_v1` — números de referência",
+        f"# `{name}` — números de referência",
         "",
         "Recalculados na geração da fixture por `scripts/make_fixtures.py`.",
         "Os testes comparam **faixas**, não igualdade exata: Louvain é",
@@ -602,50 +782,7 @@ def _write_reference_md(path: Path, reference: dict[str, Any]) -> None:
             lines.append(f"| {metric} | {cells} |")
         lines.append("")
 
-    lines += [
-        "## Comparação com o starter kit",
-        "",
-        "O starter kit reporta, sobre o mesmo gerador com seed 42:",
-        "120 alunos, 7 disciplinas, 197 arestas, Louvain com Q ~ 0,47 e",
-        "~25 comunidades. O número de arestas e o Q batem; o número de",
-        "comunidades, não, e a diferença é explicada:",
-        "",
-        "- **98 alunos, não 120.** Os 22 que ficaram sem nenhuma nota ≥ 60",
-        "  viram nós isolados e são removidos pelo contrato — um aluno sem",
-        "  aresta não participa de projeção nenhuma.",
-        "- **3 comunidades, não ~25.** As ~22 comunidades extras do starter",
-        "  kit eram exatamente esses nós isolados, cada um virando uma",
-        "  comunidade de tamanho 1. As três comunidades grandes são as três",
-        "  áreas plantadas pelo gerador, que é o resultado esperado.",
-        "- **Q com peso.** A modularidade acima usa `weight`; sem peso o",
-        "  valor muda no terceiro decimal.",
-        "",
-        "O starter kit foi removido do repositório depois de cumprir esse",
-        "papel; `reference/README.md` registra o que ele mediu e como",
-        "recuperá-lo do histórico do git.",
-        "",
-        "## Projeção disciplina↔disciplina: o caso degenerado da decisão D1",
-        "",
-        "`discipline_simple` tem **7 nós e 21 arestas** — é o grafo completo",
-        "K₇. Toda intermediação é 0 e todo grau normalizado é 1: com sete",
-        "disciplinas e alunos cursando de 2 a 4 delas, qualquer par de",
-        "disciplinas compartilha algum aluno.",
-        "",
-        "Isto **confirma empiricamente a decisão D1** do plano de",
-        "arquitetura, antes mesmo do OULAD: com V = módulo, a projeção",
-        "disciplina↔disciplina não discrimina nada, e a identificação de",
-        "disciplinas críticas (spec C-03, saída obrigatória) precisa de uma",
-        "granularidade mais fina — `module_presentation` (22 nós) ou",
-        "`assessment`. Só o **peso** das arestas distingue os pares, e é por",
-        "isso que o autovetor ponderado acima ainda ordena as disciplinas",
-        "enquanto grau e intermediação empatam tudo.",
-        "",
-        "Consequência prática para a spec C-01: **nenhum teste deve afirmar",
-        "que uma disciplina específica lidera a intermediação em",
-        "`synthetic_v1`** — nesta fixture, todas empatam em zero. O teste",
-        "correto verifica o empate e a degeneração.",
-        "",
-    ]
+    lines += extra_sections
     _write_text(path, "\n".join(lines))
 
 
@@ -653,7 +790,11 @@ def _write_reference_md(path: Path, reference: dict[str, Any]) -> None:
 # Execução
 # =====================================================================
 
-FIXTURES = {"tiny_v1": make_tiny_v1, "synthetic_v1": make_synthetic_v1}
+FIXTURES = {
+    "tiny_v1": make_tiny_v1,
+    "synthetic_v1": make_synthetic_v1,
+    "synthetic_v2": make_synthetic_v2,
+}
 
 
 def main(argv: list[str] | None = None) -> int:
