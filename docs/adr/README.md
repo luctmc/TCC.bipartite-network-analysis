@@ -25,6 +25,7 @@ banca, a resposta está aqui.
 | [0009](ADR-0009-trunk-based-prs-por-spec.md) | Trunk-based com PRs curtas por spec | [T] |
 | [0010](ADR-0010-implementacoes-a-mao.md) | Três implementações à mão, comparadas com o NetworkX | [A][B][C] |
 | [0011](ADR-0011-determinismo.md) | Determinismo: seeds, escrita canônica, versões pinadas | [T] |
+| [0012](ADR-0012-granularidades-do-comportamento.md) | Granularidades do comportamento: o bipartido pelo AVA | [A] |
 
 ## As que sustentam o paralelismo
 

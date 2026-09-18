@@ -14,6 +14,7 @@ ETL do OULAD, gerador sintético, grafo bipartido e as duas projeções.
 | [A-05](A-05-comparacao-projecao.md) | Manual × NetworkX | Bipartite | `metrics/projections.csv` | tabela + figura |
 | [A-06](A-06-escala.md) | Escala e rodada do OULAD | tabela normalizada | Bipartite, Projection | limitação reportada |
 | [A-07](A-07-estatisticas-bipartido.md) | Estatísticas e figura | Bipartite | — | figura + tabela |
+| [A-09](A-09-granularidades-do-ava.md) | **Granularidades do AVA** | CSV bruto | Bipartite, Projection | **tabela**: o critério de aresta escolhido depois de medir |
 
 ## Ordem sugerida
 
@@ -35,8 +36,9 @@ A-06 é a que **destrava as outras frentes de verdade**: quando
 | A-06 | concluída — reduções testadas e limite de escala medido |
 | A-07 | concluída, com tabela e figura do OULAD |
 | A-08 | concluída — modelo nulo (spec nova, nasceu da rodada real) |
+| A-09 | concluída — granularidades do AVA (spec nova, nasceu da A-08) |
 
-**As oito specs da Frente A estão fechadas.**
+**As nove specs da Frente A estão fechadas.**
 
 ## Reproduzir a rodada real
 
@@ -53,6 +55,10 @@ python -m edugraph data project --root data/processed \
 # linha de base para a Frente B (A-08):
 python -m edugraph data null --root data/processed \
     --dataset oulad_module_presentation --replicas 5
+# o bipartido pelo AVA — o que tem sinal para comunidades (A-09):
+python -m edugraph run configs/oulad_vle_bbb_2013j.toml --only data
+python -m edugraph data null --root data/processed \
+    --dataset oulad_vle_bbb_2013j --replicas 5
 python -m edugraph validate --root data/processed
 pytest tests/contract --artifacts-root data/processed
 ```
@@ -76,7 +82,13 @@ Em `data/processed`, prontos para `--root`:
   disciplinas; projeções **de disciplina** (as de aluno não cabem).
 - `oulad_module_presentation_null0..2` — réplicas nulas (A-08), a linha
   de base contra a qual a spec B-06 mede a modularidade.
+- `oulad_vle_bbb_2013j` — coorte BBB 2013J **pelo AVA** (A-09): 1.870
+  alunos × 320 recursos, projeção aluno↔aluno com 1.746.901 arestas. É o
+  dataset com sinal para comunidades de alunos.
+- `oulad_vle_bbb_2013j_null0..4` — réplicas nulas dele.
 
-**Leia a A-08 antes de reportar qualquer Q.** Na projeção aluno↔aluno do
-OULAD, o Q real (0,77) é menor que o das réplicas embaralhadas — não há
-estrutura a reportar ali, e isso é o resultado.
+**Leia a A-08 antes de reportar qualquer Q.** Na projeção aluno↔aluno de
+`oulad_module_presentation`, o Q real (0,77) é menor que o das réplicas
+embaralhadas — não há estrutura a reportar ali, e isso é o resultado.
+Para comunidades de alunos, use `oulad_vle_bbb_2013j` (A-09), onde o Q
+real fica ~5× acima do nulo.

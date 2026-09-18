@@ -46,3 +46,27 @@ lidera o ranking nessa fixture. Ver
   de `/datasets`.
 - As centralidades de referência nas fixtures, para o front ter o que
   mostrar antes de C-01 e C-02.
+
+## O que a Frente A entrega — leia antes de escolher o `--root`
+
+Em `data/processed`, prontos para `--root`. **A escolha do dataset não é
+indiferente**, e a razão está na spec A-08:
+
+| dataset | o que é | para quê |
+|---|---|---|
+| `oulad_vle_bbb_2013j` | coorte BBB 2013J pelo **AVA**: 1.870 alunos × 320 recursos, projeção aluno↔aluno com 1,75 M arestas | **comunidades de alunos** — é o único com sinal |
+| `oulad_vle_bbb_2013j_null0..4` | réplicas nulas do anterior | a linha de base da B-06 |
+| `oulad_module_presentation` | base inteira por módulo×apresentação, 22.425 alunos, 22 disciplinas | **projeção de disciplina** e disciplinas críticas (C-03) |
+| `oulad_module_presentation_null0..2` | réplicas nulas do anterior | linha de base |
+| `oulad_bbb_2013j` | coorte por avaliação, 1.706 alunos | comparação Louvain × Girvan-Newman (grafo menor) |
+
+**O aviso que evita concluir o contrário do certo.** Na projeção
+aluno↔aluno de `oulad_module_presentation`, o Q real (0,7728) é **menor**
+que o das réplicas embaralhadas (0,781): ali não há estrutura de
+comunidade, e o Q alto é artefato da esparsidade. Quem quiser comunidades
+de alunos usa `oulad_vle_bbb_2013j`, onde o Q real fica 5 vezes acima do
+nulo.
+
+Nada muda no código de quem consome: `kind`, `nodes.csv` e o layout são
+idênticos nos dois. Muda só o que o nó do lado V significa — recurso do
+AVA em vez de disciplina (ADR-0012).

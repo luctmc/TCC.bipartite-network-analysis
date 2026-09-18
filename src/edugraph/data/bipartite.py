@@ -48,6 +48,24 @@ PASSING_RESULTS: frozenset[str] = frozenset({"Pass", "Distinction"})
 #: Colunas da tabela normalizada devolvida por :func:`normalize_table`.
 NORMALIZED_COLUMNS: tuple[str, ...] = ("student_id", "discipline_id", "score_media")
 
+#: Combinações de granularidade e critério que produziriam um grafo vazio
+#: **em silêncio**, com o motivo. Falhar aqui, nomeando a causa, evita que
+#: outra frente passe uma tarde investigando um bipartido sem arestas.
+_INCOMPATIVEIS: dict[tuple[str, str], str] = {
+    ("vle_site", "score_threshold"): (
+        "o OULAD não registra nota por recurso do AVA: score_media é nula "
+        "em toda a tabela de normalize_vle, e nenhuma aresta seria criada"
+    ),
+    ("vle_activity_type", "score_threshold"): (
+        "o OULAD não registra nota por tipo de atividade: score_media é nula "
+        "em toda a tabela de normalize_vle, e nenhuma aresta seria criada"
+    ),
+    ("assessment", "vle_activity"): (
+        "o AVA não é registrado por avaliação no OULAD: a tabela de "
+        "normalize_assessments não tem sum_click"
+    ),
+}
+
 
 # ---------------------------------------------------------------------
 # Etapa 1 — normalização
@@ -84,6 +102,13 @@ def discipline_ids(table: pd.DataFrame, spec: BipartiteSpec) -> pd.Series:
     ``module``              → ``DAAA``
     ``module_presentation`` → ``DAAA_2013J``
     ``assessment``          → ``D<id_assessment>`` (exige a coluna)
+    ``vle_site``            → ``D<id_site>`` (exige a coluna)
+    ``vle_activity_type``   → ``D<activity_type>`` (exige a coluna)
+
+    As duas últimas são as granularidades do **comportamento** (ADR-0012):
+    o nó de V deixa de ser a disciplina e passa a ser o recurso do
+    ambiente virtual, ou o tipo dele. Exigem a tabela de
+    :func:`~edugraph.data.oulad.etl.normalize_vle`.
     """
     module = table["code_module"].astype(str)
     if spec.granularity == "module":
@@ -93,6 +118,12 @@ def discipline_ids(table: pd.DataFrame, spec: BipartiteSpec) -> pd.Series:
     if spec.granularity == "assessment":
         _require_columns(table, ("id_assessment",), "granularity='assessment'")
         return "D" + table["id_assessment"].astype("int64").astype(str)
+    if spec.granularity == "vle_site":
+        _require_columns(table, ("id_site",), "granularity='vle_site'")
+        return "D" + table["id_site"].astype("int64").astype(str)
+    if spec.granularity == "vle_activity_type":
+        _require_columns(table, ("activity_type",), "granularity='vle_activity_type'")
+        return "D" + table["activity_type"].astype(str)
     raise ContractError(f"granularity desconhecida: {spec.granularity!r}")
 
 
@@ -203,6 +234,14 @@ def build_bipartite(table: pd.DataFrame, spec: BipartiteSpec) -> BipartiteBundle
     spec
         Granularidade, critério de aresta, limiar e coorte.
     """
+    motivo = _INCOMPATIVEIS.get((spec.granularity, spec.edge_criterion))
+    if motivo is not None:
+        raise ContractError(
+            f"granularity={spec.granularity!r} com edge_criterion="
+            f"{spec.edge_criterion!r} não produz grafo: {motivo}. "
+            "Para as granularidades do AVA use edge_criterion='vle_activity'."
+        )
+
     if set(NORMALIZED_COLUMNS) <= set(table.columns):
         normalized = table
     else:

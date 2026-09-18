@@ -1,0 +1,95 @@
+# Coorte BBB 2013J pelo **comportamento**: o nó de V é o recurso do AVA.
+#
+# É a configuração principal das comunidades de alunos, e a razão de ela
+# existir está na spec A-08. Com o nó de V sendo o módulo, 91,8% dos
+# alunos do OULAD têm grau 1, e a projeção aluno↔aluno produz Q = 0,77
+# que é MENOR que o de réplicas embaralhadas — não há estrutura a
+# reportar. Com o recurso do AVA no lugar, o grau mediano do aluno vai a
+# ~33 nesta coorte e o Q real fica 5 vezes acima do nulo.
+#
+# Fundamentação (ADR-0012): o tema do trabalho descreve o bipartido como
+# "Aluno -> Comportamento"; o briefing §8 já listava participação no AVA
+# entre os critérios de aresta. Não é mudança de escopo, é a leitura
+# correta dele.
+#
+# Exige o OULAD baixado em data/raw/oulad (ver README).
+
+name = "oulad_vle_bbb_2013j"
+stages = ["data", "community", "centrality"]
+
+[source]
+kind = "oulad"
+raw_dir = "data/raw/oulad"
+cache_dir = "data/interim"
+
+[bipartite]
+dataset = "oulad_vle_bbb_2013j"
+granularity = "vle_site"
+# O critério tem que ser este: score_threshold sobre a tabela do AVA
+# levanta ContractError, porque o OULAD não registra nota por recurso.
+edge_criterion = "vle_activity"
+# Sem limiar: qualquer interação registrada vale aresta. Subir isto
+# derruba o grau e devolve o problema da esparsidade — medido em
+# 18/09/2026: com >= 20 cliques a coorte cai de 320 para 81 recursos e o
+# z contra o nulo despenca de +105 para +4.
+cohort = "BBB_2013J"
+
+# Medido em 18/09/2026 na base real: 1.870 alunos x 320 recursos, 67.531
+# arestas no bipartido. A projeção aluno↔aluno tem 1.746.901 arestas e
+# densidade 0,9996 — quase completa, porque com grau ~33 sobre 320
+# recursos quase todo par compartilha algo. A informação está no PESO,
+# não na existência da aresta.
+#
+# Por isso NÃO se aplica min_weight aqui: os cortes testados quebram o
+# grafo em mais de 900 componentes, quase todos de nó isolado, e com
+# contagem simples o Q real chega a cair ABAIXO do nulo. O recorte
+# honesto é a projeção cheia.
+[[projections]]
+side = "student"
+weighting = "resource_allocation"
+implementation = "manual"
+
+# A contagem simples entra para comparação, e o contraste é resultado do
+# artigo: ela premia volume de cliques, então as arestas mais pesadas
+# ligam os alunos mais ativos entre si — efeito de volume, não de
+# afinidade. Q = 0,039 contra 0,083 da alocação de recursos.
+[[projections]]
+side = "student"
+weighting = "simple"
+implementation = "manual"
+
+# Projeção do lado dos recursos: quais materiais são acessados pelos
+# mesmos alunos. É o insumo da centralidade para "atributos de maior
+# impacto no sistema" — a outra metade do objetivo do tema.
+[[projections]]
+side = "discipline"
+weighting = "simple"
+implementation = "manual"
+
+[[projections]]
+side = "discipline"
+weighting = "resource_allocation"
+implementation = "manual"
+
+[community]
+# Só Louvain: a projeção tem 1,7 milhão de arestas e o Girvan-Newman é
+# O(m²n). A comparação entre os dois algoritmos sai da coorte por
+# avaliação (oulad_cohort_bbb_2013j.toml), que é menor.
+algorithms = ["louvain"]
+
+[community.louvain]
+seed = 42
+resolution = 1.0
+
+[centrality]
+metrics = ["degree", "betweenness", "eigenvector"]
+
+[centrality.betweenness]
+# Grafo quase completo: a intermediação não-ponderada é quase uniforme.
+# O peso é o que discrimina aqui.
+weight_mode = "distance"
+
+[centrality.eigenvector]
+implementation = "manual"
+max_iter = 1000
+tol = 1e-8

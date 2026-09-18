@@ -78,10 +78,17 @@ def load_source(config: RunConfig) -> tuple[pd.DataFrame, Outcomes]:
         raw_dir = Path(source.get("raw_dir", "data/raw/oulad"))
         cache_dir = Path(source["cache_dir"]) if "cache_dir" in source else None
         # A granularidade decide o grão da tabela: por matrícula (módulo ou
-        # módulo_apresentação) ou por avaliação. O desfecho por aluno sai
-        # da mesma tabela, pela regra documentada em etl.to_outcomes.
-        if config.bipartite.granularity == "assessment":
+        # módulo_apresentação), por avaliação, ou por recurso do AVA. O
+        # desfecho por aluno sai da mesma tabela, pela regra documentada
+        # em etl.to_outcomes.
+        granularity = config.bipartite.granularity
+        if granularity == "assessment":
             table = etl.normalize_assessments(raw_dir, cache_dir=cache_dir)
+        elif granularity in ("vle_site", "vle_activity_type"):
+            # A coorte entra aqui, e não no filtro do bipartido, porque
+            # studentVle tem 10,6 milhões de linhas: recortar durante a
+            # leitura é o que faz caber na memória (spec A-06).
+            table = etl.normalize_vle(raw_dir, cache_dir=cache_dir, cohort=config.bipartite.cohort)
         else:
             table = etl.normalize(raw_dir, cache_dir=cache_dir)
         outcomes = Outcomes(final_result=etl.to_outcomes(table))

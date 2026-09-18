@@ -1,6 +1,6 @@
 # Specs — o quadro completo
 
-Vinte e duas specs, cada uma no template obrigatório da seção 12 do
+Vinte e três specs, cada uma no template obrigatório da seção 12 do
 briefing e **pronta para virar issue do GitHub**.
 
 Cada spec é executável em uma sessão de trabalho. Se uma parecer grande
@@ -27,6 +27,7 @@ frente.** É o que garante que ninguém espere por ninguém.
 | [A-06](frente-a/A-06-escala.md) | Escala e rodada do OULAD | 3 | limitação reportada |
 | [A-07](frente-a/A-07-estatisticas-bipartido.md) | Estatísticas e figura | 4 | figura + tabela |
 | [A-08](frente-a/A-08-modelo-nulo.md) | **Modelo nulo** (spec nova) | 3 | **tabela + método**: Q sem linha de base não é resultado |
+| [A-09](frente-a/A-09-granularidades-do-ava.md) | **Granularidades do AVA** (spec nova) | 3 | **tabela**: o critério de aresta escolhido depois de medir |
 | [B-01](frente-b/B-01-louvain.md) | Louvain | 1 | — |
 | [B-02](frente-b/B-02-girvan-newman.md) | Girvan-Newman com orçamento | 2 | decisão metodológica |
 | [B-03](frente-b/B-03-modularidade.md) | Q à mão | 1 | **algoritmo à mão** |

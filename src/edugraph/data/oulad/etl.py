@@ -65,14 +65,34 @@ ASSESSMENT_COLUMNS: tuple[str, ...] = (
     "final_result",
 )
 
+#: Colunas da tabela por recurso do AVA (granularidades ``vle_site`` e
+#: ``vle_activity_type`` da A-09). ``score_media`` vem como nulo de
+#: propósito: o OULAD não registra nota por recurso, e manter a coluna
+#: deixa a tabela com a mesma forma das outras duas — quem consome não
+#: precisa saber de qual ETL veio.
+VLE_COLUMNS: tuple[str, ...] = (
+    "id_student",
+    "code_module",
+    "code_presentation",
+    "id_site",
+    "activity_type",
+    "sum_click",
+    "score_media",
+    "final_result",
+)
+
 #: Linhas por bloco na leitura de ``studentVle``. 1 milhão de linhas ×
-#: 4 colunas estreitas ≈ 40 MB por bloco.
+#: 5 colunas estreitas ≈ 50 MB por bloco.
 VLE_CHUNKSIZE = 1_000_000
 
 KEY = ["id_student", "code_module", "code_presentation"]
 
+#: Chave da tabela do AVA: a matrícula mais o recurso.
+VLE_KEY = [*KEY, "id_site"]
+
 _CACHE_NORMALIZED = "oulad_normalized.csv"
 _CACHE_ASSESSMENTS = "oulad_assessments.csv"
+_CACHE_VLE = "oulad_vle.csv"
 
 
 # ---------------------------------------------------------------------
@@ -224,6 +244,94 @@ def normalize(
     table = table.sort_values(KEY, kind="stable").reset_index(drop=True)
 
     _cache_write(cache_dir, _CACHE_NORMALIZED, raw_dir, table)
+    return table
+
+
+def normalize_vle(
+    raw_dir: Path,
+    *,
+    cache_dir: Path | None = None,
+    chunksize: int = VLE_CHUNKSIZE,
+    cohort: str | None = None,
+) -> pd.DataFrame:
+    """Tabela por recurso do AVA, para as granularidades do comportamento (spec A-09).
+
+    Uma linha por (aluno, recurso) com a soma de cliques. É o ETL que
+    sustenta a troca do critério de aresta: com o nó de V sendo o
+    recurso, o grau mediano do aluno passa de 1 para ~40, e a projeção
+    aluno↔aluno deixa de ser indistinguível do acaso (A-08).
+
+    Parameters
+    ----------
+    raw_dir
+        Diretório com os sete CSV do OULAD.
+    cache_dir
+        Quando dado, grava em ``data/interim`` e reusa enquanto a origem
+        não mudar. Ignorado quando ``cohort`` é passada, porque o cache é
+        da base inteira.
+    chunksize
+        Linhas por bloco. ``studentVle`` tem ~10,6 milhões de linhas.
+    cohort
+        Recorte opcional, aplicado **durante** a leitura dos blocos. É o
+        que torna a coorte viável num notebook: filtrar depois exigiria
+        materializar a tabela inteira primeiro.
+
+    Returns
+    -------
+    DataFrame
+        Colunas de :data:`VLE_COLUMNS`, ordenada por (aluno, módulo,
+        apresentação, recurso).
+
+    Notes
+    -----
+    ``score_media`` vem nula por construção: o OULAD não registra nota
+    por recurso do AVA. A consequência prática é que o critério
+    ``score_threshold`` não produz aresta nenhuma sobre esta tabela — o
+    critério a usar aqui é ``vle_activity``.
+    """
+    raw_dir = Path(raw_dir)
+    usar_cache = cohort is None
+    if usar_cache:
+        cached = _cache_read(cache_dir, _CACHE_VLE, raw_dir)
+        if cached is not None:
+            return cached
+
+    partials: list[pd.DataFrame] = []
+    for chunk in read_table(raw_dir, "studentVle", chunksize=chunksize):
+        if cohort is not None:
+            if "_" in cohort:
+                chave = (
+                    chunk["code_module"].astype(str) + "_" + chunk["code_presentation"].astype(str)
+                )
+            else:
+                chave = chunk["code_presentation"].astype(str)
+            chunk = chunk[chave == cohort]
+            if chunk.empty:
+                continue
+        chunk["sum_click"] = chunk["sum_click"].astype("int64")
+        partials.append(chunk.groupby(VLE_KEY, sort=False)["sum_click"].sum().reset_index())
+
+    if not partials:
+        vazia = pd.DataFrame(columns=list(VLE_COLUMNS))
+        return vazia
+    table = pd.concat(partials).groupby(VLE_KEY, sort=True)["sum_click"].sum().reset_index()
+
+    # `vle` traz o tipo de atividade de cada recurso. O merge é por
+    # (recurso, módulo, apresentação) porque o mesmo id_site não se
+    # repete entre apresentações, mas a tabela declara as três colunas.
+    sites = read_table(raw_dir, "vle").drop_duplicates(
+        subset=["id_site", "code_module", "code_presentation"]
+    )
+    table = table.merge(sites, on=["id_site", "code_module", "code_presentation"], how="left")
+    table["activity_type"] = table["activity_type"].fillna("unknown").astype("string")
+
+    info = _registrations(raw_dir)[[*KEY, "final_result"]]
+    table = table.merge(info, on=KEY, how="left")
+    table["score_media"] = pd.Series(float("nan"), index=table.index, dtype="float64")
+
+    table = table[list(VLE_COLUMNS)].sort_values(VLE_KEY, kind="stable").reset_index(drop=True)
+    if usar_cache:
+        _cache_write(cache_dir, _CACHE_VLE, raw_dir, table)
     return table
 
 

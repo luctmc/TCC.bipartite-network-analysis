@@ -88,11 +88,12 @@ SCHEMAS: dict[str, TableSchema] = {
     ),
     "studentVle": TableSchema(
         name="studentVle",
-        usecols=("code_module", "code_presentation", "id_student", "sum_click"),
+        usecols=("code_module", "code_presentation", "id_student", "id_site", "sum_click"),
         dtypes={
             "code_module": "string",
             "code_presentation": "string",
             "id_student": "int64",
+            "id_site": "int64",
             "sum_click": "int32",
         },
     ),
