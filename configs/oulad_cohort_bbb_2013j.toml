@@ -14,6 +14,12 @@ stages = ["data", "community", "centrality"]
 kind = "oulad"
 raw_dir = "data/raw/oulad"
 cache_dir = "data/interim"
+# Reduções de escala da spec A-06, aplicadas pelo estágio `data` e
+# registradas em meta.stats["reductions"] de cada artefato. Ligue depois
+# de medir o tamanho real da coorte:
+# sample_students = 400   # amostra determinística de alunos no bipartido
+# sample_seed = 42
+# k_core = 2              # núcleo-k de cada projeção
 
 [bipartite]
 dataset = "oulad_bbb_2013j"

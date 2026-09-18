@@ -57,8 +57,30 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
     project.add_argument("--weighting", choices=["simple", "resource_allocation"], default="simple")
     project.add_argument("--implementation", choices=["manual", "networkx"], default="manual")
     project.add_argument("--min-weight", type=float, default=None, dest="min_weight")
+    project.add_argument(
+        "--k-core", type=int, default=None, dest="k_core", help="núcleo-k da projeção (A-06)"
+    )
     project.add_argument("--out", type=Path, default=Path("data/processed"))
     project.set_defaults(func=cmd_project)
+
+    sample = actions.add_parser(
+        "sample", parents=[parent], help="amostra determinística de alunos (A-06)"
+    )
+    sample.add_argument("--dataset", required=True, help="bipartido de origem")
+    sample.add_argument("--n", type=int, required=True, help="nº de alunos na amostra")
+    sample.add_argument("--seed", type=int, default=42)
+    sample.add_argument("--as", dest="new_name", required=True, help="nome do dataset gerado")
+    sample.add_argument("--out", type=Path, default=Path("data/processed"))
+    sample.set_defaults(func=cmd_sample)
+
+    cohort = actions.add_parser(
+        "cohort", parents=[parent], help="recorta um bipartido por coorte (A-06)"
+    )
+    cohort.add_argument("--dataset", required=True, help="bipartido de origem")
+    cohort.add_argument("--cohort", required=True, help='ex.: "BBB_2013J" ou "2013J"')
+    cohort.add_argument("--as", dest="new_name", required=True, help="nome do dataset gerado")
+    cohort.add_argument("--out", type=Path, default=Path("data/processed"))
+    cohort.set_defaults(func=cmd_cohort)
 
     etl = actions.add_parser("etl", parents=[parent], help="normaliza o OULAD bruto")
     etl.add_argument("--raw", type=Path, default=Path("data/raw/oulad"))
@@ -167,6 +189,10 @@ def cmd_project(args: argparse.Namespace) -> int:
     )
     algorithm = PROJECTIONS.get(f"{args.implementation}_{args.weighting}")
     bundle = algorithm.project(bipartite, spec)  # type: ignore[attr-defined]
+    if args.k_core is not None:
+        from edugraph.data.scale import k_core_projection
+
+        bundle = k_core_projection(bundle, args.k_core)
     out = io.save_projection(bundle, args.out)
 
     graph = bundle.graph
@@ -216,6 +242,60 @@ def cmd_compare(args: argparse.Namespace) -> int:
             print(f"[data] figura: {fig}")
 
     return 0 if all(r["equal_within_tolerance"] for r in rows) else 1
+
+
+def _save_reduced(bundle, roots, source_dataset: str, new_name: str, out: Path) -> list[Path]:
+    """Grava um bipartido reduzido como novo dataset, com outcomes restritos.
+
+    Os rótulos históricos são copiados pelo contrato
+    (:func:`edugraph.contracts.io.derive_outcomes`), que filtra e regrava
+    sem devolvê-los a esta frente — a Frente A não lê desfecho (ADR-0008).
+    """
+    from dataclasses import replace
+
+    from edugraph.contracts import io
+    from edugraph.contracts.types import BipartiteBundle
+
+    renamed = BipartiteBundle(
+        graph=bundle.graph, spec=replace(bundle.spec, dataset=new_name), meta=bundle.meta
+    )
+    written = [io.save_bipartite(renamed, out)]
+    derived = io.derive_outcomes(roots, source_dataset, out, new_name, keep=renamed.students)
+    if derived is not None:
+        written.append(derived)
+    return written
+
+
+def cmd_sample(args: argparse.Namespace) -> int:
+    """Amostra ``--n`` alunos de ``--dataset`` e grava como ``--as`` (spec A-06)."""
+    from edugraph.contracts import io
+    from edugraph.data.scale import sample_students
+
+    bipartite = io.load_bipartite(args.roots, args.dataset)
+    reduced = sample_students(bipartite, args.n, seed=args.seed)
+    for path in _save_reduced(reduced, args.roots, args.dataset, args.new_name, args.out):
+        print(f"[data] gravado: {path}")
+    print(
+        f"[data] {args.new_name}: {len(reduced.students)} de {len(bipartite.students)} alunos "
+        f"(seed {args.seed}), {len(reduced.disciplines)} disciplinas"
+    )
+    return 0
+
+
+def cmd_cohort(args: argparse.Namespace) -> int:
+    """Recorta ``--dataset`` pela coorte e grava como ``--as`` (spec A-06)."""
+    from edugraph.contracts import io
+    from edugraph.data.scale import filter_cohort
+
+    bipartite = io.load_bipartite(args.roots, args.dataset)
+    reduced = filter_cohort(bipartite, args.cohort)
+    for path in _save_reduced(reduced, args.roots, args.dataset, args.new_name, args.out):
+        print(f"[data] gravado: {path}")
+    print(
+        f"[data] {args.new_name}: coorte {args.cohort!r} — {len(reduced.students)} alunos, "
+        f"{len(reduced.disciplines)} disciplinas"
+    )
+    return 0
 
 
 def cmd_etl(args: argparse.Namespace) -> int:

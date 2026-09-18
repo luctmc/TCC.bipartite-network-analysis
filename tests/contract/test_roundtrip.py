@@ -191,3 +191,29 @@ def test_primeira_raiz_com_o_artefato_vence(tmp_path: Path) -> None:
 
     bundle = io.load_projection([tmp_path / "alta", tmp_path / "baixa"], "x", "student_simple")
     assert bundle.graph["S1"]["S2"]["weight"] == 9.0
+
+
+def test_derive_outcomes_filtra_sem_expor_rotulos(tmp_path: Path) -> None:
+    """Dataset derivado (A-06) herda só os desfechos dos alunos que ficaram.
+
+    A função devolve o caminho gravado, nunca os rótulos — é o que permite
+    à Frente A criar amostras e coortes sem ler desfecho (ADR-0008).
+    """
+    io.save_outcomes(
+        Outcomes(
+            final_result={"S1": "Pass", "S2": "Fail", "S3": "Withdrawn"},
+            planted_group={"S1": 0, "S2": 1, "S3": 1},
+        ),
+        tmp_path,
+        "origem",
+    )
+
+    path = io.derive_outcomes([tmp_path], "origem", tmp_path, "derivado", keep={"S1", "S3"})
+    assert isinstance(path, Path)
+
+    derivado = io.load_outcomes([tmp_path], "derivado")
+    assert derivado.final_result == {"S1": "Pass", "S3": "Withdrawn"}
+    assert derivado.planted_group == {"S1": 0, "S3": 1}
+
+    # Origem sem outcomes.csv: nada a derivar, e nada a inventar.
+    assert io.derive_outcomes([tmp_path], "inexistente", tmp_path, "d2", keep={"S1"}) is None

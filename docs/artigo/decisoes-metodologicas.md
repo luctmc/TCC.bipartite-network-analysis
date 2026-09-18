@@ -191,6 +191,34 @@ o grafo (ADR-0008) é não carregá-lo.
 `edugraph.data.oulad.schema.SCHEMAS`; testes em `tests/data/test_etl.py`
 sobre `oulad_mini`.
 
+### Reduções de escala — decididas na A-06, números pendentes do OULAD
+
+**O que dizer.** O Girvan-Newman é O(m²n) e a projeção aluno↔aluno de
+uma coorte real chega a milhões de arestas. O trabalho usa quatro
+reduções, sempre declaradas e sempre gravadas no artefato
+(`meta.stats["reductions"]`, com parâmetros e contagens) — o texto pode
+dizer, para cada tabela, exatamente sobre que recorte ela foi calculada:
+
+1. **Coorte** (`BipartiteSpec.cohort` ou `edugraph data cohort`): uma
+   apresentação de módulo. É a redução preferida, porque recorta por uma
+   unidade com sentido pedagógico — uma turma — e não por conveniência.
+2. **Corte por peso mínimo** (`ProjectionSpec.min_weight`): remove
+   arestas fracas da projeção; não muda o conjunto de nós; o validador
+   confere que foi aplicado.
+3. **Amostra de alunos** com semente fixa (`sample_students`): muda quem
+   está no grafo; reproduzível pela semente registrada.
+4. **Núcleo-k** da projeção (`k_core`): muda a topologia de propósito;
+   a partição ou centralidade calculada depois vale só para o núcleo, e
+   o número de nós removidos é reportado.
+
+**O que ainda falta e depende do download do OULAD (passo manual):** o
+tamanho real de cada coorte, o tempo e o pico de memória da rodada
+completa, e a escolha dos valores de `min_weight`, `sample_students` e
+`k_core` para as configurações de `configs/`. Esses números viram a
+seção de limitações do artigo, e a spec A-06 fica aberta até lá.
+
+**Onde está.** `edugraph.data.scale`; `[source]` dos TOML de `configs/`.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |
