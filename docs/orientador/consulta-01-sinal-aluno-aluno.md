@@ -119,6 +119,31 @@ Como o briefing já exige implementar as duas projeções à mão, o trabalho
 tem como mostrar esse contraste com autoridade. É um resultado sobre
 **método**, que sobrevive à decisão tomada aqui.
 
+### Confirmação em três coortes independentes
+
+Antes de propor isto como saída, testamos se o achado se sustenta fora de
+BBB 2013J — tanto entre sementes do Louvain quanto entre módulos
+diferentes. Usamos a pesagem por alocação de recursos, três sementes cada.
+
+| coorte | alunos × recursos | Q real (3 sementes) | comunidades × tamanho | Q nulo (5 réplicas) | z |
+|---|---|---|---|---|---|
+| BBB 2013J | 1.870 × 320 | 0,0825 / 0,0825 / 0,0825 | 4: 941, 480, 322, 127 | 0,0158 ± 0,0002 | +268,9 |
+| FFF 2013J | 2.098 × 526 | 0,0742 / 0,0742 / 0,0747 | 3: 1.457, 455, 186 | 0,0081 ± 0,0002 | +327,4 |
+| DDD 2014J | 1.647 × 361 | 0,0511 / 0,0512 / 0,0512 | 3–4: 1.046, 540, 61 (ou 969, 515, 146, 17) | 0,0073 ± 0,0001 | +400,5 |
+
+O padrão se repete nas três: Q real estável entre sementes (variação na
+quarta casa decimal) e centenas de desvios acima do nulo. As partições
+não são degeneradas — não é "uma comunidade gigante e sobras de nó
+isolado". Há sempre uma comunidade maior (50% a 69% dos alunos) e duas ou
+três menores com tamanho que permite caracterização, o que é o requisito
+mínimo para a palavra "interpretável" do objetivo.
+
+A única instabilidade encontrada: em DDD 2014J, a semente 42 converge
+para 3 comunidades e as sementes 7 e 99 para 4 (a quarta, de 17 alunos,
+ora aparece separada, ora dentro da terceira). O valor de Q não muda; só
+a partição exata na margem. Registramos como limitação conhecida do
+Louvain, não como falha do achado.
+
 ### As ressalvas, ditas antes de perguntarem
 
 - **O Q absoluto é baixo** (0,08). A estrutura é estatisticamente
@@ -131,10 +156,15 @@ tem como mostrar esse contraste com autoridade. É um resultado sobre
 - **Aplicar limiar fragmenta o grafo**: nos cortes testados, o grafo se
   quebra em mais de 900 componentes, a maioria de nó isolado. O recorte
   honesto é a projeção cheia com alocação de recursos.
-- **O desvio do nulo é estimado sobre poucas réplicas**, então o z-score
-  gigante deve ser lido como "muito acima", não como número exato. A
-  razão entre Q real e Q nulo é a medida mais robusta, e é a que
-  reportamos.
+- **O desvio do nulo é estimado sobre poucas réplicas** (5 por coorte),
+  então o z-score gigante deve ser lido como "muito acima", não como
+  número exato. A razão entre Q real e Q nulo é a medida mais robusta, e
+  é a que reportamos. Testamos em três coortes (BBB, FFF, DDD) e o
+  afastamento se repete nas três, o que reduz a chance de ser
+  particularidade de uma delas.
+- **A partição exata varia um pouco entre sementes do Louvain** em pelo
+  menos uma coorte (DDD 2014J oscila entre 3 e 4 comunidades). O valor de
+  Q não muda; é a fronteira de uma comunidade pequena que se desloca.
 
 ### O custo
 
@@ -200,7 +230,10 @@ Nossa inclinação é **Saída 1 combinada com a Saída 4**: a interação no
 ambiente virtual dá o resultado positivo, e o achado do modelo nulo entra
 no capítulo de método como a justificativa da mudança. Assim o trabalho
 tem um resultado positivo e uma contribuição metodológica, e nenhuma das
-duas depende da outra dar certo.
+duas depende da outra dar certo. A confiança nessa inclinação subiu desde
+a primeira medição: o sinal se repete em três coortes independentes
+(BBB, FFF, DDD), com partições equilibradas e Q estável entre sementes —
+não é mais uma observação isolada de uma única coorte.
 
 ---
 
