@@ -81,7 +81,34 @@ def cmd_bipartite(args: argparse.Namespace) -> int:
 
 
 def cmd_project(args: argparse.Namespace) -> int:
-    raise NotImplementedError("A-04: ver docs/specs/frente-a/A-04-projecoes-manuais.md")
+    """Projeta o bipartido de ``--dataset`` e grava em ``--out`` (spec A-04).
+
+    Lê o bipartido das raízes (``--root``, ou o padrão), resolve o
+    algoritmo no registro por ``<implementation>_<weighting>`` e grava a
+    projeção passando pelo validador de contrato.
+    """
+    from edugraph.contracts import io
+    from edugraph.contracts.registry import PROJECTIONS
+    from edugraph.contracts.types import ProjectionSpec
+    from edugraph.data.projection import manual, networkx_ref  # noqa: F401  (registro)
+
+    bipartite = io.load_bipartite(args.roots, args.dataset)
+    spec = ProjectionSpec(
+        side=args.side,
+        weighting=args.weighting,
+        implementation=args.implementation,
+        min_weight=args.min_weight,
+    )
+    algorithm = PROJECTIONS.get(f"{args.implementation}_{args.weighting}")
+    bundle = algorithm.project(bipartite, spec)  # type: ignore[attr-defined]
+    out = io.save_projection(bundle, args.out)
+
+    graph = bundle.graph
+    print(
+        f"[data] {spec.projection_id}: {graph.number_of_nodes()} nós, "
+        f"{graph.number_of_edges()} arestas → {out}"
+    )
+    return 0
 
 
 def cmd_etl(args: argparse.Namespace) -> int:
