@@ -324,4 +324,37 @@ def cmd_etl(args: argparse.Namespace) -> int:
 
 
 def cmd_report(args: argparse.Namespace) -> int:
-    raise NotImplementedError("A-07: ver docs/specs/frente-a/A-07-estatisticas-bipartido.md")
+    """Tabela de estatísticas e figura do bipartido de ``--dataset`` (spec A-07).
+
+    Grava ``<out>/tables/tab1-estatisticas-<dataset>.csv`` e
+    ``<out>/figures/fig2-bipartido-<dataset>.{png,svg}`` com a legenda ao
+    lado, e regenera o índice de figuras quando ``--out`` é o ``results/``
+    do repositório.
+    """
+    from edugraph.contracts import io
+    from edugraph.data.report import STATS_COLUMNS, figure_bipartite, table_dataset_stats
+    from edugraph.reporting.figures import FIGURES_DIR, build_index
+    from edugraph.reporting.tables import write_table
+
+    bipartite = io.load_bipartite(args.roots, args.dataset)
+
+    row = table_dataset_stats(bipartite)
+    table = write_table(
+        f"tab1-estatisticas-{args.dataset}", [row], out_dir=args.out / "tables",
+        columns=list(STATS_COLUMNS),
+    )  # fmt: skip
+    print(f"[data] tabela: {table}")
+    for col in STATS_COLUMNS[4:]:
+        value = row[col]
+        print(
+            f"[data]   {col:<26} {value:.4f}"
+            if isinstance(value, float)
+            else f"[data]   {col:<26} {value}"
+        )
+
+    figure = figure_bipartite(bipartite, args.out / "figures")
+    print(f"[data] figura: {figure}  (+ .svg, .caption.txt)")
+
+    if (args.out / "figures").resolve() == FIGURES_DIR.resolve():
+        print(f"[data] índice: {build_index()}")
+    return 0

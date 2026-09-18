@@ -69,6 +69,7 @@ def build_parser() -> argparse.ArgumentParser:
     api_cli.register(subparsers, common)
     _register_run(subparsers, common)
     _register_validate(subparsers, common)
+    _register_figures(subparsers, common)
 
     return parser
 
@@ -188,6 +189,41 @@ def cmd_validate(args: argparse.Namespace) -> int:
             for item in checked:
                 print(f"           · {item}")
     return 1 if falhou else 0
+
+
+# ---------------------------------------------------------------------
+# figures — índice gerado do material do artigo
+# ---------------------------------------------------------------------
+
+
+def _register_figures(
+    subparsers: argparse._SubParsersAction, parent: argparse.ArgumentParser
+) -> None:
+    figures = subparsers.add_parser(
+        "figures",
+        parents=[parent],
+        help="[T] índice das figuras do artigo (gerado, nunca editado à mão)",
+        description=(
+            "Regenera docs/artigo/indice-figuras.md a partir de results/figures/. "
+            "A lista planejada vive em edugraph.reporting.figures.PLANNED_FIGURES."
+        ),
+    )
+    figures.add_argument("--index", action="store_true", help="regenera o índice")
+    figures.add_argument("--dir", type=Path, default=None, help="pasta das figuras")
+    figures.add_argument("--to", type=Path, default=None, help="arquivo do índice")
+    figures.set_defaults(func=cmd_figures)
+
+
+def cmd_figures(args: argparse.Namespace) -> int:
+    """Regenera o índice de figuras. Só ``reporting`` — nenhuma frente."""
+    from edugraph.reporting.figures import FIGURES_DIR, INDEX_PATH, build_index
+
+    if not args.index:
+        print("[figures] nada a fazer; use --index para regenerar o índice")
+        return 0
+    path = build_index(args.dir or FIGURES_DIR, args.to or INDEX_PATH)
+    print(f"[figures] índice gravado em {path}")
+    return 0
 
 
 # ---------------------------------------------------------------------
