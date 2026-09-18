@@ -5,17 +5,27 @@ git (``data/raw/`` está no ``.gitignore``). Este módulo automatiza e,
 principalmente, **verifica** — um download truncado que só aparece como
 número estranho na tabela do artigo é o pior tipo de erro.
 
-Alternativa manual, se o script falhar: baixe o zip em
-https://analyse.kmi.open.ac.uk/open_dataset e extraia os sete CSV em
-``data/raw/oulad/``; depois ``python scripts/download_oulad.py --check``.
+De onde vem
+-----------
+Em 18/09/2026 o site da Open University (``research.stem.open.ac.uk/
+ouanalyse/dataset``) apontava para ``schools.stem.open.ac.uk/cdn/files/
+anonymisedData.zip``, que respondia **404**. O espelho oficial e citável
+é o do UCI Machine Learning Repository (id 349), que é o que este módulo
+usa. Se ele também sair do ar, baixe de qualquer espelho, extraia os sete
+CSV em ``data/raw/oulad/`` e rode ``python scripts/download_oulad.py
+--check``.
+
+A citação continua sendo a do artigo original: Kuzilek, J.; Hlosta, M.;
+Zdrahal, Z. *Open University Learning Analytics dataset.* Scientific
+Data, 2017.
 """
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import shutil
 import sys
-import tempfile
 import urllib.request
 import warnings
 import zipfile
@@ -24,17 +34,23 @@ from pathlib import Path
 from edugraph.contracts.errors import ContractError
 from edugraph.data.oulad.schema import TABLES, table_path, validate_schema
 
-#: Página oficial do dataset (Kuzilek; Hlosta; Zdrahal, 2017).
-OULAD_PAGE = "https://analyse.kmi.open.ac.uk/open_dataset"
+#: Página oficial do dataset.
+OULAD_PAGE = "https://research.stem.open.ac.uk/ouanalyse/dataset/"
 
-#: Download direto do zip.
-OULAD_URL = "https://analyse.kmi.open.ac.uk/open_dataset/download"
+#: Download direto do zip — espelho do UCI ML Repository (id 349).
+OULAD_URL = (
+    "https://archive.ics.uci.edu/static/public/349/open+university+learning+analytics+dataset.zip"
+)
 
-#: SHA-256 do zip. **Preencher após o primeiro download real**, com o
-#: valor que :func:`download` imprime. Enquanto estiver vazio, a
-#: verificação avisa em vez de falhar — o grupo ainda não tem o número
-#: de referência para comparar.
-OULAD_SHA256 = ""
+#: Onde o zip fica guardado depois de baixado (fora do git). Manter o zip
+#: evita rebaixar ~450 MB para re-extrair.
+ZIP_NAME = "oulad.zip"
+
+#: SHA-256 do zip do espelho do UCI, conferido no download de 18/09/2026
+#: (46.748.244 bytes). Um download com outro hash é truncado ou é outro
+#: arquivo, e não é extraído. Se o espelho republicar o zip, atualize aqui
+#: com o valor que :func:`download` imprime — e registre a data.
+OULAD_SHA256 = "f2ed1902616c1fe8d2824d872c0b7d2d72be435bf0124d077044fe4be2c6d3e4"
 
 _CHUNK = 1 << 20  # 1 MiB
 
@@ -65,8 +81,10 @@ def verify(directory: Path = Path("data/raw/oulad"), *, strict: bool = False) ->
         if not path.exists():
             problemas.append(f"{name}.csv ausente")
             continue
+        # csv.reader, não split(","): a base real vem com cabeçalhos entre
+        # aspas ("code_module"), e o split cru os deixaria com aspas.
         with path.open("r", encoding="utf-8", newline="") as handle:
-            header = handle.readline().rstrip("\r\n").split(",")
+            header = next(csv.reader(handle), [])
         try:
             validate_schema(name, header)
         except ContractError as error:
@@ -78,9 +96,14 @@ def verify(directory: Path = Path("data/raw/oulad"), *, strict: bool = False) ->
 
 
 def _fetch(url: str, dest: Path) -> None:
-    """Baixa ``url`` para ``dest`` em blocos, com progresso no stderr."""
+    """Baixa ``url`` para ``dest`` em blocos, com progresso no stderr.
+
+    Grava em ``dest.part`` e só renomeia no fim: um download interrompido
+    nunca é confundido com um completo.
+    """
+    part = dest.with_suffix(dest.suffix + ".part")
     request = urllib.request.Request(url, headers={"User-Agent": "edugraph/0.1 (TCC UniAnchieta)"})
-    with urllib.request.urlopen(request, timeout=60) as response, dest.open("wb") as out:
+    with urllib.request.urlopen(request, timeout=120) as response, part.open("wb") as out:
         total = int(response.headers.get("Content-Length") or 0)
         done = 0
         for block in iter(lambda: response.read(_CHUNK), b""):
@@ -90,7 +113,10 @@ def _fetch(url: str, dest: Path) -> None:
                 print(
                     f"\r[oulad] {done / 1e6:8.1f} / {total / 1e6:.1f} MB", end="", file=sys.stderr
                 )
+            else:
+                print(f"\r[oulad] {done / 1e6:8.1f} MB", end="", file=sys.stderr)
         print(file=sys.stderr)
+    part.replace(dest)
 
 
 def _check_sha256(zip_path: Path) -> str:
@@ -110,23 +136,40 @@ def _check_sha256(zip_path: Path) -> str:
     return digest
 
 
-def _extract(zip_path: Path, dest: Path) -> None:
-    """Extrai só os sete CSV, ignorando subpastas do zip."""
+def _extract(zip_path: Path, dest: Path) -> list[str]:
+    """Extrai só os sete CSV, ignorando subpastas — e entrando em zips aninhados.
+
+    O espelho do UCI embrulha o zip original num zip próprio; o CSV pode
+    estar a dois níveis de profundidade.
+    """
     dest.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(zip_path) as archive:
-        wanted = {f"{name}.csv" for name in TABLES}
+    wanted = {f"{name}.csv" for name in TABLES}
+    found: list[str] = []
+
+    def walk(archive: zipfile.ZipFile) -> None:
         for member in archive.infolist():
+            if member.is_dir():
+                continue
             leaf = Path(member.filename).name
-            if leaf in wanted and not member.is_dir():
+            if leaf in wanted:
                 with archive.open(member) as src, (dest / leaf).open("wb") as out:
                     shutil.copyfileobj(src, out)
+                found.append(leaf)
+            elif leaf.lower().endswith(".zip"):
+                with archive.open(member) as inner_bytes, zipfile.ZipFile(inner_bytes) as inner:
+                    walk(inner)
+
+    with zipfile.ZipFile(zip_path) as archive:
+        walk(archive)
+    return sorted(found)
 
 
 def download(dest: Path = Path("data/raw/oulad"), *, force: bool = False) -> Path:
     """Baixa e extrai o OULAD em ``dest``.
 
-    Não sobrescreve um download válido a menos que ``force``. O zip é
-    baixado para um diretório temporário, conferido e só então extraído.
+    Não sobrescreve um download válido a menos que ``force``. O zip fica
+    em ``dest.parent / oulad.zip``: se já estiver lá, não é rebaixado —
+    só conferido e re-extraído.
 
     Returns
     -------
@@ -138,13 +181,18 @@ def download(dest: Path = Path("data/raw/oulad"), *, force: bool = False) -> Pat
         print(f"[oulad] já presente e válido em {dest}; use --force para rebaixar")
         return dest
 
-    with tempfile.TemporaryDirectory(prefix="oulad-") as tmp:
-        zip_path = Path(tmp) / "oulad.zip"
+    zip_path = dest.parent / ZIP_NAME
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    if zip_path.exists() and not force:
+        print(f"[oulad] zip já baixado em {zip_path}; conferindo e extraindo")
+    else:
         print(f"[oulad] baixando {OULAD_URL}")
         _fetch(OULAD_URL, zip_path)
-        digest = _check_sha256(zip_path)
-        print(f"[oulad] sha256 {digest}")
-        _extract(zip_path, dest)
+
+    digest = _check_sha256(zip_path)
+    print(f"[oulad] sha256 {digest}")
+    found = _extract(zip_path, dest)
+    print(f"[oulad] extraídos: {', '.join(found) or 'nenhum CSV encontrado no zip'}")
 
     verify(dest, strict=True)
     print(f"[oulad] {len(TABLES)} tabelas em {dest}")

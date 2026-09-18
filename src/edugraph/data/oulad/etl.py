@@ -94,7 +94,9 @@ def _source_stamp(raw_dir: Path) -> dict[str, list[int]]:
 def _cache_read(cache_dir: Path | None, filename: str, raw_dir: Path) -> pd.DataFrame | None:
     if cache_dir is None:
         return None
-    data = cache_dir / filename
+    # Path(): quem chama pode passar str — a CLI passa Path, mas um
+    # script ou notebook passa "data/interim" e o `/` explodiria.
+    data = Path(cache_dir) / filename
     meta = data.with_suffix(".meta.json")
     if not (data.exists() and meta.exists()):
         return None
@@ -113,6 +115,7 @@ def _cache_read(cache_dir: Path | None, filename: str, raw_dir: Path) -> pd.Data
 def _cache_write(cache_dir: Path | None, filename: str, raw_dir: Path, table: pd.DataFrame) -> None:
     if cache_dir is None:
         return
+    cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     data = cache_dir / filename
     table.to_csv(data, index=False, encoding="utf-8", lineterminator="\n")

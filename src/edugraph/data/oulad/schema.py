@@ -27,6 +27,11 @@ import pandas as pd
 
 from edugraph.contracts.errors import ContractError
 
+#: Marcadores de valor ausente. A distribuição do UCI usa ``"?"``; a da
+#: Open University, campo vazio. Conferido na base real em 18/09/2026:
+#: ``studentAssessment.score`` traz ``?`` onde não há nota.
+NA_VALUES: tuple[str, ...] = ("?", "")
+
 #: Nomes dos sete arquivos, como vêm no zip do OULAD.
 TABLES: tuple[str, ...] = (
     "assessments",
@@ -168,5 +173,9 @@ def read_table(raw_dir: Path, name: str, **read_csv_kwargs: Any) -> pd.DataFrame
         usecols=list(schema.usecols),
         dtype=schema.dtypes,
         encoding="utf-8",
+        # A distribuição do UCI codifica ausente como "?"; a da OU, como
+        # vazio. Aceitar os dois é o que faz `score` virar float em vez de
+        # explodir na primeira nota faltante.
+        na_values=NA_VALUES,
         **read_csv_kwargs,
     )

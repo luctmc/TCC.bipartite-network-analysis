@@ -20,6 +20,13 @@ tem chance de rodar lá.
 | Pesos diferentes de avaliação | `weight` de 5 a 100 | a nota média por matrícula é ponderada, não aritmética |
 | Aluno sem nota em um módulo | `23629` só tem uma TMA | matrícula com pouca avaliação existe na base real |
 
+## Fidelidade à distribuição real (conferida em 18/09/2026)
+
+- **Cabeçalhos entre aspas** (`"code_module"`), como no zip real.
+- **Valor ausente é `?`** na distribuição do UCI (a da Open University
+  usa vazio). `1760/31604` em `studentAssessment` ficou sem nota de
+  propósito: é o caso que derrubou a primeira rodada na base real.
+
 ## Limites
 
 Não substitui a base real para **números**: qualquer estatística daqui é

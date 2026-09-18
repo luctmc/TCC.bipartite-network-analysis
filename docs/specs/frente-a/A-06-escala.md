@@ -2,7 +2,7 @@
 
 **Frente:** A
 **Dono:** Pedro
-**Status:** em andamento — reduções prontas e testadas (18/09/2026); rodada completa pendente do download do OULAD
+**Status:** concluída (18/09/2026) — reduções testadas e rodada real feita
 
 ## Objetivo
 
@@ -49,17 +49,35 @@ limitação é **resultado a reportar**, não falha a esconder.
       idêntica.
 - [x] Dado `min_weight=2.0`, quando podar, então `validate_projection`
       confere que nenhuma aresta abaixo do corte sobreviveu.
-- [ ] Dada a rodada completa, quando terminar, então `data/processed`
-      passa em `edugraph validate` e `pytest --artifacts-root data/processed`
-      fica verde. *Pendente: exige o OULAD baixado (passo
-      manual). O comando é `python -m edugraph run
-      configs/oulad_cohort_bbb_2013j.toml --only data`.*
-- [x] Cada redução aplicada está registrada no `meta.json` do artefato —
-      **nenhuma redução silenciosa**.
-- [ ] Tempo e pico de memória da rodada completa estão medidos e
-      registrados. *Pendente do mesmo download. Anotar aqui e em
-      `docs/artigo/decisoes-metodologicas.md`; depois escolher
-      `min_weight`, `sample_students` e `k_core` nos TOML.*
+- [x] Dada a rodada completa, quando terminar, então `data/processed`
+      passa em `edugraph validate` e a suíte de contrato roda sobre ela.
+      **Feito**: `oulad_bbb_2013j` e `oulad_module_presentation` gravados
+      e validados; `pytest tests/contract --artifacts-root data/processed`
+      dá 43 passed, 8 skipped (os pulados dependem das fixtures).
+- [x] Tempo e pico de memória da rodada completa estão medidos e
+      registrados. **Medidos em 18/09/2026** (Windows, Python 3.13, 15,7 GB):
+
+      | etapa | tempo | memória |
+      |---|---:|---:|
+      | ETL completo (`data etl`) | 6,3 s | pico 171 MB |
+      | coorte BBB_2013J, estágio `data` | 22 s | — |
+      | `module_presentation`, bipartido + 2 projeções de disciplina | 4 s | — |
+      | projeção aluno↔aluno da base inteira | **não terminou em 10 min** | **> 5 GB** |
+
+**O achado de escala, e ele muda a configuração.** A projeção aluno↔aluno
+de `module_presentation` sobre os 22.425 alunos daria ~15,9 milhões de
+pares. A construção passou de 5 GB de RAM sem terminar, e foi
+interrompida.
+
+**`min_weight` não resolve isso.** O corte acontece *depois* de acumular
+os pares no dicionário, então ele reduz o artefato gravado, não o pico de
+memória. Quem reduz o pico é a amostra (`sample_students`) ou o recorte
+por coorte — que agem *antes* da projeção. Isso está agora dito no
+docstring de `prune_by_weight` e nos comentários das configurações.
+
+Consequência prática: `configs/oulad_module_presentation.toml` tem as
+duas projeções de aluno **comentadas**, com o aviso; para comunidades de
+alunos, use a configuração por coorte ou uma amostra.
 
 ## Testes exigidos
 

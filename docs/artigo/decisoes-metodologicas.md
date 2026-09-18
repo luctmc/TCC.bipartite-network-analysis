@@ -64,6 +64,19 @@ padrão, com `module` (7) como comparação, e `assessment` para as análises
 por coorte. A comparação entre granularidades **é resultado**, não
 detalhe de implementação.
 
+**A base real, medida em 18/09/2026 — e a previsão estava meio errada.**
+Com V = módulo, `discipline_simple` tem **12 de 21 arestas (57%)**, não o
+grafo completo que a D1 previa: 91,8% dos alunos do OULAD cursam **um
+único módulo**, e essa esparsidade impede a completude. Com V =
+`module_presentation`, são **93 de 231 (40%)**. Em nenhuma das duas a
+projeção disciplina↔disciplina degenera — a intermediação discrimina, e é
+a configuração recomendada para a spec C-03.
+
+O problema real de V = módulo é **do outro lado**: a projeção aluno↔aluno
+daria ~52 milhões de pares (15,9 milhões com `module_presentation`), e
+não cabe em memória. A decisão D1 acertou o diagnóstico — V = módulo é
+inadequado — pela razão oposta à que supunha.
+
 **Segundo achado, da spec A-01: a degeneração depende também da
 esparsidade.** `synthetic_v2` tem os mesmos 7 módulos e a mesma seed de
 `synthetic_v1`, mas 70% dos alunos reduzidos a uma única matrícula — o
@@ -160,6 +173,14 @@ independente possível, e o texto deve dizer isso em vez de afirmar que
 **Resultado.** Nas quatro projeções de `synthetic_v1` (98 nós, 1.971
 arestas), a implementação à mão e a referência concordam com diferença
 máxima abaixo de 1e-9. Tabela em `metrics/projections.csv`.
+
+**Na base real** (coorte BBB_2013J, 1.706 alunos, **1.449.841 arestas**),
+as duas continuam concordando (diferença máxima 1,7e-18) e a
+implementação à mão é **mais rápida**: 5,2 s contra 9,5 s do NetworkX na
+projeção simples, e 5,2 s contra 22,5 s na alocação de recursos — porque
+a referência precisa chamar a função de peso por par, enquanto a nossa
+acumula num único percurso. É um número citável: a implementação didática
+não custa desempenho.
 
 **Onde está.** `edugraph.data.projection.networkx_ref`; ADR-0010.
 

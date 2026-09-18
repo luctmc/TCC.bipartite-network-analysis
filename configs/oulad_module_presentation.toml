@@ -24,20 +24,35 @@ granularity = "module_presentation"
 edge_criterion = "score_threshold"
 threshold = 40.0   # limiar de aprovação do OULAD; conferir em A-02
 
-[[projections]]
-side = "student"
-weighting = "simple"
-implementation = "manual"
-# Corte por peso mínimo: a projeção aluno↔aluno da base inteira chega a
-# milhões de arestas (spec A-06). O corte fica registrado no artefato e
-# o validador confere que foi aplicado.
-min_weight = 2.0
+# Medido em 18/09/2026 (A-06): 22.425 alunos, 22 disciplinas, 24.500
+# arestas; 91,8% dos alunos cursam **um único módulo** (grau mediano 1).
+#
+# ATENÇÃO, projeção aluno↔aluno: a base inteira daria ~15,9 milhões de
+# pares. Tentar construí-la aqui passou de 5 GB de RAM sem terminar em
+# 10 min, e `min_weight` NÃO resolve — o corte acontece depois de
+# acumular os pares, então reduz o artefato, não o pico de memória.
+#
+# Por isso as duas projeções de aluno ficam **desligadas** nesta
+# configuração. Para comunidades de alunos, use uma amostra
+# (`sample_students` abaixo) ou a configuração por coorte. Ligar as duas
+# linhas abaixo sem amostra trava a máquina.
+#
+# [[projections]]
+# side = "student"
+# weighting = "simple"
+# implementation = "manual"
+# min_weight = 2.0
+#
+# [[projections]]
+# side = "student"
+# weighting = "resource_allocation"
+# implementation = "manual"
 
-[[projections]]
-side = "student"
-weighting = "resource_allocation"
-implementation = "manual"
-
+# Disciplina↔disciplina: 22 nós, 93 de 231 arestas possíveis (40%).
+# **Não é o grafo completo** — ao contrário do que a decisão D1 previa e
+# do que acontece em synthetic_v1 (K₇). A esparsidade real (mediana de
+# um módulo por aluno) impede a completude, e a intermediação discrimina.
+# É a configuração recomendada para as disciplinas críticas (spec C-03).
 [[projections]]
 side = "discipline"
 weighting = "simple"

@@ -28,16 +28,28 @@ edge_criterion = "score_threshold"
 threshold = 40.0
 cohort = "BBB_2013J"
 
+# Medido em 18/09/2026 (A-06): a coorte tem 1.706 alunos e 11 avaliações;
+# a projeção aluno↔aluno sem corte tem 1.449.841 arestas e densidade
+# 0,997 — quase completa, porque quase todo mundo compartilha quase toda
+# avaliação. A topologia não discrimina; o peso (nº de avaliações em
+# comum, de 1 a 11) discrimina. Decis do peso: 1,2,3,5,7,9,10,10,11.
+# min_weight = 10 mantém 476.591 arestas (33%): pares de alunos que
+# fizeram ≥ 10 das 11 avaliações juntos — quem persistiu até o fim.
 [[projections]]
 side = "student"
 weighting = "simple"
 implementation = "manual"
+min_weight = 10.0
 
+# Alocação de recursos divide por grau da avaliação (~1.500 alunos):
+# pesos na casa de 1e-3; o corte equivalente é ~10/1500.
 [[projections]]
 side = "student"
 weighting = "resource_allocation"
 implementation = "manual"
+min_weight = 0.0065
 
+# 11 avaliações: K11 completa (55 arestas). Só o peso ordena.
 [[projections]]
 side = "discipline"
 weighting = "simple"
