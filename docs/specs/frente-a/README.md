@@ -25,33 +25,58 @@ A-06 é a que **destrava as outras frentes de verdade**: quando
 
 ## Estado (18/09/2026)
 
-| Spec | Estado | O que falta |
-|---|---|---|
-| A-01 | concluída | — |
-| A-02 | concluída contra `oulad_mini` | rodada na base completa; medir memória; preencher `OULAD_SHA256` |
-| A-03 | concluída | — |
-| A-04 | concluída | medir tempo sobre uma coorte real |
-| A-05 | concluída | — |
-| A-06 | em andamento | rodada completa → `data/processed`; tempo e memória; escolher `min_weight`/`sample_students`/`k_core` nos TOML |
-| A-07 | concluída sobre as fixtures | figura e tabela finais saem da rodada do OULAD |
+| Spec | Estado |
+|---|---|
+| A-01 | concluída |
+| A-02 | concluída, incluindo a rodada na base completa |
+| A-03 | concluída |
+| A-04 | concluída — na coorte real, mais rápida que o NetworkX |
+| A-05 | concluída, com os números do OULAD |
+| A-06 | concluída — reduções testadas e limite de escala medido |
+| A-07 | concluída, com tabela e figura do OULAD |
+| A-08 | concluída — modelo nulo (spec nova, nasceu da rodada real) |
 
-Tudo o que falta depende de **um passo manual**: baixar o OULAD
-(`python scripts/download_oulad.py`, ou pela página do dataset) para
-`data/raw/oulad/`. Depois disso, em ordem:
+**As oito specs da Frente A estão fechadas.**
+
+## Reproduzir a rodada real
+
+O OULAD é download manual (~45 MB compactados, 450 MB extraídos) e fica
+fora do git. Para refazer tudo numa máquina nova:
 
 ```bash
-python -m edugraph data etl                                        # A-02: normaliza e mede
-python -m edugraph run configs/oulad_cohort_bbb_2013j.toml --only data   # A-06: uma coorte
-python -m edugraph run configs/oulad_module_presentation.toml --only data
+python scripts/download_oulad.py                     # espelho do UCI, com SHA-256 conferido
+python -m edugraph data etl                          # 6 s, pico de 171 MB
+python -m edugraph run configs/oulad_cohort_bbb_2013j.toml --only data     # 22 s
+python -m edugraph data bipartite configs/oulad_module_presentation.toml
+python -m edugraph data project --root data/processed \
+    --dataset oulad_module_presentation --side discipline --weighting simple
+# linha de base para a Frente B (A-08):
+python -m edugraph data null --root data/processed \
+    --dataset oulad_module_presentation --replicas 5
 python -m edugraph validate --root data/processed
-pytest --artifacts-root data/processed                             # a mesma suíte, sobre o real
-python -m edugraph data compare --dataset oulad_bbb_2013j --figures results/figures  # A-05
-python -m edugraph data report  --dataset oulad_bbb_2013j          # A-07
+pytest tests/contract --artifacts-root data/processed
 ```
 
-Anotar tempo e pico de memória nas specs A-02 e A-06 e em
-`docs/artigo/decisoes-metodologicas.md`, e só então fixar os valores de
-escala nos TOML.
+**Não rode a projeção aluno↔aluno de `module_presentation` sem
+amostra**: são ~15,9 milhões de pares, passou de 5 GB sem terminar em
+10 min (ver A-06). Use a coorte ou `data sample`.
 
 `tests/data/oulad_mini/` continua sendo a fixture do ETL: sete tabelas em
-miniatura com o esquema real.
+miniatura com o esquema real — agora com cabeçalhos entre aspas e `?`
+como ausente, como na distribuição do UCI.
+
+## O que a Frente A entrega para B e C
+
+Em `data/processed`, prontos para `--root`:
+
+- `oulad_bbb_2013j` — coorte BBB 2013J por avaliação: 1.706 alunos,
+  11 avaliações, projeções aluno↔aluno (1,45 M arestas) e
+  disciplina↔disciplina.
+- `oulad_module_presentation` — base inteira, 22.425 alunos, 22
+  disciplinas; projeções **de disciplina** (as de aluno não cabem).
+- `oulad_module_presentation_null0..2` — réplicas nulas (A-08), a linha
+  de base contra a qual a spec B-06 mede a modularidade.
+
+**Leia a A-08 antes de reportar qualquer Q.** Na projeção aluno↔aluno do
+OULAD, o Q real (0,77) é menor que o das réplicas embaralhadas — não há
+estrutura a reportar ali, e isso é o resultado.

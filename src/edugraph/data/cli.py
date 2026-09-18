@@ -82,6 +82,22 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
     cohort.add_argument("--out", type=Path, default=Path("data/processed"))
     cohort.set_defaults(func=cmd_cohort)
 
+    null = actions.add_parser(
+        "null",
+        parents=[parent],
+        help="modelo nulo: mesmo grafo sem estrutura, linha de base para Q (A-08)",
+    )
+    null.add_argument("--dataset", required=True, help="bipartido real, que serve de molde")
+    null.add_argument("--replicas", type=int, default=5, help="quantas réplicas gerar")
+    null.add_argument("--seed", type=int, default=0, help="semente da primeira réplica")
+    null.add_argument(
+        "--projections",
+        action="store_true",
+        help="também projeta cada réplica (aluno↔aluno e disciplina↔disciplina)",
+    )
+    null.add_argument("--out", type=Path, default=Path("data/processed"))
+    null.set_defaults(func=cmd_null)
+
     etl = actions.add_parser("etl", parents=[parent], help="normaliza o OULAD bruto")
     etl.add_argument("--raw", type=Path, default=Path("data/raw/oulad"))
     etl.add_argument("--cache", type=Path, default=Path("data/interim"))
@@ -295,6 +311,44 @@ def cmd_cohort(args: argparse.Namespace) -> int:
         f"[data] {args.new_name}: coorte {args.cohort!r} — {len(reduced.students)} alunos, "
         f"{len(reduced.disciplines)} disciplinas"
     )
+    return 0
+
+
+def cmd_null(args: argparse.Namespace) -> int:
+    """Gera réplicas do modelo nulo de ``--dataset`` (spec A-08).
+
+    Cada réplica vira um dataset ``<nome>_null<seed>``, com os mesmos
+    graus de aluno e as arestas sorteadas. É a linha de base contra a
+    qual a Frente B compara a modularidade (spec B-06): Q real que não
+    supera o Q dessas réplicas não é evidência de estrutura.
+
+    **As réplicas não são dados.** Nunca as misture com o dataset de
+    origem nem reporte números delas como resultado — ``meta.stats``
+    carrega ``null_model`` para que ninguém as confunda.
+    """
+    from edugraph.contracts import io
+    from edugraph.contracts.registry import PROJECTIONS
+    from edugraph.contracts.types import ProjectionSpec
+    from edugraph.data.nullmodel import null_replicas
+    from edugraph.data.projection import manual, networkx_ref  # noqa: F401  (registro)
+
+    real = io.load_bipartite(args.roots, args.dataset)
+    replicas = null_replicas(real, n=args.replicas, seed=args.seed)
+
+    print(
+        f"[data] {args.dataset}: {len(real.students)} alunos, "
+        f"{real.graph.number_of_edges()} arestas → {len(replicas)} réplicas nulas"
+    )
+    for replica in replicas:
+        io.save_bipartite(replica, args.out)
+        linha = f"[data]   {replica.spec.dataset}: {replica.graph.number_of_edges()} arestas"
+        if args.projections:
+            for side in ("student", "discipline"):
+                spec = ProjectionSpec(side=side, weighting="simple")  # type: ignore[arg-type]
+                projection = PROJECTIONS.get("manual_simple").project(replica, spec)  # type: ignore[attr-defined]
+                io.save_projection(projection, args.out)
+                linha += f"  {side}: {projection.graph.number_of_edges()}"
+        print(linha)
     return 0
 
 
