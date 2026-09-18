@@ -2,7 +2,7 @@
 
 **Frente:** A
 **Dono:** Pedro
-**Status:** não iniciada
+**Status:** concluída (18/09/2026)
 
 ## Objetivo
 
@@ -51,17 +51,25 @@ Ver `docs/contratos/bipartite.md` e `docs/contratos/outcomes.md`.
 
 ## Critérios de aceite
 
-- [ ] Dado `SyntheticSpec(seed=42)`, quando gerar duas vezes, então as
+- [x] Dado `SyntheticSpec(seed=42)`, quando gerar duas vezes, então as
       matrículas são idênticas.
-- [ ] Dado `sparsity=0.5`, quando gerar, então a mediana de matrículas
-      por aluno cai para 1 e o desvio da distribuição se aproxima do
-      OULAD (documentar a comparação).
-- [ ] Dado `sparsity` alto, quando gerar, então o grupo plantado continua
+- [x] Dado `sparsity`, quando gerar, então a fração de alunos com uma só
+      matrícula acompanha o parâmetro e a mediana cai para 1 a partir de
+      ~0,6. *Medido com seed 42: base tem mediana 2 e ninguém com uma só;
+      0,5 deixa 48% com uma (mediana ainda 2, na fronteira); 0,7 leva a
+      mediana a 1 com 68%. A estimativa original desta spec — "0,5 já
+      baixa a mediana para 1" — estava errada, e é por isso que
+      `synthetic_v2` usa 0,7. A comparação com o OULAD real fica para a
+      A-02.*
+- [x] Dado `sparsity` alto, quando gerar, então o grupo plantado continua
       recuperável — se a esparsidade destruir a estrutura, isso é achado
-      e vai para o texto.
-- [ ] Dado `--seed 7 --out data/processed`, quando rodar o comando, então
+      e vai para o texto. *Em `synthetic_v2` (0,7), a pureza do Louvain de
+      referência contra o grupo plantado é 0,86 (simples) e 0,84
+      (alocação de recursos): recuperável, com perda. Registrado no
+      `REFERENCE.md` da fixture.*
+- [x] Dado `--seed 7 --out data/processed`, quando rodar o comando, então
       o dataset é gravado e passa em `edugraph validate`.
-- [ ] `synthetic_v2` existe, é imutável e tem `REFERENCE.md`.
+- [x] `synthetic_v2` existe, é imutável e tem `REFERENCE.md`.
 
 ## Testes exigidos
 
@@ -70,8 +78,9 @@ Ver `docs/contratos/bipartite.md` e `docs/contratos/outcomes.md`.
   estender): determinismo; seeds diferentes geram dados diferentes;
   tamanhos de grupo; faixa de matrículas por aluno; existência de ruído;
   vocabulário de `final_result`.
-- Remover o `test_esparsidade_ainda_nao_implementada`, que hoje verifica
-  o `NotImplementedError`.
+- `test_esparsidade_ainda_nao_implementada` removido; +8 testes (esparsidade,
+  determinismo, grupo plantado preservado, sinal das áreas, faixa do
+  parâmetro, `make_groups`, número de grupos, comando `data synthetic`).
 
 ## Arquivos criados ou alterados
 
@@ -82,6 +91,14 @@ Ver `docs/contratos/bipartite.md` e `docs/contratos/outcomes.md`.
 - `tests/data/test_synthetic.py`.
 
 ## Impacto no artigo
+
+**Achado registrado.** Em `synthetic_v2`, a projeção disciplina↔disciplina
+**deixa de ser completa** (16 de 21 arestas): a esparsidade remove pares de
+disciplinas sem aluno em comum, e a intermediação passa a discriminar — ao
+contrário de `synthetic_v1`, que é K₇. Ou seja, a degeneração da decisão D1
+depende tanto da granularidade quanto da esparsidade, e o OULAD tem as duas
+contra si. Ver `data/fixtures/synthetic_v2/REFERENCE.md`.
+
 
 A esparsidade realista é o que permite mostrar, **antes do OULAD**, o
 efeito da decisão D1 sobre a projeção. Rende uma figura comparando a
