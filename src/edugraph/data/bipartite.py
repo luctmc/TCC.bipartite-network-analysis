@@ -243,8 +243,44 @@ def build_bipartite(table: pd.DataFrame, spec: BipartiteSpec) -> BipartiteBundle
 
 
 def describe(bundle: BipartiteBundle) -> dict[str, float]:
-    """Estatísticas descritivas do bipartido — insumo da spec A-07."""
-    raise NotImplementedError("A-07: ver docs/specs/frente-a/A-07-estatisticas-bipartido.md")
+    """Estatísticas descritivas do bipartido — a tabela da seção de dados (A-07).
+
+    Densidade bipartida é ``m / (|U|·|V|)``: a fração dos pares
+    aluno–disciplina possíveis que viraram aresta. Grau médio de cada
+    lado é ``m/|U|`` e ``m/|V|``. Os quantis de grau dos alunos são o que
+    mostra a esparsidade (decisão D1): no OULAD a mediana tende a 1.
+    """
+    graph = bundle.graph
+    students = sorted(bundle.students)
+    disciplines = sorted(bundle.disciplines)
+    n_u, n_v, m = len(students), len(disciplines), graph.number_of_edges()
+
+    def quantis(nodes: list[str]) -> tuple[float, float, float]:
+        degrees = sorted(graph.degree(n) for n in nodes)
+        if not degrees:
+            return (0.0, 0.0, 0.0)
+        pos = lambda q: degrees[min(len(degrees) - 1, int(q * (len(degrees) - 1)))]  # noqa: E731
+        return (float(pos(0.25)), float(pos(0.5)), float(pos(0.75)))
+
+    q1_u, med_u, q3_u = quantis(students)
+    q1_v, med_v, q3_v = quantis(disciplines)
+    return {
+        "n_students": float(n_u),
+        "n_disciplines": float(n_v),
+        "n_edges": float(m),
+        "density": m / (n_u * n_v) if n_u and n_v else 0.0,
+        "mean_degree_student": m / n_u if n_u else 0.0,
+        "mean_degree_discipline": m / n_v if n_v else 0.0,
+        "median_degree_student": med_u,
+        "q1_degree_student": q1_u,
+        "q3_degree_student": q3_u,
+        "median_degree_discipline": med_v,
+        "q1_degree_discipline": q1_v,
+        "q3_degree_discipline": q3_v,
+        "max_degree_student": float(max((graph.degree(n) for n in students), default=0)),
+        "max_degree_discipline": float(max((graph.degree(n) for n in disciplines), default=0)),
+        "n_isolated_removed": float(bundle.meta.stats.get("n_isolated_removed", 0)),
+    }
 
 
 def default_meta(spec: BipartiteSpec, producer: str) -> Meta:

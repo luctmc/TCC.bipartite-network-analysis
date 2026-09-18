@@ -23,10 +23,35 @@ ETL do OULAD, gerador sintético, grafo bipartido e as duas projeções.
 A-06 é a que **destrava as outras frentes de verdade**: quando
 `data/processed` existir, B e C trocam `--root` e param de usar fixtures.
 
-## O que já existe no dia 0
+## Estado (18/09/2026)
 
-`edugraph/data/synthetic.py` **funciona** — é dele que saem as fixtures.
-Tudo o mais é stub com `NotImplementedError` carregando o id da spec.
+| Spec | Estado | O que falta |
+|---|---|---|
+| A-01 | concluída | — |
+| A-02 | concluída contra `oulad_mini` | rodada na base completa; medir memória; preencher `OULAD_SHA256` |
+| A-03 | concluída | — |
+| A-04 | concluída | medir tempo sobre uma coorte real |
+| A-05 | concluída | — |
+| A-06 | em andamento | rodada completa → `data/processed`; tempo e memória; escolher `min_weight`/`sample_students`/`k_core` nos TOML |
+| A-07 | concluída sobre as fixtures | figura e tabela finais saem da rodada do OULAD |
 
-`tests/data/oulad_mini/` traz as sete tabelas do OULAD em miniatura, com
-o esquema real, para que a A-02 não espere pelo download.
+Tudo o que falta depende de **um passo manual**: baixar o OULAD
+(`python scripts/download_oulad.py`, ou pela página do dataset) para
+`data/raw/oulad/`. Depois disso, em ordem:
+
+```bash
+python -m edugraph data etl                                        # A-02: normaliza e mede
+python -m edugraph run configs/oulad_cohort_bbb_2013j.toml --only data   # A-06: uma coorte
+python -m edugraph run configs/oulad_module_presentation.toml --only data
+python -m edugraph validate --root data/processed
+pytest --artifacts-root data/processed                             # a mesma suíte, sobre o real
+python -m edugraph data compare --dataset oulad_bbb_2013j --figures results/figures  # A-05
+python -m edugraph data report  --dataset oulad_bbb_2013j          # A-07
+```
+
+Anotar tempo e pico de memória nas specs A-02 e A-06 e em
+`docs/artigo/decisoes-metodologicas.md`, e só então fixar os valores de
+escala nos TOML.
+
+`tests/data/oulad_mini/` continua sendo a fixture do ETL: sete tabelas em
+miniatura com o esquema real.
