@@ -240,6 +240,65 @@ seção de limitações do artigo, e a spec A-06 fica aberta até lá.
 
 **Onde está.** `edugraph.data.scale`; `[source]` dos TOML de `configs/`.
 
+### Q precisa de linha de base — o achado da A-08
+
+**O que dizer, e é o mais importante desta rodada.** A modularidade
+encontra "comunidades" em qualquer grafo esparso, inclusive em grafos sem
+estrutura nenhuma (Guimerà et al., 2004). Por isso o trabalho compara todo
+Q com o de **réplicas nulas**: os mesmos alunos, as mesmas disciplinas, os
+mesmos graus, mas quem cursou o quê é sorteado.
+
+Medido em 18/09/2026, projeção aluno↔aluno, Louvain com seed 42:
+
+| dataset | Q real | Q nulo | veredito |
+|---|---:|---|---|
+| `synthetic_v1` | 0,4666 | 0,2079 ± 0,0168 (z = +15,4) | estrutura real |
+| `synthetic_v2` | 0,5392 | 0,4611 ± 0,0202 (z = +3,9) | estrutura real, sinal fraco |
+| OULAD `module_presentation` (amostra de 3.000) | 0,7728 | 0,7807 / 0,7816 | **indistinguível do acaso** |
+
+Três coisas seguem disso, e todas vão para o texto:
+
+1. **O método funciona.** No sintético, o Q real fica 15 desvios acima do
+   nulo. Louvain recupera estrutura plantada — é o que valida o método e
+   o que a Conclusão precisa para responder ao objetivo declarado.
+2. **O OULAD não sustenta a afirmação.** O Q de 0,77 é *menor* que o das
+   réplicas embaralhadas. Escrever "encontramos 15 comunidades de perfis
+   de alunos" seria falso. O resultado negativo é o resultado.
+3. **A esparsidade infla Q.** O Q nulo de `synthetic_v2` (0,46) é o dobro
+   do de `synthetic_v1` (0,21), só por ter 70% dos alunos com uma
+   matrícula. É o mesmo mecanismo que produz o 0,78 do OULAD, e explica
+   *por que* a base real não discrimina: com grau mediano 1, quase não há
+   informação relacional entre alunos.
+
+**O que isso não quer dizer.** Não quer dizer que o OULAD não tenha
+estrutura nenhuma — quer dizer que *esta* projeção, *nesta* granularidade,
+não tem. Outras configurações (coorte, avaliação, critério de aresta) são
+exatamente o que as tabelas comparativas do capítulo 3 existem para
+explorar, e cada uma precisa da sua linha de base nula.
+
+**Onde está.** Spec A-08; `edugraph.data.nullmodel`; a comparação é da
+spec B-06.
+
+### O papel do gerador sintético — e o que ele não deve fazer
+
+**Não se misturam dados sintéticos com dados reais.** Não há aumento de
+dados, não há preenchimento de lacunas, não há arestas geradas entrando no
+grafo do OULAD. Qualquer número saído de um grafo misto seria ficção, e a
+restrição da seção 2 do briefing deixaria de ser verificável.
+
+O gerador agrega de três formas, todas separadas dos dados reais:
+
+1. **Ground truth que o OULAD não tem.** A base real não traz comunidades
+   conhecidas. Sem o sintético, não há como afirmar que o método recupera
+   estrutura — só que ele produz um número.
+2. **Linha de base nula** (A-08), que é o gerador calibrado no real *sem*
+   estrutura plantada. É o que transforma um Q num resultado.
+3. **Calibração da dificuldade.** `synthetic_v2` mostrou, antes do
+   download, que a esparsidade derruba a detectabilidade — o que o OULAD
+   depois confirmou.
+
+**Onde está.** Specs A-01 e A-08.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |

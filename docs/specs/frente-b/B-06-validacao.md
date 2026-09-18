@@ -27,6 +27,25 @@ categorias já conhecidas.
 - B-01, para ter partições.
 - `outcomes.csv`, que já existe nas fixtures **com o grupo plantado**.
 
+> **Nota da Frente A (18/09/2026) — leia antes de reportar qualquer Q.**
+> A spec **A-08** acrescentou réplicas do **modelo nulo**: o mesmo grafo
+> com os mesmos graus e a estrutura embaralhada. Elas já estão em
+> `data/processed` (`oulad_module_presentation_null0..2`) e saem de
+> `edugraph data null --dataset X --replicas N`.
+>
+> Isso importa porque a modularidade encontra "comunidades" em qualquer
+> grafo esparso. Medido: em `synthetic_v1` o Q real (0,4666) fica 15
+> desvios acima do nulo (0,208 ± 0,017) — o método funciona; no OULAD
+> `module_presentation` o Q real (0,7728) é **menor** que o das réplicas
+> (0,781) — ali não há estrutura a reportar.
+>
+> A comparação é **desta spec**, não da A-08 (a Frente A só gera o
+> artefato). `edugraph.data.nullmodel.is_null(bundle)` distingue uma
+> réplica de um dataset real sem depender do nome. Sugestão de critério:
+> reportar o z-score de Q contra ≥ 5 réplicas, e tratar z < 3 como
+> "indistinguível do acaso". Gabriel decide o critério final — isto é
+> apontamento, não alteração de escopo.
+
 ## Escopo
 
 ### Incluído
