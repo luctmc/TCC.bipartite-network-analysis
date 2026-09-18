@@ -70,6 +70,18 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
     report.add_argument("--out", type=Path, default=Path("results"))
     report.set_defaults(func=cmd_report)
 
+    compare = actions.add_parser(
+        "compare",
+        parents=[parent],
+        help="à mão × NetworkX nas 4 projeções (metrics/projections.csv + figura)",
+    )
+    compare.add_argument("--dataset", required=True)
+    compare.add_argument("--out", type=Path, default=Path("data/processed"))
+    compare.add_argument(
+        "--figures", type=Path, default=None, help="diretório da figura (padrão: nenhuma)"
+    )
+    compare.set_defaults(func=cmd_compare)
+
 
 # ---------------------------------------------------------------------
 # Handlers — cada um fecha com a sua spec
@@ -163,6 +175,47 @@ def cmd_project(args: argparse.Namespace) -> int:
         f"{graph.number_of_edges()} arestas → {out}"
     )
     return 0
+
+
+def cmd_compare(args: argparse.Namespace) -> int:
+    """À mão × NetworkX nas quatro projeções (spec A-05).
+
+    Grava ``metrics/projections.csv`` em ``--out`` e, com ``--figures``,
+    a figura "simples × ponderada" do lado aluno↔aluno e do lado
+    disciplina↔disciplina.
+    """
+    from edugraph.contracts import io
+    from edugraph.contracts.registry import PROJECTIONS
+    from edugraph.contracts.types import ProjectionSpec
+    from edugraph.data.projection.compare import compare_all, write_metrics
+    from edugraph.data.report import figure_weight_distributions
+
+    bipartite = io.load_bipartite(args.roots, args.dataset)
+    rows = compare_all(bipartite)
+    path = write_metrics(rows, args.out, args.dataset)
+
+    print(f"[data] {'projeção':<34} {'arestas':>8} {'max|Δ|':>10} {'manual':>9} {'networkx':>9}")
+    for row in rows:
+        flag = "ok" if row["equal_within_tolerance"] else "DIVERGE"
+        print(
+            f"[data] {row['projection_id']:<34} {row['n_edges_manual']:>8} "
+            f"{row['max_abs_diff']:>10.2e} {row['runtime_manual_s']:>8.3f}s "
+            f"{row['runtime_networkx_s']:>8.3f}s  {flag}"
+        )
+    print(f"[data] gravado: {path}")
+
+    if args.figures is not None:
+        for side in ("student", "discipline"):
+            simple = PROJECTIONS.get("manual_simple").project(  # type: ignore[attr-defined]
+                bipartite, ProjectionSpec(side=side, weighting="simple")
+            )
+            ra = PROJECTIONS.get("manual_resource_allocation").project(  # type: ignore[attr-defined]
+                bipartite, ProjectionSpec(side=side, weighting="resource_allocation")
+            )
+            fig = figure_weight_distributions(simple, ra, args.figures)
+            print(f"[data] figura: {fig}")
+
+    return 0 if all(r["equal_within_tolerance"] for r in rows) else 1
 
 
 def cmd_etl(args: argparse.Namespace) -> int:
