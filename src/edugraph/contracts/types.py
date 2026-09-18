@@ -29,8 +29,26 @@ NodeKind = Literal["student", "discipline"]
 Weighting = Literal["simple", "resource_allocation"]
 """Ponderação da projeção: contagem simples ou Zhou et al. (2007)."""
 
-Granularity = Literal["module", "module_presentation", "assessment"]
-"""O que conta como um nó 'disciplina' (decisão D1)."""
+Granularity = Literal[
+    "module",
+    "module_presentation",
+    "assessment",
+    "vle_site",
+    "vle_activity_type",
+]
+"""O que conta como um nó de V (decisão D1; ADR-0012 para as duas do AVA).
+
+As três primeiras usam a **matrícula** como relação: o nó de V é o
+módulo, a apresentação do módulo ou a avaliação. As duas últimas usam o
+**comportamento**: o nó de V é um recurso do ambiente virtual
+(``vle_site``) ou o tipo de atividade dele (``vle_activity_type``).
+
+A troca existe porque 91,8% dos alunos do OULAD cursam um único módulo,
+e com grau 1 a projeção aluno↔aluno não carrega informação relacional —
+ver ``docs/artigo/decisoes-metodologicas.md``. ``kind="discipline"``
+continua marcando o lado V nas duas famílias: é o marcador do lado, não
+uma afirmação de que o nó é uma disciplina.
+"""
 
 EdgeCriterion = Literal["score_threshold", "final_result_pass", "vle_activity"]
 """O que cria uma aresta aluno-disciplina (parametrizável, ADR-0007)."""

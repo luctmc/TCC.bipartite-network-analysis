@@ -39,6 +39,13 @@ categorias já conhecidas.
 > `module_presentation` o Q real (0,7728) é **menor** que o das réplicas
 > (0,781) — ali não há estrutura a reportar.
 >
+> **Atualização (A-09, mesmo dia).** O diagnóstico acima levou à troca do
+> critério de aresta. Existe agora `oulad_vle_bbb_2013j`, em que o nó do
+> lado V é o recurso do AVA e o grau mediano do aluno é 33 em vez de 1.
+> Nele o Q real fica ~5× acima do nulo, com 4 comunidades de tamanhos
+> 941, 480, 322 e 127. **É o dataset a usar para comunidades de alunos.**
+> As réplicas nulas dele são `oulad_vle_bbb_2013j_null0..4`.
+>
 > A comparação é **desta spec**, não da A-08 (a Frente A só gera o
 > artefato). `edugraph.data.nullmodel.is_null(bundle)` distingue uma
 > réplica de um dataset real sem depender do nome. Sugestão de critério:

@@ -16,6 +16,7 @@ histórico do chat ou na cabeça de quem implementou.
 | entender por que ninguém espera por ninguém | [arquitetura/paralelismo.md](arquitetura/paralelismo.md) |
 | escrever ou rodar testes | [testes/estrategia.md](testes/estrategia.md) |
 | saber o que precisa entrar no texto do artigo | [artigo/decisoes-metodologicas.md](artigo/decisoes-metodologicas.md) |
+| falar com o orientador sem enrolar | [orientador/README.md](orientador/README.md) |
 
 ## O que há aqui
 
@@ -56,6 +57,14 @@ Incluindo a derivação, no papel, dos valores esperados de `tiny_v1`.
   precisa estar escrito, e o que o artigo **não** deve afirmar
 - [indice-figuras.md](artigo/indice-figuras.md) e
   [indice-tabelas.md](artigo/indice-tabelas.md) — arquivos **gerados**
+
+### [`orientador/`](orientador/README.md) — o que se manda para a orientação
+
+Uma **nota** avisa de decisão que já cabe no tema aprovado. Uma
+**consulta** leva impasse que o grupo não deve resolver sozinho, sempre
+com o problema medido, o que já se tentou e as saídas com custo. As duas
+são curtas: o diagnóstico longo mora em
+[artigo/decisoes-metodologicas.md](artigo/decisoes-metodologicas.md).
 
 ### [`briefing.md`](briefing.md)
 

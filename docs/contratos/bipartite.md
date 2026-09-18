@@ -23,11 +23,31 @@ class BipartiteBundle:
 | Campo | Tipo | O que significa |
 |---|---|---|
 | `dataset` | `str` | nome da pasta em disco |
-| `granularity` | `module` \| `module_presentation` \| `assessment` | o que conta como um nó de V (decisão D1) |
+| `granularity` | `module` \| `module_presentation` \| `assessment` \| `vle_site` \| `vle_activity_type` | o que conta como um nó de V (decisão D1; as duas do AVA vêm da ADR-0012) |
 | `edge_criterion` | `score_threshold` \| `final_result_pass` \| `vle_activity` | o que cria uma aresta |
 | `threshold` | `float \| None` | nota mínima, cliques mínimos… |
 | `cohort` | `str \| None` | recorte por apresentação (spec A-06) |
 | `seed` | `int \| None` | só para dados sintéticos |
+
+
+### As duas famílias de granularidade
+
+As três primeiras usam a **matrícula** como relação: o nó de V é o
+módulo, a apresentação ou a avaliação. As duas últimas usam o
+**comportamento**: o nó de V é um recurso do ambiente virtual ou o tipo
+dele.
+
+`kind` continua `"discipline"` no lado V **nas duas famílias** — ele
+marca o lado do bipartido, não a natureza do nó. É o que permite às
+Frentes B e C consumirem os dois tipos de artefato sem mudar código.
+
+Cada família tem sua tabela de entrada, e misturá-las é erro nomeado:
+`build_bipartite` levanta `ContractError` em combinações que produziriam
+grafo vazio em silêncio, como `granularity="vle_site"` com
+`edge_criterion="score_threshold"` (o OULAD não tem nota por recurso).
+
+A troca existe porque 91,8% dos alunos do OULAD cursam um único módulo —
+ver ADR-0012 e a spec A-09.
 
 ## Em disco
 
