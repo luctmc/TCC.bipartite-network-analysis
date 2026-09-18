@@ -9,6 +9,7 @@ histórico do chat ou na cabeça de quem implementou.
 
 | Se você quer… | Leia |
 |---|---|
+| entender um termo que apareceu (grafo, projeção, modularidade) | [glossario.md](glossario.md) |
 | entender a arquitetura em 10 minutos | [arquitetura/visao-geral.md](arquitetura/visao-geral.md) |
 | começar a trabalhar na sua frente | [specs/README.md](specs/README.md) → o README da sua frente |
 | saber por que algo foi decidido assim | [adr/README.md](adr/README.md) |
@@ -19,6 +20,12 @@ histórico do chat ou na cabeça de quem implementou.
 | falar com o orientador sem enrolar | [orientador/README.md](orientador/README.md) |
 
 ## O que há aqui
+
+### [`glossario.md`](glossario.md) — os termos, sem jargão
+
+Grafo, bipartido, projeção, granularidade, modularidade, modelo nulo,
+centralidade — cada um com desenho. É o primeiro lugar a mandar quem
+chegou agora, ou quem travou numa palavra lendo uma spec.
 
 ### [`adr/`](adr/README.md) — decisões de arquitetura
 
