@@ -30,6 +30,7 @@ from edugraph.contracts.registry import PROJECTIONS
 from edugraph.contracts.types import BipartiteBundle, Outcomes, RunConfig
 from edugraph.data.bipartite import build_bipartite
 from edugraph.data.projection import manual, networkx_ref  # noqa: F401  (registro)
+from edugraph.data.scale import k_core_projection, sample_students
 from edugraph.data.synthetic import SyntheticSpec, generate, make_groups
 
 __all__ = ["load_run_config", "load_source", "run_data_stage"]
@@ -89,10 +90,12 @@ def load_source(config: RunConfig) -> tuple[pd.DataFrame, Outcomes]:
     raise ContractError(f"[source] kind desconhecido: {kind!r} (esperado 'synthetic' ou 'oulad')")
 
 
-def _restrict_outcomes(outcomes: Outcomes, bundle: BipartiteBundle) -> Outcomes:
-    """Só alunos que sobreviveram ao critério de aresta ficam em ``outcomes.csv``.
+def restrict_outcomes(outcomes: Outcomes, bundle: BipartiteBundle) -> Outcomes:
+    """Só alunos presentes no bipartido ficam em ``outcomes.csv``.
 
-    O validador exige que todo desfecho aponte para um nó existente.
+    O validador exige que todo desfecho aponte para um nó existente —
+    vale depois do critério de aresta e depois de qualquer redução da
+    spec A-06 (amostra, coorte).
     """
     survivors = bundle.students
     planted = (
@@ -124,13 +127,26 @@ def run_data_stage(config: RunConfig, out: Path, *, projections: bool = True) ->
     bundle = build_bipartite(table, config.bipartite)
     dataset = config.bipartite.dataset
 
+    # Reduções de escala (spec A-06), declaradas em [source] do TOML.
+    # Ficam em [source] porque são decisão sobre a fonte, não sobre o
+    # grafo — e porque RunConfig é contrato congelado. Cada uma deixa
+    # rastro em meta.stats["reductions"] do artefato.
+    source: dict[str, Any] = dict(config.source)
+    if source.get("sample_students"):
+        bundle = sample_students(
+            bundle, int(source["sample_students"]), seed=int(source.get("sample_seed", 42))
+        )
+
     written: list[Path] = [io.save_bipartite(bundle, out)]
-    written.append(io.save_outcomes(_restrict_outcomes(outcomes, bundle), out, dataset))
+    written.append(io.save_outcomes(restrict_outcomes(outcomes, bundle), out, dataset))
 
     if projections:
+        k = int(source["k_core"]) if source.get("k_core") else None
         for spec in config.projections:
             algorithm = PROJECTIONS.get(f"{spec.implementation}_{spec.weighting}")
             projection = algorithm.project(bundle, spec)  # type: ignore[attr-defined]
+            if k is not None:
+                projection = k_core_projection(projection, k)
             written.append(io.save_projection(projection, out))
 
     return written
