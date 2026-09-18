@@ -61,6 +61,28 @@ A coluna `planted_group` é omitida quando não existe.
   de verdade: alunos removidos pelo corte do critério de aresta precisam
   sair de `outcomes.csv` também, e `make_fixtures.py` faz esse filtro.
 
+## Datasets derivados: `derive_outcomes`
+
+Reduções da spec A-06 (amostra, coorte) criam um dataset novo com um
+subconjunto dos alunos. O validador exige que todo desfecho aponte para
+um nó existente, então o `outcomes.csv` do derivado precisa ser o da
+origem **filtrado**.
+
+Quem faz isso é `contracts.io.derive_outcomes(roots, origem, out,
+destino, keep=alunos)`: lê, filtra e regrava, e **não devolve os rótulos
+ao chamador**. Ela vive no contrato pela mesma razão que `load_outcomes`
+vive: é manuseio genérico do artefato, sem olhar o valor do rótulo. A
+Frente A a usa em `data sample` e `data cohort` sem nunca ver um
+desfecho — e o teste `test_apenas_evaluate_le_outcomes` foi o que
+impediu a alternativa errada (a frente chamar `load_outcomes` e filtrar
+por conta própria).
+
+> **Nota de processo.** `derive_outcomes` foi acrescentada ao pacote
+> congelado em 18/09/2026, na spec A-06. É aditiva: nenhum tipo, layout
+> ou coluna mudou, e `SCHEMA_VERSION` continua `1.0`. Pela ADR-0009,
+> mudança em `contracts/` pede o aceite dos três — este é o registro
+> para esse aceite.
+
 ## O que se valida, e o que não se está fazendo
 
 O que se mede nos `evaluate.py` **não é acurácia de um modelo** — não há

@@ -64,6 +64,7 @@ NEWLINE = "\n"
 
 __all__ = [
     "append_metrics_rows",
+    "derive_outcomes",
     "load_bipartite",
     "load_centrality",
     "load_metrics",
@@ -470,6 +471,43 @@ def load_outcomes(
             if row.get("planted_group", "") != ""
         }
     return Outcomes(final_result=final_result, planted_group=planted)
+
+
+def derive_outcomes(
+    roots: ArtifactRoots | list[str | Path] | str | Path | None,
+    source_dataset: str,
+    out_root: str | Path,
+    target_dataset: str,
+    keep: set[str],
+) -> Path | None:
+    """Copia ``outcomes.csv`` de um dataset para outro, restrito a ``keep``.
+
+    Existe para os datasets **derivados** por redução (amostra, coorte —
+    spec A-06): o validador exige que todo desfecho aponte para um nó
+    existente, então o arquivo precisa ser filtrado ao gravar o derivado.
+
+    Vive aqui, e não na frente que reduz, pela mesma razão que
+    :func:`load_outcomes` vive aqui: é manuseio genérico do artefato,
+    sem olhar o valor do rótulo. A função lê e regrava; **não devolve os
+    rótulos** ao chamador — quem precisa deles continua sendo só um
+    ``evaluate.py`` (ADR-0008). Devolve ``None`` se a origem não tem
+    ``outcomes.csv``.
+    """
+    resolved = as_roots(roots)
+    if not resolved.has(source_dataset, "bipartite", OUTCOMES_FILE):
+        return None
+    source = load_outcomes(resolved, source_dataset)
+    planted = (
+        {k: v for k, v in source.planted_group.items() if k in keep}
+        if source.planted_group is not None
+        else None
+    )
+    restricted = Outcomes(
+        final_result={k: v for k, v in source.final_result.items() if k in keep},
+        planted_group=planted,
+        meta=source.meta,
+    )
+    return save_outcomes(restricted, out_root, target_dataset)
 
 
 # ---------------------------------------------------------------------

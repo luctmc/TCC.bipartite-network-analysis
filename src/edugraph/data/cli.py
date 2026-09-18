@@ -245,23 +245,24 @@ def cmd_compare(args: argparse.Namespace) -> int:
 
 
 def _save_reduced(bundle, roots, source_dataset: str, new_name: str, out: Path) -> list[Path]:
-    """Grava um bipartido reduzido como novo dataset, com outcomes restritos."""
+    """Grava um bipartido reduzido como novo dataset, com outcomes restritos.
+
+    Os rótulos históricos são copiados pelo contrato
+    (:func:`edugraph.contracts.io.derive_outcomes`), que filtra e regrava
+    sem devolvê-los a esta frente — a Frente A não lê desfecho (ADR-0008).
+    """
     from dataclasses import replace
 
     from edugraph.contracts import io
-    from edugraph.contracts.errors import ArtifactNotFoundError
     from edugraph.contracts.types import BipartiteBundle
-    from edugraph.data.pipeline import restrict_outcomes
 
     renamed = BipartiteBundle(
         graph=bundle.graph, spec=replace(bundle.spec, dataset=new_name), meta=bundle.meta
     )
     written = [io.save_bipartite(renamed, out)]
-    try:
-        outcomes = io.load_outcomes(roots, source_dataset)
-    except ArtifactNotFoundError:
-        return written  # fonte sem outcomes.csv: nada a restringir
-    written.append(io.save_outcomes(restrict_outcomes(outcomes, renamed), out, new_name))
+    derived = io.derive_outcomes(roots, source_dataset, out, new_name, keep=renamed.students)
+    if derived is not None:
+        written.append(derived)
     return written
 
 
