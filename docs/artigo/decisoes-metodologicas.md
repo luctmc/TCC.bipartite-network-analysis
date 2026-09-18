@@ -279,6 +279,72 @@ explorar, e cada uma precisa da sua linha de base nula.
 **Onde está.** Spec A-08; `edugraph.data.nullmodel`; a comparação é da
 spec B-06.
 
+### O critério de aresta muda de matrícula para interação no AVA
+
+**O que dizer.** A seção anterior mostra que o critério "cursou o módulo"
+não carrega informação relacional suficiente: 91,8% dos alunos do OULAD
+cursam um único módulo, e a projeção aluno↔aluno resultante não se
+distingue do acaso. O trabalho **troca o critério de aresta** para a
+interação com recursos do ambiente virtual de aprendizagem.
+
+Isto **não é mudança de tema nem de escopo**. O critério de aresta é
+parâmetro desde o dia 0: o briefing §8 já listava "participação no AVA"
+entre os critérios candidatos, a ADR-0007 o tornou configurável, e
+`EdgeCriterion` já contém `vle_activity`. A fundamentação do tema
+descreve o bipartido como **"Aluno → Comportamento"** e o peso da aresta
+como "interseção de atributos compartilhados" — que é exatamente esta
+configuração, e não a de matrícula.
+
+**Por que funciona.** O grau muda de ordem de grandeza:
+
+| nó do lado V | grau mediano do aluno |
+|---|---:|
+| módulo | 1 |
+| módulo × apresentação | 1 |
+| recurso do AVA | 40 |
+| tipo de atividade | 7 |
+
+Medido em três coortes independentes, projeção por alocação de recursos,
+três sementes do Louvain cada:
+
+| coorte | alunos × recursos | Q real | Q nulo | razão |
+|---|---|---:|---:|---:|
+| BBB 2013J | 1.870 × 320 | 0,0825 | 0,0158 | 5,2× |
+| FFF 2013J | 2.098 × 526 | 0,0742 | 0,0081 | 9,2× |
+| DDD 2014J | 1.647 × 361 | 0,0511 | 0,0073 | 7,0× |
+
+As partições não são degeneradas: há sempre uma comunidade maior (50% a
+69% dos alunos) e duas ou três menores com tamanho caracterizável. O Q é
+estável entre sementes (variação na quarta casa decimal). Em DDD 2014J o
+número de comunidades oscila entre 3 e 4 conforme a semente, sem alterar
+o Q — limitação conhecida do Louvain, registrada como tal.
+
+**Achado de método, e vale por si.** A escolha da ponderação decide se o
+sinal aparece. Sob extração de espinha (mantendo só as arestas mais
+pesadas), a **contagem simples inverte de lado** e o Q real cai *abaixo*
+do nulo em todos os limiares testados; a **alocação de recursos** (Zhou
+et al., 2007) se mantém acima em todos. A causa é interpretável: a
+contagem simples premia volume de cliques, então as arestas mais pesadas
+passam a ligar os alunos mais ativos entre si — efeito de volume, não de
+afinidade. A alocação de recursos normaliza pelo grau e desfaz o viés.
+Como o briefing exige as duas projeções implementadas à mão, o contraste
+é resultado próprio do trabalho.
+
+**O que a configuração antiga continua servindo.** O bipartido por módulo
+**não sai do trabalho**. A projeção disciplina↔disciplina dele funciona
+(93 de 231 arestas com `module_presentation`, intermediação discrimina) e
+continua sendo a base da spec C-03, disciplinas críticas. As duas
+configurações convivem em `configs/`, que é precisamente o que a ADR-0007
+existe para permitir: uma serve à Frente B, outra à Frente C.
+
+**Ressalvas que o texto precisa carregar.** O Q absoluto é baixo (0,05 a
+0,08) — a estrutura é estatisticamente inequívoca, mas fraca. A projeção
+fica quase completa (densidade 0,9996), então o sinal está nos **pesos**,
+não na presença da aresta. Aplicar limiar fragmenta o grafo em centenas
+de componentes de nó isolado, então o recorte honesto é a projeção cheia.
+
+**Onde está.** ADR-0007; spec A-09; `docs/orientador/nota-01-criterio-de-aresta.md`.
+
 ### O papel do gerador sintético — e o que ele não deve fazer
 
 **Não se misturam dados sintéticos com dados reais.** Não há aumento de
