@@ -119,6 +119,12 @@ def prune_by_weight(bundle: ProjectionBundle, min_weight: float) -> ProjectionBu
     O corte vai para ``ProjectionSpec.min_weight``, e o validador de
     contrato passa a conferir que nenhuma aresta abaixo dele sobreviveu —
     o corte fica auditável no artefato.
+
+    **Não use isto para caber na memória.** O corte age sobre a projeção
+    já construída: ele reduz o artefato gravado, não o pico. Sobre a base
+    inteira do OULAD a projeção aluno↔aluno passa de 5 GB *antes* de
+    chegar aqui (medido na A-06). O que reduz o pico é :func:`filter_cohort`
+    ou :func:`sample_students`, que agem antes de projetar.
     """
     if min_weight <= 0:
         raise ContractError(f"min_weight precisa ser positivo; recebeu {min_weight!r}")

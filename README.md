@@ -121,11 +121,13 @@ a CI.
 
 ## Os dados
 
-**Base principal:** [OULAD](https://analyse.kmi.open.ac.uk/open_dataset)
+**Base principal:** [OULAD](https://research.stem.open.ac.uk/ouanalyse/dataset/)
 (Kuzilek; Hlosta; Zdrahal, 2017). Público e anonimizado. O download é
-**passo manual**: baixe o zip, extraia as sete tabelas em
-`data/raw/oulad/` e rode `python -m edugraph data etl`. A pasta é
-ignorada pelo git.
+**passo manual**: `python scripts/download_oulad.py` baixa do espelho do
+[UCI ML Repository](https://archive.ics.uci.edu/dataset/349) (o link do
+site da OU respondia 404 em 18/09/2026), guarda o zip em `data/raw/` e
+extrai as sete tabelas em `data/raw/oulad/`. Depois,
+`python -m edugraph data etl`. A pasta é ignorada pelo git.
 
 Não é preciso baixá-lo para trabalhar: `tests/data/oulad_mini/` traz as
 sete tabelas em miniatura, com o esquema real.

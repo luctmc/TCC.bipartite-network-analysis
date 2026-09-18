@@ -9,9 +9,11 @@ existe para automatizar e, principalmente, **verificar** — um download
 truncado que só aparece como número estranho na tabela do artigo é o pior
 tipo de erro.
 
-Alternativa manual, se o script falhar: baixe o zip de
-https://analyse.kmi.open.ac.uk/open_dataset e extraia as sete tabelas em
-``data/raw/oulad/``.
+Alternativa manual, se o script falhar: baixe o zip do espelho do UCI
+(https://archive.ics.uci.edu/dataset/349) ou da página da OU
+(https://research.stem.open.ac.uk/ouanalyse/dataset/ — em 18/09/2026 o
+link de lá respondia 404), extraia as sete tabelas em ``data/raw/oulad/``
+e rode este script com ``--check``.
 """
 
 from __future__ import annotations

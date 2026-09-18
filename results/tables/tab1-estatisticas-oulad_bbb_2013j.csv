@@ -1,0 +1,2 @@
+dataset,granularity,edge_criterion,threshold,n_students,n_disciplines,n_edges,density,mean_degree_student,median_degree_student,mean_degree_discipline,median_degree_discipline,n_isolated_removed
+oulad_bbb_2013j,assessment,score_threshold,40.0,1706,11,14180,0.7556218693381648,8.311840562719812,10,1289.090909090909,1250,4

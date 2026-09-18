@@ -14,7 +14,7 @@ aluno  mód.   apres.  nota (ponderada por ``weight``)   cliques  desfecho
 11391  AAA    2013J   (78·10 + 82·20)/30 = 80,667        4+1 = 5  Pass
 28400  AAA    2013J   (70·10 + 64·20)/30 = 66            3        Pass
 30268  AAA    2013J   45                                 1        Withdrawn
-31604  AAA    2014J   91                                 7        Pass
+31604  AAA    2014J   ``?`` (sem nota; fica pelos cliques)  7        Pass
 23629  BBB    2013J   38                                 2        Fail
 11391  BBB    2013J   (88·5 + 95·5)/10 = 91,5            9        Distinction
 =====  =====  ======  ================================  =======  ==========
@@ -94,6 +94,11 @@ def test_etl_produz_a_tabela_normalizada() -> None:
     assert list(table.columns) == list(etl.NORMALIZED_COLUMNS)
     assert not table.duplicated(subset=KEY).any()
     assert len(table) == 6  # as seis matrículas do studentInfo, todas com evidência
+
+    # "?" é ausente (distribuição do UCI): a nota vira NaN, mas a matrícula
+    # fica, porque há cliques. Foi o que derrubou a primeira rodada real.
+    sem_nota = _row(table, 31604, "AAA", "2014J")
+    assert pd.isna(sem_nota.score_media) and sem_nota.sum_click == 7
 
 
 def test_nota_e_media_ponderada_pelo_peso_da_avaliacao() -> None:
@@ -203,7 +208,7 @@ def test_cache_e_reusado_e_expira_quando_a_fonte_muda(
 def test_tabela_por_avaliacao() -> None:
     fine = etl.normalize_assessments(OULAD_MINI)
     assert list(fine.columns) == list(etl.ASSESSMENT_COLUMNS)
-    assert len(fine) == 9  # nove entregas em studentAssessment
+    assert len(fine) == 8  # nove entregas em studentAssessment, uma sem nota ("?")
     assert not fine.duplicated(subset=["id_student", "id_assessment"]).any()
 
     bundle = build_bipartite(
@@ -253,10 +258,22 @@ def test_download_nao_rebaixa_o_que_ja_e_valido(
     assert "já presente" in capsys.readouterr().out
 
 
-def test_sha256_sem_referencia_avisa_em_vez_de_falhar(tmp_path: Path) -> None:
+def test_sha256_divergente_recusa_o_zip(tmp_path: Path) -> None:
+    """Com referência preenchida, um zip diferente é recusado antes de extrair."""
     arquivo = tmp_path / "x.zip"
     arquivo.write_bytes(b"conteudo")
-    assert download.OULAD_SHA256 == "", "quando preencher, troque este teste pela comparação"
+    assert len(download.OULAD_SHA256) == 64, "referência preenchida no download real de 18/09/2026"
+    with pytest.raises(ContractError, match="SHA-256 do zip não confere"):
+        download._check_sha256(arquivo)
+
+
+def test_sha256_sem_referencia_avisa_em_vez_de_falhar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sem referência (espelho republicado, constante zerada), avisa e segue."""
+    arquivo = tmp_path / "x.zip"
+    arquivo.write_bytes(b"conteudo")
+    monkeypatch.setattr(download, "OULAD_SHA256", "")
     with pytest.warns(RuntimeWarning, match="OULAD_SHA256 vazio"):
         digest = download._check_sha256(arquivo)
     assert digest == download.sha256_of(arquivo)

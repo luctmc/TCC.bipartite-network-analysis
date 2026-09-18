@@ -8,7 +8,7 @@
 | # | Figura | Spec | Estado | Arquivos | Onde no artigo |
 |---|---|---|---|---|---|
 | 1 | Arquitetura de componentes | — | pendente | — | abertura do cap. 3 |
-| 2 | Grafo bipartido | A-07 | pendente | — | seção de dados |
+| 2 | Grafo bipartido | A-07 | presente | `fig2-bipartido-oulad_bbb_2013j.{png,svg}`, `fig2-bipartido-oulad_module_presentation.{png,svg}` | seção de dados |
 | 3 | Distribuição de pesos: simples × alocação de recursos | A-05 | pendente | — | seção de projeção |
 | 4 | Comunidades na projeção aluno↔aluno | B-07 | pendente | — | seção de comunidades |
 | 5 | Distribuição de tamanhos de comunidade | B-07 | pendente | — | seção de comunidades |
@@ -16,6 +16,13 @@
 | 7 | Ranking de disciplinas por intermediação | C-03/C-07 | pendente | — | disciplinas críticas |
 | 8 | Desfecho por quartil de centralidade | C-06 | pendente | — | validação |
 | 9 | Capturas da interface | C-05 | pendente | — | aplicação |
+
+## Legendas geradas
+
+**`fig2-bipartido-oulad_bbb_2013j`** — Grafo bipartido de oulad_bbb_2013j: 1706 alunos, 11 disciplinas e 14180 arestas (critério score_threshold, limiar 40). Para legibilidade, a figura mostra uma amostra determinística de 300 alunos (semente 0) e todas as suas arestas; as estatísticas do texto referem-se ao grafo completo.
+
+**`fig2-bipartido-oulad_module_presentation`** — Grafo bipartido de oulad_module_presentation: 22425 alunos, 22 disciplinas e 24500 arestas (critério score_threshold, limiar 40). Para legibilidade, a figura mostra uma amostra determinística de 300 alunos (semente 0) e todas as suas arestas; as estatísticas do texto referem-se ao grafo completo.
+
 
 ## Regras
 
