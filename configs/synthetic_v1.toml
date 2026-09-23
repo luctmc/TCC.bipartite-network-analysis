@@ -51,7 +51,10 @@ seed = 42
 resolution = 1.0
 
 [community.girvan_newman]
-# Grafo pequeno: cabe folgado. Ver ADR-0006.
+# Medido em 20/09/2026: o dendrograma completo de `student_simple` (98
+# nós, 1.971 arestas) custa 34 s — 1.453× o Louvain, com Q menor. Cabe
+# nos 300 s, e as duas projeções de aluno somam ~70 s da rodada. Ver
+# ADR-0006 e a spec B-02.
 time_budget_s = 300.0
 seed = 42
 

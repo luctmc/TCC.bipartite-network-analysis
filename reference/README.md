@@ -42,12 +42,18 @@ fixtures deste repositório:
 | Arestas | 197 | **197** ✓ |
 | Louvain, Q | ≈ 0,47 | **0,4666** ✓ |
 | Louvain, comunidades | ~25 (3 grandes + isolados) | **3** (sem os isolados) |
-| Girvan-Newman | ~645× mais lento que Louvain | a medir na spec B-02 |
+| Girvan-Newman | ~645× mais lento que Louvain | **1.453×** (34,4 s contra 0,024 s), Q 0,4174 contra 0,4666 |
 
 As duas divergências são explicadas e deliberadas: o contrato remove nós
 de grau zero, e as ~22 comunidades extras do starter kit eram justamente
 esses alunos isolados, cada um virando uma comunidade de tamanho 1. Ver
 [`../data/fixtures/synthetic_v1/REFERENCE.md`](../data/fixtures/synthetic_v1/REFERENCE.md).
+
+**O custo do Girvan-Newman foi confirmado, e é maior do que o starter kit
+media** (spec B-02, 20/09/2026): 1.453× sobre 98 nós, contra os 645× que
+ele reportou sobre 120. A diferença não é contradição — o starter kit
+parava antes, e aqui o dendrograma é percorrido inteiro (97 cortes). A
+conclusão é a mesma, e agora com o Q ao lado: **mais lento e pior**.
 
 **Uma observação do starter kit que não se confirmou.** O README dele
 afirmava que a disciplina `EEE` tinha a maior intermediação. Na projeção

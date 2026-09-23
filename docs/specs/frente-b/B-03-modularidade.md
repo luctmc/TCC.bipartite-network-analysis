@@ -2,7 +2,7 @@
 
 **Frente:** B
 **Dono:** Gabriel
-**Status:** não iniciada
+**Status:** concluída (20/09/2026)
 
 ## Objetivo
 
@@ -45,14 +45,14 @@ peso, kᵢ a força do nó e m metade da soma de todos os pesos.
 
 ## Critérios de aceite
 
-- [ ] Dada a partição trivial (tudo numa comunidade), então Q = 0.
-- [ ] Dada a partição de referência de `synthetic_v1`, então o Q à mão
+- [x] Dada a partição trivial (tudo numa comunidade), então Q = 0.
+- [x] Dada a partição de referência de `synthetic_v1`, então o Q à mão
       difere do NetworkX em menos de 1e-9.
-- [ ] Dado o mesmo grafo com e sem peso, então os valores diferem e
+- [x] Dado o mesmo grafo com e sem peso, então os valores diferem e
       ambos estão em [−0,5, 1].
-- [ ] Dada uma partição com ids esparsos, então `densify` devolve
+- [x] Dada uma partição com ids esparsos, então `densify` devolve
       `0..k-1` preservando os agrupamentos, de forma determinística.
-- [ ] Dado um grafo de 100 mil arestas, então o cálculo termina em tempo
+- [x] Dado um grafo de 100 mil arestas, então o cálculo termina em tempo
       linear — **medir**, para provar que a forma fechada foi usada.
 
 ## Testes exigidos
@@ -64,9 +64,43 @@ peso, kᵢ a força do nó e m metade da soma de todos os pesos.
 
 ## Arquivos criados ou alterados
 
-- `src/edugraph/community/modularity.py`.
-- `tests/community/test_modularidade.py` (novo, ou estender
-  `test_louvain.py`).
+- `src/edugraph/community/modularity.py` — `modularity`,
+  `compare_with_networkx`, `densify` e os dois utilitários que a B-01 e
+  a B-02 usam para converter entre `membership` e lista de comunidades.
+- `tests/community/test_modularidade.py` (novo), com a forma ingênua
+  escrita no próprio teste.
+
+## Números medidos (20/09/2026)
+
+**Contra o NetworkX**, nas quatro projeções de `synthetic_v1` com a
+partição do Louvain:
+
+| projeção | Q à mão | `nx.community.modularity` | diferença |
+|---|---:|---:|---:|
+| `student_simple` | 0,4665532051 | 0,4665532051 | 0 |
+| `student_resource_allocation` | 0,4595772030 | 0,4595772030 | 3,2e-15 |
+| `discipline_simple` | 0,3143096286 | 0,3143096286 | 5,6e-17 |
+| `discipline_resource_allocation` | 0,3714629460 | 0,3714629460 | 5,6e-17 |
+
+Todas abaixo da tolerância de 1e-9. As diferenças não nulas são ruído de
+ponto flutuante — as duas implementações somam na mesma ordem de
+grandeza, mas não na mesma ordem.
+
+**Contra a forma ingênua** `O(n²)`, escrita no teste direto da fórmula:
+igualdade até 1e-9 em `tiny_v1`, para três partições (a natural, a de
+singletons e uma deliberadamente ruim) e com e sem peso.
+
+**Custo**, que é o critério de aceite que prova a forma fechada:
+
+| arestas | tempo |
+|---:|---:|
+| 25 mil | 15 ms |
+| 100 mil | 80 ms |
+| 400 mil | 334 ms |
+
+Quadruplicar as arestas quadruplica o tempo: é O(m). A forma ingênua
+sobre o grafo de 100 mil arestas percorreria 20 mil × 20 mil pares — não
+é questão de constante, é de ordem.
 
 ## Impacto no artigo
 

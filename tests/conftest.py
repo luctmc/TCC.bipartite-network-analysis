@@ -6,8 +6,13 @@ A suíte inteira aceita ``--artifacts-root`` (ou a variável de ambiente
 propriedade que sustenta o paralelismo entre as frentes::
 
     pytest                                          # sobre as fixtures
-    pytest --artifacts-root data/processed          # sobre o OULAD
-    pytest --artifacts-root data/processed --artifacts-root data/fixtures
+    pytest tests --artifacts-root data/processed    # sobre o OULAD
+    pytest tests --artifacts-root data/processed --artifacts-root data/fixtures
+
+O caminho ``tests`` explícito é necessário com ``--artifacts-root``: o
+pytest só registra as opções dos conftests dos caminhos que recebe na
+linha de comando. Sem ele, a opção ainda não existe no momento em que
+os argumentos são lidos.
 
 Testes que dependem de um dataset específico declaram isso com
 ``@pytest.mark.dataset("synthetic_v1")`` e são **pulados**, não

@@ -2,7 +2,7 @@
 
 **Frente:** B
 **Dono:** Gabriel
-**Status:** não iniciada
+**Status:** concluída (20/09/2026)
 
 ## Objetivo
 
@@ -47,15 +47,15 @@ Ver `docs/contratos/partition.md`.
 
 ## Critérios de aceite
 
-- [ ] Dado `tiny_v1`/`student_simple`, quando rodar, então S4 e S5 ficam
+- [x] Dado `tiny_v1`/`student_simple`, quando rodar, então S4 e S5 ficam
       juntos, S1/S2/S6 ficam juntos, e os dois grupos são distintos.
-- [ ] Dado `synthetic_v1`/`student_simple`, então Q ∈ [0,40, 0,55] e há
+- [x] Dado `synthetic_v1`/`student_simple`, então Q ∈ [0,40, 0,55] e há
       pelo menos 3 comunidades com 10 ou mais alunos.
-- [ ] Dada a mesma seed, duas execuções dão a **mesma** partição.
-- [ ] Os ids de comunidade são densos `0..k-1`.
-- [ ] `validate_partition` passa, inclusive no cruzamento com a projeção.
-- [ ] `params` registra `seed`, `resolution` e `implementation`.
-- [ ] A comparação entre as duas bibliotecas está registrada.
+- [x] Dada a mesma seed, duas execuções dão a **mesma** partição.
+- [x] Os ids de comunidade são densos `0..k-1`.
+- [x] `validate_partition` passa, inclusive no cruzamento com a projeção.
+- [x] `params` registra `seed`, `resolution` e `implementation`.
+- [x] A comparação entre as duas bibliotecas está registrada.
 
 ## Testes exigidos
 
@@ -69,8 +69,36 @@ Ver `docs/contratos/partition.md`.
 
 - `src/edugraph/community/louvain.py`.
 - `src/edugraph/community/cli.py` — `cmd_louvain`.
-- `src/edugraph/community/stage.py`.
+- `src/edugraph/community/stage.py` — o estágio inteiro: partições,
+  `profile.csv` e as linhas de `metrics/communities.csv`.
+- `src/edugraph/community/__init__.py` — `check_params`, o único
+  utilitário compartilhado pelos dois algoritmos da frente: parâmetro
+  desconhecido vindo do TOML vira erro, não silêncio.
 - `tests/community/test_louvain.py` — remover os `xfail`.
+- `tests/community/test_stage.py` (novo) — o estágio e o
+  `run --only community`.
+
+## Números medidos (20/09/2026, `synthetic_v1`, seed 42)
+
+| projeção | Q | k | maior | unitárias | tempo |
+|---|---:|---:|---:|---:|---:|
+| `student_simple` | 0,4666 | 3 | 39 | 0 | 0,024 s |
+| `student_resource_allocation` | 0,4596 | 3 | 38 | 0 | 0,022 s |
+| `discipline_simple` | 0,3143 | 3 | 3 | 0 | 0,001 s |
+| `discipline_resource_allocation` | 0,3715 | 3 | 3 | 0 | 0,001 s |
+
+Os quatro valores reproduzem exatamente a partição de referência da
+fixture (`data/fixtures/synthetic_v1/REFERENCE.md`), que foi gerada pela
+biblioteca em 17/09 — a implementação da frente não mudou nenhum número,
+que é o resultado esperado de uma spec que **usa** a biblioteca.
+
+**As duas bibliotecas concordam nas quatro projeções**: diferença de Q
+igual a 0, NMI = 1 e Rand ajustado = 1, partições idênticas nó a nó. Com
+a projeção carregada, `nx.community.louvain_communities` é ligeiramente
+mais rápida (0,020 s contra 0,022 s em `student_resource_allocation`); a
+diferença não muda nenhuma conclusão do artigo, e a escolha por
+`python-louvain` se mantém por ser a do starter kit e a que gerou as
+fixtures.
 
 ## Impacto no artigo
 

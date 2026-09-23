@@ -37,9 +37,9 @@ python -m edugraph validate --root data/fixtures
 pytest
 ```
 
-Esperado: os dois datasets de fixture validando, e a suíte com **61
-testes passando e 33 `xfail`**. Os `xfail` são as specs ainda abertas —
-cada um traz o id da spec que o destrava.
+Esperado: os dois datasets de fixture validando, e a suíte com **275
+testes passando e 11 `xfail`**. Os `xfail` são as specs ainda abertas da
+Frente C — cada um traz o id da spec que o destrava.
 
 Requer **Python 3.11+**. O front-end requer **Node 18+**, e é opcional:
 a análise inteira funciona sem ele.
@@ -62,15 +62,23 @@ python -m edugraph run configs/synthetic_v1.toml --dry-run
 # regenerar as fixtures (byte a byte idênticas)
 python scripts/make_fixtures.py --force
 
+# detectar comunidades, caracterizar e comparar (Frente B, pronta)
+python -m edugraph community louvain --root data/fixtures \
+    --dataset synthetic_v1 --projection student_simple
+python -m edugraph community characterize --root data/processed --root data/fixtures \
+    --dataset synthetic_v1 --partition louvain__student_simple
+python -m edugraph community compare --root data/processed --dataset synthetic_v1
+
 # ver os comandos de cada frente
 python -m edugraph data --help
 python -m edugraph community --help
 python -m edugraph centrality --help
 ```
 
-Os comandos de cálculo ainda respondem `não implementado` com o id da
-spec correspondente: **este repositório é a arquitetura e o esqueleto**,
-e as implementações são as 21 specs de [`docs/specs/`](docs/specs/README.md).
+As Frentes **A** (dados e projeções) e **B** (comunidades) estão
+implementadas. Os comandos da Frente C ainda respondem `não implementado`
+com o id da spec correspondente; as implementações são as specs de
+[`docs/specs/`](docs/specs/README.md).
 
 ## Como o projeto está organizado
 

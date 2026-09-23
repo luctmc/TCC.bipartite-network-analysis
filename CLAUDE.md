@@ -69,9 +69,9 @@ python -m edugraph api serve --root data/processed --root data/fixtures
 python -m edugraph run configs/synthetic_v1.toml --dry-run
 python scripts/make_fixtures.py
 
-pytest                                    # sobre as fixtures
-pytest --artifacts-root data/processed    # sobre o OULAD
-pytest -m "not slow"                      # o que a CI roda
+pytest                                         # sobre as fixtures
+pytest tests --artifacts-root data/processed   # sobre o OULAD
+pytest -m "not slow"                           # o que a CI roda
 
 ruff check . && ruff format --check . && mypy src/edugraph/contracts
 ```

@@ -365,12 +365,123 @@ O gerador agrega de três formas, todas separadas dos dados reais:
 
 **Onde está.** Specs A-01 e A-08.
 
+### As comunidades: o que a Frente B mediu (specs B-01 a B-07)
+
+**O método funciona, e o número que prova isso é o NMI.** Sobre
+`synthetic_v1`, o Louvain parte a projeção aluno↔aluno em três
+comunidades (39, 30 e 29 alunos) com Q = 0,4666, e essas três comunidades
+**são** as três áreas plantadas pelo gerador: NMI = 0,8188 e pureza =
+0,9490 contra o grupo plantado, apesar dos 35% de ruído. A caracterização
+mostra a mesma coisa em prosa — sistemas (DDD-EEE), exatas (AAA-BBB-CCC)
+e humanas (FFF-GGG), uma por comunidade.
+
+**A comparação entre os dois algoritmos é o resultado mais citável.** Na
+mesma projeção, o Girvan-Newman chega a três comunidades com Q = 0,4174
+em **34,4 s**, contra 0,024 s do Louvain: **1.453× mais lento, com Q
+menor**. É a mesma ordem de grandeza que o starter kit mediu (645× sobre
+120 nós) e é o dado empírico que a ADR-0006 previa. As duas partições
+concordam (NMI 0,774, Rand ajustado 0,808) — o achado é da estrutura, não
+do algoritmo, e as duas figuras lado a lado mostram isso.
+
+**Um k maior não é uma partição melhor.** Na projeção
+disciplina↔disciplina, o Girvan-Newman devolve k = 4 com Q = 0,0331, e
+**três** dessas quatro comunidades têm um nó só. Ao reportar k no texto,
+dizer quantas comunidades são unitárias.
+
+### Q implementada à mão, e por que a forma fechada (B-03)
+
+**O que dizer.** A modularidade é calculada pela forma fechada por
+comunidade, `Q = Σ_c (m_c/m − γ(K_c/2m)²)`, algebricamente idêntica à
+soma dupla da definição e de custo O(m + n). Medido: 15 ms para 25 mil
+arestas, 80 ms para 100 mil, 334 ms para 400 mil — linear. A forma
+ingênua O(n²) existe **no teste**, escrita direto da fórmula, e é contra
+ela (e contra o NetworkX) que a implementação é verificada.
+
+**Resultado.** Nas quatro projeções de `synthetic_v1`, o Q à mão e o
+`nx.community.modularity` diferem em no máximo 3,2e-15 — ruído de ponto
+flutuante, três ordens abaixo da tolerância de 1e-9.
+
+### Duas escolhas do Girvan-Newman que a banca pode perguntar (B-02)
+
+1. **A intermediação que escolhe a aresta a remover é não ponderada; o Q
+   reportado é ponderado.** Em NetworkX, peso em caminho mínimo é
+   *distância*, e nas projeções peso alto significa afinidade — usá-lo
+   inverteria o critério de remoção. Já o Q precisa ser ponderado para
+   ser comparável com o do Louvain. As duas escolhas ficam gravadas em
+   `params`, no artefato.
+2. **O orçamento é verificado a cada remoção de aresta**, não só a cada
+   corte como a ADR-0006 previa. O motivo é medido: o primeiro corte de
+   `synthetic_v1` custa 15 s dos 34 s totais, então um orçamento de 1 s
+   só seria notado 14 s depois. O comportamento observável é o da ADR —
+   `status="timeout"` com a melhor partição vista, nunca exceção.
+
+Quando o Girvan-Newman roda sobre uma **amostra** de nós, o
+`projection_id` do artefato ganha o sufixo `__sample<N>`. Sem isso, uma
+partição de 400 alunos poderia ser lida como a partição da projeção
+inteira de 1.706 — e a tabela do capítulo 3 mentiria sobre o recorte.
+
+### Pureza e NMI medem coisas diferentes, e o sintético mostra isso (B-06)
+
+**O que dizer.** A validação contra o grupo plantado reporta as duas
+medidas. Em `synthetic_v1` elas concordam (pureza 0,949, NMI 0,819). Em
+`synthetic_v2` — mesmos grupos, 70% dos alunos com uma matrícula só — a
+pureza quase não cai (0,864) e o **NMI cai pela metade (0,495)**: as
+comunidades continuam homogêneas, mas deixaram de corresponder aos
+grupos plantados, porque a partição ficou mais fina. Pureza sobe quando
+se divide mais; NMI não. Reportar só a pureza sugeriria que o método
+resiste à esparsidade, e ele não resiste.
+
+É o mesmo mecanismo que a A-08 mediu pelo lado do Q, visto por outra
+lente — e é o argumento de que o resultado negativo do OULAD não é falha
+de implementação.
+
+### O critério que separa estrutura de acaso (B-06)
+
+**O que dizer.** Todo Q reportado é comparado com o de réplicas nulas
+(spec A-08). O critério, decidido nesta spec: pelo menos **cinco**
+réplicas, z = (Q real − média do nulo) / desvio do nulo, e **z ≥ 3** para
+afirmar que há estrutura; abaixo disso o texto diz "indistinguível do
+acaso". Com menos de cinco réplicas não há veredito.
+
+Não é teste de significância estatística — a spec põe isso
+explicitamente fora de escopo. É a distância, em desvios, até a
+distribuição do acaso, e serve para separar "muito acima" de
+"indistinguível".
+
+Pelo critério, `synthetic_v1` (z = +15,4) tem estrutura e o OULAD
+`module_presentation` (Q real **abaixo** do nulo) não tem — que é o
+veredito que a A-08 já antecipava.
+
+### Frequência em excesso, não em absoluto (B-05)
+
+**O que dizer.** A disciplina que caracteriza uma comunidade é a de maior
+`frequência na comunidade − frequência na base`, não a mais numerosa. A
+disciplina obrigatória que todo mundo cursa apareceria em primeiro lugar
+em todas as comunidades e não distinguiria nenhuma. O `profile.csv`
+mostra as duas frequências lado a lado — em `synthetic_v1`, AAA aparece
+em 62,1% da comunidade de exatas e em 5,1% da de sistemas, contra 23,5%
+da base.
+
+### NMI e Rand ajustado são medidas entre partições, não modelos
+
+**O que dizer, porque a banca pode confundir.** A comparação entre duas
+partições usa informação mútua normalizada (pela média aritmética das
+entropias) e índice de Rand ajustado ao acaso, **implementados à mão**
+sobre a tabela de contingência. São contas fechadas entre dois
+agrupamentos já conhecidos: não há treino, não há rótulo de entrada e
+nenhuma biblioteca de aprendizado é importada — `tests/contract/test_no_ml.py`
+recusaria o import.
+
+O mesmo vale para o uso do grupo plantado e do desfecho histórico: eles
+entram **depois** de o algoritmo ter rodado, como categorias contra as
+quais a estrutura é comparada, nunca como entrada.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |
 |---|---|---|
 | `weight_mode` da intermediação (`none`/`inverse`/`raw`) | C-01 | **muda o ranking**; em NetworkX peso é distância, não afinidade |
-| Interpretação do resultado da validação a posteriori | B-06, C-06 | se a relação não aparecer, é achado a reportar, não fracasso |
+| Interpretação do resultado da validação a posteriori | ~~B-06~~, C-06 | **decidida para as comunidades** (ver acima); segue aberta para a centralidade |
 
 ## O que o artigo não deve afirmar
 

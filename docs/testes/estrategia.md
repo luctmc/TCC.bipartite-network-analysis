@@ -9,15 +9,22 @@ suíte que prova isso (briefing §4.4).
 ## Como rodar
 
 ```bash
-pytest                                       # sobre as fixtures (padrão)
-pytest --artifacts-root data/processed       # sobre o que a Frente A gerou
-pytest --artifacts-root data/processed --artifacts-root data/fixtures
-pytest -m "not slow"                         # o que a CI roda
-pytest tests/community                       # só a sua frente
+pytest                                            # sobre as fixtures (padrão)
+pytest tests --artifacts-root data/processed      # sobre o que a Frente A gerou
+pytest tests --artifacts-root data/processed --artifacts-root data/fixtures
+pytest -m "not slow"                              # o que a CI roda
+pytest tests/community                            # só a sua frente
 ```
 
-Alternativa por ambiente: `EDUGRAPH_ROOTS="data/processed:data/fixtures"`
-(`;` no Windows).
+**O `tests` explícito importa quando se usa `--artifacts-root`**: o
+`pytest_addoption` vive em `tests/conftest.py`, e o pytest só registra
+opções dos conftests dos caminhos passados na linha de comando. Sem o
+caminho, a opção não existe ainda e o comando falha com
+`unrecognized arguments`. (Descoberto ao rodar a suíte sobre a saída da
+Frente B, em 20/09/2026.)
+
+Alternativa por ambiente, que não tem esse detalhe:
+`EDUGRAPH_ROOTS="data/processed:data/fixtures"` (`;` no Windows).
 
 Testes que dependem de um dataset específico declaram
 `@pytest.mark.dataset("synthetic_v1")` e são **pulados**, não quebrados,
@@ -29,20 +36,27 @@ quando a raiz em uso não o contém.
 |---|---|---|---|
 | Contrato | `tests/contract/` | validadores sobre todo artefato da raiz; round-trip; escrita canônica; nenhum rótulo em `nodes.csv`; nenhum import cruzado; nenhuma dependência de ML; implementações registradas satisfazem os protocolos | `[T]` |
 | Unitário A | `tests/data/` | pesos de `tiny_v1` batem com `expected/`; manual = NetworkX até 1e-9; ETL sobre `oulad_mini`; critério e granularidade mudam o grafo | `[A]` |
-| Unitário B | `tests/community/` | Louvain recupera os 2 grupos de `tiny_v1` e ≥3 comunidades com Q em [0,40, 0,55] em `synthetic_v1`; mesma seed, mesma partição; orçamento de 0,01 s devolve `timeout`; Q à mão = NetworkX; NMI ≥ 0,8 | `[B]` |
+| Unitário B | `tests/community/` | **91 testes, todos passando.** Louvain recupera os 2 grupos de `tiny_v1` e as 3 áreas de `synthetic_v1`; mesma seed, mesma partição; orçamento estourado devolve `timeout`/`skipped` sem exceção; Q à mão = NetworkX e = forma ingênua; 100 mil arestas em 80 ms; NMI ≥ 0,8 contra o grupo plantado; a tabela comparativa é idempotente; as figuras saem determinísticas | `[B]` |
 | Unitário C | `tests/centrality/` | valores exatos em `tiny_v1`; iteração de potência = NetworkX; fallback sem exceção; empate na projeção degenerada; discordância entre métricas | `[C]` |
 | API | `tests/api/` | cada rota responde 200 sobre a fixture e valida no schema; 404 para inexistente | `[C]` |
 | Lentos | marcador `slow` | Girvan-Newman completo, OULAD inteiro. Fora da CI, sob demanda | todos |
 
 ## Estado atual da suíte
 
-**61 testes passando, 33 `xfail`, nenhuma falha.**
+**275 testes passando, 11 `xfail`, 1 `slow`, nenhuma falha**
+(20/09/2026, `pytest -m "not slow"`).
 
-Os `xfail` são as specs ainda abertas, todos com
-`raises=NotImplementedError, strict=True` e o id da spec no `reason`.
-`strict=True` importa: quando a spec fecha e o teste passa, **a CI
-quebra** — é o aviso de que o marcador pode sair. Um `xfail` que passa
-silenciosamente é um teste que ninguém vai lembrar de destravar.
+Os `xfail` restantes são as specs abertas da **Frente C** (C-01 a C-04,
+C-06); as sete da Frente B fecharam e os marcadores saíram, como manda o
+procedimento. Todos trazem `raises=NotImplementedError, strict=True` e o
+id da spec no `reason`. `strict=True` importa: quando a spec fecha e o
+teste passa, **a CI quebra** — é o aviso de que o marcador pode sair. Um
+`xfail` que passa silenciosamente é um teste que ninguém vai lembrar de
+destravar.
+
+O único teste `slow` é o Girvan-Newman completo sobre `synthetic_v1`
+(34 s): é ele que mede o custo relativo ao Louvain, o número que vai
+para o capítulo 3. Roda sob demanda, com `pytest -m slow`.
 
 ## Os quatro testes que protegem o trabalho
 

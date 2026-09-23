@@ -7,20 +7,34 @@ caracterização.
 `projections/` e `bipartite/`; lê `outcomes.csv` apenas em
 `evaluate.py`.
 
-| ID | Spec | Consome | Cumpre | Artigo |
-|---|---|---|---|---|
-| [B-01](B-01-louvain.md) | Louvain determinístico | Projection (fixture) | Partition | — |
-| [B-02](B-02-girvan-newman.md) | Girvan-Newman com orçamento | Projection (fixture) | Partition | decisão metodológica (ADR-0006) |
-| [B-03](B-03-modularidade.md) | Q implementada à mão | Projection, Partition | — | **algoritmo implementado à mão** |
-| [B-04](B-04-comparacao.md) | Comparação Louvain × GN × ponderação | Partition | `metrics/communities.csv` | **tabela principal do cap. 3** |
-| [B-05](B-05-caracterizacao.md) | Caracterização por disciplina | Partition, Bipartite (fixture) | `profile.csv` | **saída obrigatória** |
-| [B-06](B-06-validacao.md) | Validação a posteriori | Partition, Outcomes | — | tabela de validação |
-| [B-07](B-07-figuras.md) | Figuras de comunidades | Partition, Projection | — | figuras |
+| ID | Spec | Consome | Cumpre | Artigo | Status |
+|---|---|---|---|---|---|
+| [B-01](B-01-louvain.md) | Louvain determinístico | Projection (fixture) | Partition | — | concluída |
+| [B-02](B-02-girvan-newman.md) | Girvan-Newman com orçamento | Projection (fixture) | Partition | decisão metodológica (ADR-0006) | concluída |
+| [B-03](B-03-modularidade.md) | Q implementada à mão | Projection, Partition | — | **algoritmo implementado à mão** | concluída |
+| [B-04](B-04-comparacao.md) | Comparação Louvain × GN × ponderação | Partition | `metrics/communities.csv` | **tabela principal do cap. 3** | concluída |
+| [B-05](B-05-caracterizacao.md) | Caracterização por disciplina | Partition, Bipartite (fixture) | `profile.csv` | **saída obrigatória** | concluída |
+| [B-06](B-06-validacao.md) | Validação a posteriori | Partition, Outcomes | — | tabela de validação | concluída |
+| [B-07](B-07-figuras.md) | Figuras de comunidades | Partition, Projection | — | figuras | concluída |
+
+**As sete fecharam em 20/09/2026, sobre as fixtures.** Os números de cada
+uma estão na seção *Números medidos* da própria spec; o que vai para o
+texto está em
+[`docs/artigo/decisoes-metodologicas.md`](../../artigo/decisoes-metodologicas.md).
 
 ## Ordem sugerida
 
 **Onda 1:** B-01, B-03 · **Onda 2:** B-02, B-04 · **Onda 3:** B-05, B-06
 · **Onda 4:** B-07.
+
+## Os três números que a frente entrega
+
+1. **Louvain recupera as três áreas plantadas** em `synthetic_v1`:
+   Q = 0,4666, k = 3, NMI 0,8188 contra o grupo plantado.
+2. **Girvan-Newman é 1.453× mais lento e acha Q menor** (0,4174 em
+   34,4 s) na mesma projeção — o dado empírico que a ADR-0006 previa.
+3. **A comunidade de exatas concentra reprovação 9 pontos acima da
+   base**, achado obtido sem nenhum classificador (B-06).
 
 ## Por que nenhuma delas espera pela Frente A
 
@@ -33,6 +47,35 @@ Quando a Frente A entregar o OULAD (spec A-06), muda **só o argumento**:
 ```bash
 python -m edugraph community louvain --root data/processed --dataset oulad_bbb_2013j ...
 ```
+
+## Como rodar a frente inteira
+
+```bash
+python -m edugraph community louvain --root data/fixtures \
+    --dataset synthetic_v1 --projection student_simple
+python -m edugraph community girvan-newman --root data/fixtures \
+    --dataset synthetic_v1 --projection student_simple --time-budget 600
+python -m edugraph community characterize --root data/processed --root data/fixtures \
+    --dataset synthetic_v1 --partition louvain__student_simple
+python -m edugraph community compare --root data/processed --dataset synthetic_v1
+python -m edugraph community evaluate --root data/processed --root data/fixtures \
+    --dataset synthetic_v1 --partition louvain__student_simple --null-baseline
+python -m edugraph community figures --root data/processed --root data/fixtures \
+    --dataset synthetic_v1 --partition louvain__student_simple --out results/figures
+```
+
+Ou tudo de uma vez, por configuração — o estágio grava as partições, o
+`profile.csv` de cada uma e a tabela comparativa:
+
+```bash
+python -m edugraph run configs/synthetic_v1.toml --only data      # gera synthetic_dev
+python -m edugraph run configs/synthetic_v1.toml --only community --root data/processed
+```
+
+O `--only data` vem antes porque a configuração descreve o dataset
+`synthetic_dev`, que a Frente A produz; sobre as fixtures, os comandos
+avulsos acima já bastam. Medido em 20/09/2026: os dois estágios juntos
+levam ~2 min, quase tudo no Girvan-Newman das duas projeções de aluno.
 
 ## Duas coisas para não esquecer
 
