@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026)
 
 ## Objetivo
 
@@ -41,15 +41,15 @@ mesma regra do `evaluate.py` da Frente B.
 
 ## Critérios de aceite
 
-- [ ] Dada a fixture, quando avaliar, então a tabela traz a taxa de
+- [x] Dada a fixture, quando avaliar, então a tabela traz a taxa de
       reprovação das disciplinas críticas e a da base, lado a lado.
-- [ ] Dada a centralidade dos alunos, então a distribuição de desfechos
+- [x] Dada a centralidade dos alunos, então a distribuição de desfechos
       por quartil sai com uma linha por quartil.
-- [ ] Dado `synthetic_v1`, onde a intermediação das disciplinas é toda
+- [x] Dado `synthetic_v1`, onde a intermediação das disciplinas é toda
       zero (K₇), então a spec **reporta isso** em vez de produzir um
       ranking sem sentido — a validação só é informativa com
       granularidade mais fina.
-- [ ] Nenhum rótulo alimenta cálculo: `test_outcomes_isolation` verde.
+- [x] Nenhum rótulo alimenta cálculo: `test_outcomes_isolation` verde.
 
 ## Testes exigidos
 

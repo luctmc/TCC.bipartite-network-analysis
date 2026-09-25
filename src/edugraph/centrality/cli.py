@@ -72,6 +72,23 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
         "evaluate", parents=[parent], help="validação a posteriori contra outcomes.csv"
     )
     evaluate.add_argument("--dataset", required=True)
+    evaluate.add_argument(
+        "--metric", choices=["degree", "betweenness", "eigenvector"], default="betweenness"
+    )
+    evaluate.add_argument(
+        "--discipline-projection", default="discipline_simple", dest="discipline_projection"
+    )
+    evaluate.add_argument(
+        "--student-projection", default="student_simple", dest="student_projection"
+    )
+    evaluate.add_argument("--top-n", type=int, default=5, dest="top_n")
+    evaluate.add_argument("--quantiles", type=int, default=4)
+    evaluate.add_argument(
+        "--tables", type=Path, default=None, help="grava a tabela 8 nesta pasta (results/tables)"
+    )
+    evaluate.add_argument(
+        "--figures", type=Path, default=None, help="grava a figura 8 nesta pasta (results/figures)"
+    )
     evaluate.set_defaults(func=cmd_evaluate)
 
     report = actions.add_parser("report", parents=[parent], help="relatório interno consolidado")
@@ -251,7 +268,87 @@ def cmd_critical(args: argparse.Namespace) -> int:
 
 
 def cmd_evaluate(args: argparse.Namespace) -> int:
-    raise NotImplementedError("C-06: ver docs/specs/frente-c/C-06-validacao-centralidade.md")
+    """Validação a posteriori contra ``outcomes.csv`` (C-06)."""
+    from edugraph.centrality.evaluate import (
+        FAILURE_COLUMNS,
+        QUANTILE_COLUMNS,
+        evaluate,
+        figure_outcome_by_quantile,
+    )
+    from edugraph.reporting.tables import write_table
+
+    resultado = evaluate(
+        args.roots,
+        args.dataset,
+        discipline_projection=args.discipline_projection,
+        student_projection=args.student_projection,
+        metric=args.metric,
+        top_n=args.top_n,
+        quantiles=args.quantiles,
+    )
+    labels: dict[str, str] = resultado["labels"]
+
+    print(f"[centrality] validação a posteriori — {args.dataset}, métrica {args.metric}")
+    print("  não conclusão = Fail + Withdrawn; taxas sobre os alunos com vínculo no bipartido")
+    disciplinas = resultado["disciplines"]
+    if disciplinas is None:
+        print(f"  disciplinas: {resultado['discipline_note']}")
+    else:
+        print(
+            f"  {'grupo':<13} {'disciplina':<14} {'alunos':>7} "
+            f"{'não concl.':>10} {'base':>7} {'excesso':>8}"
+        )
+        for row in disciplinas:
+            nome = labels.get(row["node_id"], row["node_id"]) if row["node_id"] else ""
+            print(
+                f"  {row['group']:<13} {nome:<14} {row['n_students']:>7} "
+                f"{row['rate_not_passed']:>10.1%} {row['base_rate_not_passed']:>7.1%} "
+                f"{row['excess_not_passed']:>+8.1%}"
+            )
+
+    alunos = resultado["students"]
+    if alunos is None:
+        print(f"  alunos: {resultado['student_note']}")
+    else:
+        print(f"  {'faixa':<6} {'alunos':>7} {'score':>21} {'não concl.':>10} {'excesso':>8}")
+        for row in alunos:
+            faixa = f"{row['score_min']:.4g}–{row['score_max']:.4g}"
+            print(
+                f"  Q{row['quantile']:<5} {row['n_students']:>7} {faixa:>21} "
+                f"{row['rate_not_passed']:>10.1%} {row['excess_not_passed']:>+8.1%}"
+            )
+
+    sufixo = f"{args.dataset}-{args.metric}"
+    if args.tables is not None and disciplinas is not None:
+        linhas = [
+            {**row, "label": labels.get(row["node_id"], "") if row["node_id"] else ""}
+            for row in disciplinas
+        ]
+        path = write_table(
+            f"tab8-reprovacao-{sufixo}",
+            linhas,
+            out_dir=args.tables,
+            columns=["group", "rank", "node_id", "label", *FAILURE_COLUMNS[3:]],
+        )
+        print(f"[centrality] gravado: {path}")
+    if args.tables is not None and alunos is not None:
+        path = write_table(
+            f"tab8b-desfecho-faixa-{sufixo}",
+            alunos,
+            out_dir=args.tables,
+            columns=list(QUANTILE_COLUMNS),
+        )
+        print(f"[centrality] gravado: {path}")
+    if args.figures is not None and alunos is not None:
+        for path in figure_outcome_by_quantile(
+            alunos,
+            dataset=args.dataset,
+            projection_id=args.student_projection,
+            metric=args.metric,
+            out=args.figures,
+        ):
+            print(f"[centrality] gravado: {path}")
+    return 0
 
 
 def cmd_report(args: argparse.Namespace) -> int:

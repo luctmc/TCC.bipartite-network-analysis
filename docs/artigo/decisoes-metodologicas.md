@@ -604,12 +604,59 @@ o mesmo), grau × intermediação 0,53, intermediação × autovetor **0,21**
 difíceis ou que reprovam mais — isso é a pergunta da C-06, respondida
 a posteriori contra `outcomes.csv`, nunca premissa do ranking.
 
+### A validação da centralidade: o que a C-06 mediu
+
+**O método.** Depois de calculado o ranking — sem nenhum rótulo —, a
+taxa de **não conclusão** (`Fail` + `Withdrawn`) dos alunos de cada
+disciplina crítica é posta ao lado da taxa da base. `Withdrawn` entra
+porque, para a gestão, desistir também é não concluir; `rate_Fail`
+fica na tabela para quem quiser a reprovação estrita. Para os alunos, o
+desfecho é distribuído por faixa de centralidade (quartis por posição).
+Tudo descritivo: a spec deixa teste de significância fora de escopo.
+
+**O resultado (OULAD, `oulad_module_presentation`, 22.425 alunos, base
+37,6%, 25/09/2026).** O sinal é **fraco e depende da métrica**:
+
+| Top 5 por | Não conclusão no conjunto | Excesso sobre a base |
+|---|---|---|
+| intermediação | 38,8% | **+1,2 p.p.** |
+| grau | 40,0% | +2,4 p.p. |
+| autovetor | 41,6% | +4,0 p.p. |
+
+Individualmente, as disciplinas-ponte vão de FFF_2014B (+9,2 p.p.) a
+BBB_2014J (**−6,4 p.p.**, abaixo da base). Tabelas em
+`results/tables/tab8-reprovacao-*.csv`.
+
+**Como ler, e o que dizer na banca.** A intermediação — a métrica que a
+Introdução associa a gargalo — praticamente **não separa** as
+disciplinas críticas pelo desfecho. A spec já previa essa leitura: se a
+relação não aparece, o artigo reporta que centralidade estrutural e
+desempenho histórico são dimensões **independentes**, e isso reforça
+que a centralidade não é um proxy disfarçado da reprovação. Um gargalo
+estrutural é um ponto de passagem no currículo, não uma disciplina
+difícil.
+
+**Duas ressalvas que precisam ir para o texto.**
+
+1. **Desfecho por aluno, não por matrícula.** O ETL guarda um desfecho
+   por aluno, o da apresentação mais recente (A-02). Para 91,8% dos
+   alunos do `module_presentation`, que cursaram uma só disciplina, é o
+   daquela disciplina; para os demais, pode ser de outra.
+2. **Matrícula vinda do bipartido com `score_threshold = 40`.** Só há
+   aresta onde a nota passou do limiar: 3.674 alunos sem nenhuma nota
+   acima de 40 ficaram fora do bipartido (A-03), e são justamente os que
+   mais reprovam. A taxa **absoluta** fica subestimada; a comparação
+   crítica × base continua válida como contraste, porque as duas são
+   medidas sobre a mesma população. Uma validação sem esse viés
+   precisaria de um bipartido por matrícula (sem limiar), que a Frente A
+   pode gerar — fica como sugestão, não como bloqueio.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |
 |---|---|---|
-| ~~`weight_mode` da intermediação~~ | ~~C-01~~ | **decidido**: `none`, com `inverse` como sensibilidade (ver acima) |
-| Interpretação do resultado da validação a posteriori | ~~B-06~~, C-06 | **decidida para as comunidades** (ver acima); segue aberta para a centralidade |
+| ~~`weight_mode` da intermediação~~ | ~~C-01~~ | **decidido**: `none` em projeção esparsa, `inverse` em projeção quase completa (ver acima) |
+| ~~Interpretação do resultado da validação a posteriori~~ | ~~B-06~~, ~~C-06~~ | **decidida** para as comunidades e para a centralidade (ver acima) |
 
 ## O que o artigo não deve afirmar
 
