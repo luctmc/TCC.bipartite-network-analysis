@@ -16,7 +16,7 @@ import pytest
 
 from edugraph.centrality.betweenness import BetweennessCentrality
 from edugraph.centrality.degree import DegreeCentrality
-from edugraph.centrality.eigenvector import EigenvectorCentrality
+from edugraph.centrality.eigenvector import DEFAULT_TOL, EigenvectorCentrality
 
 
 def _expected(path: Path) -> list[dict[str, str]]:
@@ -157,7 +157,6 @@ def test_parametro_desconhecido_e_recusado(tiny_projection) -> None:
 
 
 @pytest.mark.dataset("tiny_v1")
-@pytest.mark.xfail(reason="C-02 não implementada", raises=NotImplementedError, strict=True)
 def test_autovetor_bate_com_a_forma_fechada(tiny_projection, tiny_expected: Path) -> None:
     """Triângulo ponderado DA-DB=3, DA-DC=DB-DC=1.
 
@@ -174,20 +173,24 @@ def test_autovetor_bate_com_a_forma_fechada(tiny_projection, tiny_expected: Path
 
 
 @pytest.mark.dataset("synthetic_v1")
-@pytest.mark.xfail(reason="C-02 não implementada", raises=NotImplementedError, strict=True)
 def test_iteracao_de_potencia_bate_com_o_networkx(synthetic_projection) -> None:
     """A comparação que o artigo cita (ADR-0010)."""
     import networkx as nx
 
     projection = synthetic_projection("student_simple")
     manual = EigenvectorCentrality().compute(projection, implementation="manual")
-    referencia = nx.eigenvector_centrality(projection.graph, weight="weight", max_iter=1000)
+    # Mesmo critério de parada dos dois lados. Com o tol padrão do
+    # NetworkX (1e-6), é a referência que fica a 7e-6 do autovetor exato
+    # — a manual, com 1e-8, fica a 8e-8 — e a comparação falharia por
+    # imprecisão da biblioteca, não da implementação à mão.
+    referencia = nx.eigenvector_centrality(
+        projection.graph, weight="weight", max_iter=1000, tol=DEFAULT_TOL
+    )
 
     for node, score in manual.scores.items():
         assert score == pytest.approx(abs(referencia[node]), abs=1e-6)
 
 
-@pytest.mark.xfail(reason="C-02 não implementada", raises=NotImplementedError, strict=True)
 def test_nao_convergencia_vira_fallback_e_nao_excecao() -> None:
     """O contrato exige ``converged=False`` e fallback, nunca exceção.
 
@@ -213,6 +216,95 @@ def test_nao_convergencia_vira_fallback_e_nao_excecao() -> None:
 
     assert set(result.scores) == set(graph.nodes)
     assert all(score >= 0 for score in result.scores.values())
+
+
+def _bundle(graph, kind: str = "student"):
+    from edugraph.contracts.types import BipartiteSpec, ProjectionBundle, ProjectionSpec
+
+    for node in graph:
+        graph.nodes[node]["kind"] = kind
+    return ProjectionBundle(
+        graph=graph,
+        spec=ProjectionSpec(side=kind, weighting="simple"),
+        source=BipartiteSpec(dataset="t"),
+    )
+
+
+def test_iteracao_de_potencia_acha_autovetor_conhecido() -> None:
+    """[[2,1],[1,2]] tem autovalores 3 e 1; o principal é (1,1)/√2.
+
+    E [[2,1],[1,0]] — não simétrico no vetor inicial — converge para
+    ((1+√2), 1) normalizado, autovalor 1+√2.
+    """
+    import numpy as np
+
+    from edugraph.centrality.eigenvector import power_iteration
+
+    vetor, convergiu, _ = power_iteration(np.array([[2.0, 1.0], [1.0, 2.0]]))
+    assert convergiu is True
+    assert vetor == pytest.approx(np.array([1.0, 1.0]) / np.sqrt(2), abs=1e-12)
+
+    vetor, convergiu, n_iter = power_iteration(np.array([[2.0, 1.0], [1.0, 0.0]]))
+    esperado = np.array([1.0 + np.sqrt(2.0), 1.0])
+    assert convergiu is True and n_iter > 1
+    assert vetor == pytest.approx(esperado / np.linalg.norm(esperado), abs=1e-7)
+
+
+def test_iteracao_sem_deslocamento_oscila_em_grafo_bipartido() -> None:
+    """Estrela de 3 folhas: A tem ±√3, e a iteração pura não converge.
+
+    É o motivo de ``compute`` iterar sobre A + I (ver o módulo).
+    """
+    import networkx as nx
+
+    from edugraph.centrality.eigenvector import power_iteration
+
+    estrela = nx.to_numpy_array(nx.star_graph(3))
+    _, convergiu, _ = power_iteration(estrela, max_iter=200)
+    assert convergiu is False
+
+    result = EigenvectorCentrality().compute(_bundle(nx.star_graph(3)))
+    assert result.converged is True
+    assert result.top(1)[0][0] == "0"
+
+
+def test_estouro_de_iteracoes_registra_o_fallback() -> None:
+    """Com ``max_iter=1`` num caminho, não converge: fallback e ``params``."""
+    import networkx as nx
+
+    grafo = nx.path_graph(6)
+    result = EigenvectorCentrality().compute(_bundle(nx.relabel_nodes(grafo, str)), max_iter=1)
+
+    assert result.converged is False
+    assert result.params["fallback"] == "spectral"
+    referencia = nx.eigenvector_centrality_numpy(grafo)
+    for node, score in referencia.items():
+        assert result.scores[str(node)] == pytest.approx(abs(score), abs=1e-9)
+
+
+@pytest.mark.dataset("tiny_v1")
+def test_implementacao_networkx_bate_com_a_manual(tiny_projection) -> None:
+    projection = tiny_projection("student_simple")
+    manual = EigenvectorCentrality().compute(projection, implementation="manual")
+    referencia = EigenvectorCentrality().compute(projection, implementation="networkx")
+
+    assert referencia.params["implementation"] == "networkx"
+    for node, score in manual.scores.items():
+        assert score == pytest.approx(referencia.scores[node], abs=1e-6)
+
+
+def test_validador_recusa_autovetor_com_componente_negativa() -> None:
+    from edugraph.contracts.errors import ContractError
+    from edugraph.contracts.types import CentralityResult
+    from edugraph.contracts.validate import validate_centrality
+
+    ruim = CentralityResult(
+        projection_id="student_simple",
+        metric="eigenvector",
+        scores={"S1": 0.8, "S2": -0.6},
+    )
+    with pytest.raises(ContractError, match="negativa"):
+        validate_centrality(ruim)
 
 
 # ---------------------------------------------------------------------

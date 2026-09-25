@@ -516,6 +516,38 @@ o valor é estimativa. Com `k` maior ou igual ao número de nós, o cálculo
 é exato e o artefato diz isso — é o caso das 22 disciplinas do OULAD,
 mesmo com o `k = 500` da configuração.
 
+### Autovetor à mão: iteração sobre A + I (C-02)
+
+**O que dizer.** A centralidade de autovetor é calculada por iteração de
+potência implementada à mão, a partir do vetor uniforme `1/n` (não
+aleatório, para ser reproduzível), com normalização L2 a cada passo e
+parada quando a variação L1 entre iterações fica abaixo de `tol · n`,
+com `tol = 1e-8`.
+
+**A escolha não-óbvia: iterar sobre `A + I`, não sobre `A`.** Somar a
+identidade não muda os autovetores — só desloca os autovalores em uma
+unidade —, então o resultado é o mesmo autovetor principal. O que muda é
+a convergência: num grafo bipartido, `A` tem `−λ` com o mesmo módulo de
+`λ`, e a iteração pura oscila entre dois vetores sem nunca parar. O teste
+`test_iteracao_sem_deslocamento_oscila_em_grafo_bipartido` mostra isso
+numa estrela. É o mesmo recurso que o NetworkX usa internamente, e o
+artefato registra `params.shift = 1.0`.
+
+**Validação contra o NetworkX (medida em 25/09/2026).** Em `tiny_v1`, o
+resultado bate com a forma fechada `λ = (3+√17)/2` com erro abaixo de
+1e-8. Em `synthetic_v1`/`student_simple`, a implementação à mão fica a
+7,7e-8 do autovetor exato (decomposição espectral), e o NetworkX com a
+tolerância padrão dele (1e-6) fica a 7,0e-6: **a comparação só é justa
+com o mesmo critério de parada dos dois lados**, e com ele as duas batem
+abaixo de 1e-6.
+
+**Convergência no OULAD.** Nenhuma projeção precisou do fallback:
+43 iterações em `oulad_module_presentation`/`discipline_simple`, 45 em
+`discipline_resource_allocation` e 7 na projeção aluno↔aluno de
+`oulad_vle_bbb_2013j` (1.870 alunos). O fallback por decomposição
+espectral existe e é testado, mas, se aparecer numa rodada, vira nota de
+rodapé da tabela.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |

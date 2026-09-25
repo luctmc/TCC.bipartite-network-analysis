@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026)
 
 ## Objetivo
 
@@ -47,18 +47,18 @@ está ligado a nós centrais: `x = (1/λ) A x`, resolvido iterando
 
 ## Critérios de aceite
 
-- [ ] Dado `tiny_v1`/`discipline_simple` (triângulo ponderado DA-DB = 3,
+- [x] Dado `tiny_v1`/`discipline_simple` (triângulo ponderado DA-DB = 3,
       DA-DC = DB-DC = 1), então os scores batem com a **forma fechada**:
       λ = (3+√17)/2, DA = DB ≈ 0,6571923, DC ≈ 0,3690482, com erro
       < 1e-8. É verificação de verdade — o esperado sai da álgebra, não
       da biblioteca.
-- [ ] Dado `synthetic_v1`/`student_simple`, os scores batem com o
+- [x] Dado `synthetic_v1`/`student_simple`, os scores batem com o
       NetworkX com erro < 1e-6.
-- [ ] Dado um grafo desconexo e `max_iter=5`, então devolve scores para
+- [x] Dado um grafo desconexo e `max_iter=5`, então devolve scores para
       **todos** os nós, todos não negativos, **sem levantar exceção**.
-- [ ] `converged` reflete o que aconteceu, e o fallback fica registrado
+- [x] `converged` reflete o que aconteceu, e o fallback fica registrado
       em `params`.
-- [ ] `validate_centrality` recusa autovetor com componente negativa.
+- [x] `validate_centrality` recusa autovetor com componente negativa.
 
 ## Testes exigidos
 
