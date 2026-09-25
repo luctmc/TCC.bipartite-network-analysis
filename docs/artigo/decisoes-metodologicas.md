@@ -548,6 +548,48 @@ abaixo de 1e-6.
 espectral existe e é testado, mas, se aparecer numa rodada, vira nota de
 rodapé da tabela.
 
+### Disciplinas críticas: o que a C-03 mediu
+
+**O resultado (OULAD, `oulad_module_presentation`/`discipline_simple`,
+22 disciplinas, 25/09/2026).** As três métricas apontam disciplinas
+diferentes, e é isso que o artigo discute:
+
+| Métrica | Topo 3 | O que mede |
+|---|---|---|
+| grau | DDD_2014J, FFF_2014J, CCC_2014B | com quantas disciplinas a disciplina compartilha alunos |
+| intermediação | FFF_2014B, DDD_2014J, FFF_2014J | por onde passam os caminhos entre partes do currículo |
+| autovetor | CCC_2014J, CCC_2014B, DDD_2013J | ligação com disciplinas que também são centrais |
+
+Tabelas completas em `results/tables/tab6-criticas-*.csv` (ranking) e
+`tab7-discordancia-*.csv` (conjuntos e correlações).
+
+**A discordância é o achado.** No top 5, **FFF_2014B, FFF_2013J e
+BBB_2014J aparecem só na intermediação**: são pontes sem ser populares —
+o perfil de gargalo estrutural que a Introdução descreve. No outro
+extremo, EEE_2013J e EEE_2014B aparecem só no autovetor, puxadas pela
+vizinhança com CCC, o módulo com mais matrículas. Nenhuma disciplina está
+no top 5 das três métricas. Spearman: grau × autovetor 0,84 (medem quase
+o mesmo), grau × intermediação 0,53, intermediação × autovetor **0,21**
+— ser ponte e estar num bloco central são dimensões diferentes.
+
+**Duas ressalvas que a banca pode levantar.**
+
+1. **Na alocação de recursos, grau e intermediação não mudam.** A
+   projeção `discipline_resource_allocation` tem as mesmas 93 arestas
+   que a `discipline_simple`; como a intermediação ignora o peso (C-01)
+   e o grau é a contagem de vizinhos, só o autovetor difere entre as
+   duas. Isso é consequência da decisão da C-01, não coincidência.
+2. **Posição sob empate.** A chave de `centrality_top.csv` inclui a
+   posição, então empates são desfeitos por `node_id`: DDD_2014J e
+   FFF_2014J têm o mesmo grau (0,667) e ocupam as posições 1 e 2 por
+   ordem alfabética. A tabela precisa ser lida com o score ao lado. Em
+   `synthetic_v1` (K₇), a tabela inteira é ordem alfabética e o Spearman
+   é **indefinido** (`nan`), não zero: todos os nós empatam.
+
+**O que não afirmar.** Que as disciplinas de alta intermediação são
+difíceis ou que reprovam mais — isso é a pergunta da C-06, respondida
+a posteriori contra `outcomes.csv`, nunca premissa do ranking.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |

@@ -1,0 +1,8 @@
+dataset,projection_id,comparison,top_n,value
+oulad_module_presentation,discipline_simple,only_degree,5,
+oulad_module_presentation,discipline_simple,only_betweenness,5,BBB_2014J; FFF_2013J; FFF_2014B
+oulad_module_presentation,discipline_simple,only_eigenvector,5,EEE_2013J; EEE_2014B
+oulad_module_presentation,discipline_simple,all_three,5,
+oulad_module_presentation,discipline_simple,spearman_degree_betweenness,5,0.5320603030645603
+oulad_module_presentation,discipline_simple,spearman_degree_eigenvector,5,0.8382993778572569
+oulad_module_presentation,discipline_simple,spearman_betweenness_eigenvector,5,0.2055916489777375

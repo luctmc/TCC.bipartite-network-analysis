@@ -55,8 +55,17 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
         "critical", parents=[parent], help="disciplinas críticas (metrics/centrality_top.csv)"
     )
     critical.add_argument("--dataset", required=True)
+    critical.add_argument(
+        "--projection", default=None, help="restringe a uma projeção discipline_*"
+    )
     critical.add_argument("--top-n", type=int, default=10, dest="top_n")
     critical.add_argument("--out", type=Path, default=Path("data/processed"))
+    critical.add_argument(
+        "--tables",
+        type=Path,
+        default=None,
+        help="grava as tabelas 6 e 7 do artigo nesta pasta (ex.: results/tables)",
+    )
     critical.set_defaults(func=cmd_critical)
 
     evaluate = actions.add_parser(
@@ -161,7 +170,84 @@ def cmd_compute(args: argparse.Namespace) -> int:
 
 
 def cmd_critical(args: argparse.Namespace) -> int:
-    raise NotImplementedError("C-03: ver docs/specs/frente-c/C-03-disciplinas-criticas.md")
+    """Disciplinas críticas, discordância e correlação entre métricas (C-03)."""
+    import math
+
+    from edugraph.centrality.critical_disciplines import (
+        METRICS_COLUMNS,
+        is_discipline_projection,
+        labels_of,
+        load_results,
+        rank_disciplines,
+        write_metrics,
+    )
+    from edugraph.centrality.disagreement import DISAGREEMENT_COLUMNS, disagreement_rows
+    from edugraph.contracts import io
+    from edugraph.contracts.errors import ArtifactNotFoundError
+    from edugraph.contracts.paths import as_roots
+    from edugraph.reporting.tables import write_table
+
+    roots = as_roots(args.roots)
+    candidates = [args.projection] if args.projection else roots.centralities(args.dataset)
+    projection_ids = [p for p in candidates if is_discipline_projection(p)]
+    if not projection_ids:
+        raise ArtifactNotFoundError(
+            f"nenhuma projeção discipline_* com centralidade em {args.dataset!r} sob "
+            f"{', '.join(str(r) for r in roots)}; rode `centrality all` antes"
+        )
+
+    rows: list[dict[str, Any]] = []
+    for projection_id in projection_ids:
+        results = load_results(roots, args.dataset, projection_id)
+        if not results:
+            print(f"[centrality] {projection_id}: sem centralidades calculadas, pulando")
+            continue
+        labels = labels_of(io.load_projection(roots, args.dataset, projection_id))
+        linhas = rank_disciplines(results, top_n=args.top_n, dataset=args.dataset, labels=labels)
+        rows.extend(linhas)
+
+        print(f"[centrality] disciplinas críticas — {args.dataset}/{projection_id}")
+        for metric in dict.fromkeys(row["metric"] for row in linhas):
+            topo = [r for r in linhas if r["metric"] == metric]
+            print(
+                f"  {metric:<12} " + ", ".join(f"{r['label']} {r['score']:.4f}" for r in topo[:5])
+            )
+
+        if all(m in results for m in ("degree", "betweenness", "eigenvector")):
+            discordancia = disagreement_rows(
+                results, top_n=min(args.top_n, 5), dataset=args.dataset, labels=labels
+            )
+            for linha in discordancia:
+                valor = linha["value"]
+                if isinstance(valor, float):
+                    valor = (
+                        "indefinida (ranking todo empatado)"
+                        if math.isnan(valor)
+                        else f"{valor:.3f}"
+                    )
+                print(f"  {linha['comparison']:<34} {valor or '—'}")
+            if args.tables is not None:
+                tabela = write_table(
+                    f"tab7-discordancia-{args.dataset}-{projection_id}",
+                    discordancia,
+                    out_dir=args.tables,
+                    columns=list(DISAGREEMENT_COLUMNS),
+                )
+                print(f"[centrality] gravado: {tabela}")
+
+        if args.tables is not None:
+            tabela = write_table(
+                f"tab6-criticas-{args.dataset}-{projection_id}",
+                linhas,
+                out_dir=args.tables,
+                columns=list(METRICS_COLUMNS),
+            )
+            print(f"[centrality] gravado: {tabela}")
+
+    if not rows:
+        return 1
+    print(f"[centrality] gravado: {write_metrics(rows, args.out, args.dataset)}")
+    return 0
 
 
 def cmd_evaluate(args: argparse.Namespace) -> int:

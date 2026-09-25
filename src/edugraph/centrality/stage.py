@@ -7,6 +7,10 @@ de ``[centrality] metrics`` sobre as projeções de ``[[projections]]`` e
 grava um ``CentralityResult`` por (projeção, métrica). Os parâmetros de
 cada métrica vêm do bloco ``[centrality.<métrica>]`` do TOML.
 
+Sobre as projeções ``discipline_*`` grava também as linhas de
+``metrics/centrality_top.csv`` — as disciplinas críticas (spec C-03),
+com ``[centrality] top_n`` posições por métrica.
+
 A CLI (``centrality compute`` e ``centrality all``) usa as mesmas funções
 daqui, para que o artefato não dependa de qual porta de entrada o gerou.
 """
@@ -18,6 +22,12 @@ from typing import Any
 
 # Registro das implementações da frente (ver nota em data/stage.py).
 from edugraph.centrality import betweenness, degree, eigenvector  # noqa: F401
+from edugraph.centrality.critical_disciplines import (
+    is_discipline_projection,
+    labels_of,
+    rank_disciplines,
+    write_metrics,
+)
 from edugraph.contracts import io
 from edugraph.contracts.errors import ContractError
 from edugraph.contracts.paths import ArtifactRoots, as_roots, centrality_dir
@@ -27,6 +37,10 @@ from edugraph.contracts.validate import validate_centrality
 
 #: As três métricas que a Introdução cita, na ordem das tabelas.
 DEFAULT_METRICS: tuple[str, ...] = ("degree", "betweenness", "eigenvector")
+
+#: Posições por métrica em ``metrics/centrality_top.csv``. Com 7 ou 22
+#: disciplinas, 10 cobre o topo que o artigo discute.
+DEFAULT_TOP_N = 10
 
 
 def metrics_of(config: RunConfig) -> list[str]:
@@ -108,7 +122,29 @@ class CentralityStage:
         metrics = metrics_of(config)
         params = {metric: params_of(config, metric) for metric in metrics}
         results = compute_all(resolved, out, dataset, projection_ids, metrics, params)
-        return sorted({centrality_dir(out, dataset, r.projection_id) for r in results})
+        written = sorted({centrality_dir(out, dataset, r.projection_id) for r in results})
+
+        top_n = int(config.centrality.get("top_n", DEFAULT_TOP_N))
+        rows = critical_rows(resolved, dataset, results, top_n)
+        if rows:
+            written.append(write_metrics(rows, out, dataset))
+        return written
+
+
+def critical_rows(
+    roots: ArtifactRoots, dataset: str, results: list[CentralityResult], top_n: int
+) -> list[dict[str, Any]]:
+    """Linhas de ``centrality_top.csv`` das projeções de disciplina."""
+    by_projection: dict[str, dict[str, CentralityResult]] = {}
+    for result in results:
+        if is_discipline_projection(result.projection_id):
+            by_projection.setdefault(result.projection_id, {})[result.metric] = result
+
+    rows: list[dict[str, Any]] = []
+    for projection_id, by_metric in sorted(by_projection.items()):
+        labels = labels_of(io.load_projection(roots, dataset, projection_id))
+        rows.extend(rank_disciplines(by_metric, top_n=top_n, dataset=dataset, labels=labels))
+    return rows
 
 
 STAGES.register("centrality", CentralityStage())
