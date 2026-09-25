@@ -352,4 +352,10 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
 
 
 def cmd_report(args: argparse.Namespace) -> int:
-    raise NotImplementedError("C-07: ver docs/specs/frente-c/C-07-relatorio-interno.md")
+    """Relatório interno consolidado, em Markdown (C-07)."""
+    from edugraph.centrality.report import build_internal_report
+    from edugraph.contracts.paths import as_roots
+
+    path = build_internal_report(args.dataset, list(as_roots(args.roots)), args.out)
+    print(f"[centrality] relatório interno gravado: {path}")
+    return 0
