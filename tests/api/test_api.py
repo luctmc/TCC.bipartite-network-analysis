@@ -123,17 +123,19 @@ def test_dataset_inexistente_da_404(client: TestClient) -> None:
 
 @pytest.mark.dataset("synthetic_v1")
 def test_projecao_acima_do_limite_corta_e_declara_o_corte(client: TestClient) -> None:
-    """Fica o subconjunto de maior peso **e** o corpo diz que cortou."""
+    """``top_weight``: fica o subconjunto de maior peso **e** o corpo diz que cortou."""
     inteira = client.get("/datasets/synthetic_v1/projections/student_simple").json()
     total = inteira["truncation"]["n_edges_total"]
     assert inteira["truncation"]["truncated"] is False
     assert len(inteira["edges"]) == total
 
     cortada = client.get(
-        "/datasets/synthetic_v1/projections/student_simple", params={"max_edges": 10}
+        "/datasets/synthetic_v1/projections/student_simple",
+        params={"max_edges": 10, "cut": "top_weight"},
     ).json()
     corte = cortada["truncation"]
     assert corte["truncated"] is True
+    assert corte["criterion"] == "top_weight"
     assert corte["n_edges_total"] == total
     assert corte["n_edges_returned"] == len(cortada["edges"]) == 10
     assert len(cortada["nodes"]) == len(inteira["nodes"])  # nós nunca são cortados
@@ -141,6 +143,44 @@ def test_projecao_acima_do_limite_corta_e_declara_o_corte(client: TestClient) ->
     menor_mantido = min(e["weight"] for e in cortada["edges"])
     descartados = [e for e in inteira["edges"] if e not in cortada["edges"]]
     assert all(e["weight"] <= menor_mantido for e in descartados)
+
+
+@pytest.mark.dataset("synthetic_v1")
+def test_corte_padrao_e_o_esqueleto_e_nao_deixa_no_solto(client: TestClient) -> None:
+    """``backbone``: as k arestas mais fortes de cada nó, com o maior k que cabe.
+
+    Todo aluno que tinha vizinho continua com pelo menos um — o corte por
+    peso global deixaria a maioria solta.
+    """
+    url = "/datasets/synthetic_v1/projections/student_simple"
+    inteira = client.get(url).json()
+    cortada = client.get(url, params={"max_edges": 150}).json()
+    corte = cortada["truncation"]
+
+    assert corte["truncated"] is True
+    assert corte["criterion"] == "backbone"
+    assert corte["k_per_node"] >= 1
+    assert corte["n_edges_returned"] == len(cortada["edges"]) <= 150
+
+    com_vizinho = {n for e in inteira["edges"] for n in (e["source"], e["target"])}
+    tocados = {n for e in cortada["edges"] for n in (e["source"], e["target"])}
+    assert tocados == com_vizinho
+
+
+def test_esqueleto_fica_com_a_aresta_mais_forte_de_cada_no() -> None:
+    """Estrela ponderada + uma aresta fraca entre folhas: com k = 1, a folha
+    fica com a aresta forte para o centro, não com a fraca."""
+    from edugraph.api.routes import _backbone
+
+    arestas = [
+        ("A", "B", 5.0),
+        ("A", "C", 4.0),
+        ("A", "D", 3.0),
+        ("B", "C", 1.0),
+    ]
+    mantidas, k = _backbone(arestas, max_edges=3)
+    assert k == 1
+    assert sorted(mantidas) == [("A", "B", 5.0), ("A", "C", 4.0), ("A", "D", 3.0)]
 
 
 @pytest.mark.dataset("synthetic_v1")

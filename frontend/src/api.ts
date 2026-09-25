@@ -4,9 +4,9 @@
  * A API é somente leitura (ADR-0004): não há POST, não há cálculo sob
  * demanda. Todo endpoint aqui é um GET sobre artefato já em disco.
  *
- * Rotas de dados ainda respondem 501 enquanto a spec C-04 não fecha —
- * `ApiError.notImplemented` distingue esse caso de um erro de verdade,
- * para que a interface possa dizer "aguardando C-04" em vez de "falhou".
+ * `ApiError.notFound` distingue o artefato ausente (404, a mensagem cita
+ * as raízes consultadas) de um erro de verdade; `notImplemented` (501)
+ * sobra para rotas cuja spec ainda esteja aberta.
  */
 
 import type {
@@ -86,9 +86,31 @@ export const api = {
       `/datasets/${encodeURIComponent(dataset)}/communities/${encodeURIComponent(artifactId)}`,
     ),
 
-  centrality: (dataset: string, projectionId: string, metric: CentralityMetric) =>
+  /** Ranking de uma métrica. `top` limita às N primeiras posições. */
+  centrality: (dataset: string, projectionId: string, metric: CentralityMetric, top?: number) =>
     get<CentralityResponse>(
       `/datasets/${encodeURIComponent(dataset)}/centrality/` +
-        `${encodeURIComponent(projectionId)}/${metric}`,
+        `${encodeURIComponent(projectionId)}/${metric}${top ? `?top=${top}` : ""}`,
     ),
+
+  /**
+   * Quais das três métricas existem em disco para a projeção. Consulta
+   * cada uma com `top=1` (leitura barata) para que o grafo, que é a
+   * requisição cara, seja pedido uma vez só e com as métricas certas.
+   */
+  availableMetrics: async (
+    dataset: string,
+    projectionId: string,
+    metrics: CentralityMetric[],
+  ): Promise<CentralityMetric[]> => {
+    const found = await Promise.all(
+      metrics.map((metric) =>
+        api
+          .centrality(dataset, projectionId, metric, 1)
+          .then(() => metric)
+          .catch(() => null),
+      ),
+    );
+    return found.filter((metric): metric is CentralityMetric => metric !== null);
+  },
 };

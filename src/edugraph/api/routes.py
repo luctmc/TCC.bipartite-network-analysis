@@ -13,9 +13,10 @@ engano mais comum em desenvolvimento é esquecer o ``--root``.
 from __future__ import annotations
 
 import heapq
-from typing import Annotated, Any, get_args
+from typing import Annotated, Any, Literal, get_args
 
 import networkx as nx
+import numpy as np
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from edugraph import __version__
@@ -99,27 +100,86 @@ DEFAULT_MAX_EDGES = 5000
 HARD_MAX_EDGES = 50_000
 
 
-def _graph_payload(
-    graph: nx.Graph[Any], max_edges: int
-) -> tuple[list[NodeOut], list[EdgeOut], TruncationInfo]:
-    """Nós, arestas (cortadas pelo peso) e a declaração do corte.
+EdgeCut = Literal["backbone", "top_weight"]
 
-    O corte fica com as arestas de maior peso — as ligações mais fortes
-    são as que desenham a estrutura — e desempata pelo par de nós, para
-    que a mesma requisição devolva sempre o mesmo subconjunto.
+
+def _top_weight(
+    edges: list[tuple[str, str, float]], max_edges: int
+) -> list[tuple[str, str, float]]:
+    """As ``max_edges`` arestas de maior peso do grafo inteiro."""
+    return heapq.nsmallest(max_edges, edges, key=lambda e: (-e[2], e[0], e[1]))
+
+
+def _backbone(
+    edges: list[tuple[str, str, float]], max_edges: int
+) -> tuple[list[tuple[str, str, float]], int]:
+    """Esqueleto: as ``k`` arestas mais fortes de **cada nó**, com o maior ``k`` que cabe.
+
+    O corte global por peso concentra as arestas em poucos nós muito
+    ligados e deixa o resto solto — no AVA do OULAD, as 5.000 mais pesadas
+    tocam uma fração pequena dos 1.870 alunos. Aqui cada aresta recebe o
+    posto dela na vizinhança de cada ponta (0 = a mais forte daquele nó),
+    fica com o menor dos dois, e entram todas as de posto menor que ``k``.
+    Assim todo nó que tinha vizinho continua com pelo menos um.
+
+    Se nem ``k = 1`` couber, fica com as de posto 0 de maior peso.
+    Desempates por id: a mesma requisição devolve o mesmo subconjunto.
+    """
+    ids = sorted({n for u, v, _ in edges for n in (u, v)})
+    index = {node: i for i, node in enumerate(ids)}
+    u = np.array([index[e[0]] for e in edges], dtype=np.int64)
+    v = np.array([index[e[1]] for e in edges], dtype=np.int64)
+    w = np.array([e[2] for e in edges], dtype=float)
+
+    # Cada aresta aparece duas vezes, uma por ponta; ordena por (nó, −peso, vizinho).
+    node = np.concatenate([u, v])
+    other = np.concatenate([v, u])
+    weight = np.concatenate([w, w])
+    edge_id = np.concatenate([np.arange(len(edges)), np.arange(len(edges))])
+    order = np.lexsort((other, -weight, node))
+    sorted_node = node[order]
+    starts = np.r_[0, np.flatnonzero(np.diff(sorted_node)) + 1]
+    group_start = np.repeat(starts, np.diff(np.r_[starts, len(sorted_node)]))
+    rank = np.empty(len(order), dtype=np.int64)
+    rank[order] = np.arange(len(order)) - group_start
+
+    edge_rank = np.full(len(edges), np.iinfo(np.int64).max)
+    np.minimum.at(edge_rank, edge_id, rank)
+
+    counts = np.bincount(edge_rank)
+    cumulative = np.cumsum(counts)  # cumulative[k-1] = arestas com posto < k
+    fits = np.flatnonzero(cumulative <= max_edges)
+    if fits.size == 0:
+        firsts = [edges[i] for i in np.flatnonzero(edge_rank == 0)]
+        return _top_weight(firsts, max_edges), 1
+    k = int(fits[-1]) + 1
+    return [edges[i] for i in np.flatnonzero(edge_rank < k)], k
+
+
+def _graph_payload(
+    graph: nx.Graph[Any], max_edges: int, cut: EdgeCut = "backbone"
+) -> tuple[list[NodeOut], list[EdgeOut], TruncationInfo]:
+    """Nós, arestas (cortadas se passarem do limite) e a declaração do corte.
+
+    Os nós nunca são cortados: são eles que carregam comunidade e
+    centralidade. Ver :func:`_backbone` e :func:`_top_weight`.
     """
     nodes = [
         NodeOut(id=str(n), kind=data["kind"], label=str(data.get("label", n)))
         for n, data in sorted(graph.nodes(data=True), key=lambda item: str(item[0]))
     ]
     edges: list[tuple[str, str, float]] = []
-    for u, v, data in graph.edges(data=True):
-        a, b = sorted((str(u), str(v)))
+    for a_node, b_node, data in graph.edges(data=True):
+        a, b = sorted((str(a_node), str(b_node)))
         edges.append((a, b, float(data["weight"])))
     total = len(edges)
     truncated = total > max_edges
+    k: int | None = None
     if truncated:
-        edges = heapq.nsmallest(max_edges, edges, key=lambda e: (-e[2], e[0], e[1]))
+        if cut == "backbone":
+            edges, k = _backbone(edges, max_edges)
+        else:
+            edges = _top_weight(edges, max_edges)
     edges.sort(key=lambda e: (e[0], e[1]))
 
     info = TruncationInfo(
@@ -128,8 +188,21 @@ def _graph_payload(
         n_nodes=len(nodes),
         n_edges_total=total,
         n_edges_returned=len(edges),
+        criterion=cut,
+        k_per_node=k,
     )
-    return nodes, [EdgeOut(source=u, target=v, weight=w) for u, v, w in edges], info
+    return nodes, [EdgeOut(source=a, target=b, weight=w) for a, b, w in edges], info
+
+
+Cut = Annotated[
+    EdgeCut,
+    Query(
+        description=(
+            "Como cortar acima de max_edges: backbone (as k mais fortes de cada nó) "
+            "ou top_weight (as mais pesadas do grafo inteiro)"
+        )
+    ),
+]
 
 
 def _split_metrics(metrics: list[str] | None) -> list[str]:
@@ -167,7 +240,7 @@ MaxEdges = Annotated[
     Query(
         ge=1,
         le=HARD_MAX_EDGES,
-        description="Arestas por resposta; acima disso, ficam as de maior peso",
+        description="Arestas por resposta; acima disso, a resposta é cortada (ver cut)",
     ),
 ]
 
@@ -188,6 +261,7 @@ def get_projection(
         list[str] | None, Query(description="Centralidades a embutir, separadas por vírgula")
     ] = None,
     max_edges: MaxEdges = DEFAULT_MAX_EDGES,
+    cut: Cut = "backbone",
 ) -> GraphResponse:
     """Grafo da projeção, opcionalmente com comunidade e centralidade.
 
@@ -198,7 +272,7 @@ def get_projection(
     roots = _roots(request)
     names = _split_metrics(metrics)
     projection = io.load_projection(roots, dataset, projection_id)
-    nodes, edges, truncation = _graph_payload(projection.graph, max_edges)
+    nodes, edges, truncation = _graph_payload(projection.graph, max_edges, cut)
 
     community = None
     if partition:
@@ -229,7 +303,10 @@ def get_projection(
     tags=["grafo"],
 )
 def get_bipartite(
-    dataset: str, request: Request, max_edges: MaxEdges = DEFAULT_MAX_EDGES
+    dataset: str,
+    request: Request,
+    max_edges: MaxEdges = DEFAULT_MAX_EDGES,
+    cut: Cut = "backbone",
 ) -> GraphResponse:
     """Grafo bipartido do dataset.
 
@@ -237,7 +314,7 @@ def get_bipartite(
     de resposta para as duas vistas.
     """
     bipartite = io.load_bipartite(_roots(request), dataset)
-    nodes, edges, truncation = _graph_payload(bipartite.graph, max_edges)
+    nodes, edges, truncation = _graph_payload(bipartite.graph, max_edges, cut)
     return GraphResponse(
         dataset=dataset,
         projection_id="bipartite",

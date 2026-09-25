@@ -84,12 +84,21 @@ Nenhum diretamente. Habilita a C-05, de onde saem as capturas do capítulo
 ## Como ficou (25/09/2026)
 
 - **Corte de arestas.** Padrão de 5.000 arestas por resposta (`?max_edges=`,
-  teto de 50.000). Quando corta, ficam as de **maior peso**, com
-  desempate pelo par de nós, e **todos os nós** permanecem — são eles
-  que carregam comunidade e centralidade. O corpo traz o bloco
-  `truncation` (`truncated`, `n_edges_total`, `n_edges_returned`…), que
-  o front usa para avisar. Foi o único acréscimo aos schemas, e o
-  `frontend/src/types.ts` mudou no mesmo commit.
+  teto de 50.000), e **todos os nós** permanecem — são eles que carregam
+  comunidade e centralidade. Dois critérios (`?cut=`), com desempate
+  determinístico:
+  - `backbone` (**padrão**, acrescentado na C-05): as k arestas mais
+    fortes de cada nó, com o maior k que cabe. No AVA do OULAD
+    (`oulad_vle_bbb_2013j`/`student_simple`), k = 2 dá 3.732 arestas e
+    **os 1.870 alunos continuam ligados**;
+  - `top_weight`: as de maior peso do grafo inteiro. Na mesma projeção,
+    as 5.000 mais pesadas tocam só **193** dos 1.870 alunos — o resto
+    aparece solto, e a figura engana. Foi o que motivou a troca.
+
+  O corpo traz o bloco `truncation` (`truncated`, `criterion`,
+  `k_per_node`, `n_edges_total`, `n_edges_returned`…), que o front usa
+  para avisar. Foi o único acréscimo aos schemas, e o
+  `frontend/src/types.ts` mudou junto.
 - **Números medidos no OULAD.** `oulad_module_presentation`/`discipline_simple`
   com as três centralidades embutidas: 0,1 s. `oulad_vle_bbb_2013j`/`student_simple`
   (1.870 nós, 1,75 M arestas): 3,6 s e 0,42 MB, cortada em 5.000. Sem

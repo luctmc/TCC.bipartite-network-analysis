@@ -45,8 +45,10 @@ export interface GraphEdge {
 }
 
 /**
- * O corte de arestas da resposta. Quando `truncated`, a API ficou com as
- * `max_edges` arestas de maior peso e manteve todos os nós.
+ * O corte de arestas da resposta. Quando `truncated`, a API manteve todos
+ * os nós e escolheu as arestas por `criterion`: `backbone` (as
+ * `k_per_node` mais fortes de cada nó) ou `top_weight` (as mais pesadas
+ * do grafo inteiro).
  */
 export interface TruncationInfo {
   truncated: boolean;
@@ -54,7 +56,8 @@ export interface TruncationInfo {
   n_nodes: number;
   n_edges_total: number;
   n_edges_returned: number;
-  criterion: "top_weight";
+  criterion: "backbone" | "top_weight";
+  k_per_node: number | null;
 }
 
 export interface GraphResponse {

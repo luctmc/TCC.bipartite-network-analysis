@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026) — funcional; o acabamento visual fica para depois
 
 ## Objetivo
 
@@ -53,19 +53,19 @@ que está sendo mostrado na banca.
 
 ## Critérios de aceite
 
-- [ ] Dado `synthetic_v1`, quando abrir, então o grafo aparece com os
+- [x] Dado `synthetic_v1`, quando abrir, então o grafo aparece com os
       nós coloridos pela partição escolhida.
-- [ ] Dado um seletor de métrica, quando trocar, então o tamanho dos nós
+- [x] Dado um seletor de métrica, quando trocar, então o tamanho dos nós
       muda com transição, sem recarregar a página.
-- [ ] Dado um nó clicado, então o painel mostra comunidade, grau,
+- [x] Dado um nó clicado, então o painel mostra comunidade, grau,
       intermediação e autovetor daquele nó.
-- [ ] Dado um grafo acima do limite, então o aviso aparece e a interface
+- [x] Dado um grafo acima do limite, então o aviso aparece e a interface
       continua utilizável.
-- [ ] `npm run build` gera `src/edugraph/api/static/` e
+- [x] `npm run build` gera `src/edugraph/api/static/` e
       `python -m edugraph api serve` passa a servir a interface em `/`.
-- [ ] `npm run typecheck` passa — o front é tipado contra os schemas da
+- [x] `npm run typecheck` passa — o front é tipado contra os schemas da
       API.
-- [ ] As cores distinguem comunidades em escala de cinza.
+- [x] As cores distinguem comunidades em escala de cinza.
 
 ## Testes exigidos
 
@@ -87,3 +87,24 @@ que está sendo mostrado na banca.
 
 **Capturas de tela do capítulo 3.** A escolha da stack vale uma frase na
 seção de ferramentas — visualização é meio, não resultado.
+
+## Como ficou (25/09/2026)
+
+- **Cores em escala de cinza.** A paleta de Okabe & Ito é acessível para
+  daltonismo, mas não separa todas as cores em cinza. Cada comunidade
+  ganhou também uma **forma** (círculo, triângulo, quadrado…), e é a
+  forma que garante o critério — conferido com `grayscale(1)` sobre
+  `synthetic_v1`.
+- **O Cytoscape não entende `var(--x)`.** O esqueleto passava as cores do
+  tema como variáveis CSS, que o canvas ignora; agora elas são lidas do
+  CSS no momento de montar o estilo (`themeColor` em `palette.ts`).
+- **Partição à parte da projeção.** A projeção (cara) vem com as
+  centralidades embutidas; a partição vem por `/communities/…`. Trocar a
+  cor não redesenha o grafo.
+- **Só as métricas que existem.** Antes de pedir o grafo, o front
+  consulta cada métrica com `?top=1`; pedir as três com uma faltando
+  daria 404 e perderia as outras.
+- **Grafo grande.** O corte por peso global deixava 1.677 dos 1.870
+  alunos do AVA soltos; a API passou a cortar pelo esqueleto (ver C-04).
+- **Teste de interface.** Não automatizado, como a spec previa: roteiro
+  manual em `frontend/README.md`, e `npm run typecheck`.
