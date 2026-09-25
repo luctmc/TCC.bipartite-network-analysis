@@ -509,6 +509,20 @@ usam afinidade no sentido certo. Só a intermediação o ignora, porque ali
 o peso precisaria ser convertido em distância, e a conversão `1/w` deixa
 o resultado refém de poucas arestas muito pesadas.
 
+**A exceção: projeções quase completas usam `inverse`.** O modo em
+saltos só discrimina se o grafo não for (quase) completo. Na projeção
+aluno↔aluno de `oulad_vle_bbb_2013j`, a densidade é **1,000** (1.746.901
+de 1.747.515 pares possíveis): todo par de alunos é vizinho, nenhum
+caminho mínimo passa por um terceiro, e a intermediação em saltos dá
+**zero para os 1.870 alunos**. Ali só o peso distingue, e a configuração
+usa `inverse` (com 200 pivôs amostrados, porque a versão exata com peso
+não termina em tempo razoável). O Pedro já tinha visto isso na A-09 e
+escrito `"distance"`, que o contrato não aceita; o valor foi corrigido
+para `inverse`, que é a mesma intenção. A regra, portanto: **`none` onde
+a projeção é esparsa o bastante para haver caminhos de mais de um salto
+(as disciplinas do `module_presentation`, com 40% de densidade); `inverse`
+onde ela é quase completa.** A legenda de cada tabela diz qual foi usado.
+
 **Amostragem de pivôs.** Com `k` menor que o número de nós, a
 intermediação é estimada a partir de `k` pivôs sorteados com `seed`
 fixa; o artefato registra `estimate = true`, e a tabela precisa dizer que
