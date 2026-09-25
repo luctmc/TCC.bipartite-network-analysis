@@ -53,6 +53,23 @@ class EdgeOut(BaseModel):
     weight: float
 
 
+class TruncationInfo(BaseModel):
+    """O corte de arestas, declarado no corpo para que a interface avise.
+
+    Um grafo de um milhão de arestas não renderiza e não deve sequer ser
+    transferido. Quando corta, a API fica com as ``max_edges`` arestas de
+    **maior peso** (desempate por par de nós, determinístico) e mantém
+    todos os nós — são eles que carregam comunidade e centralidade.
+    """
+
+    truncated: bool
+    max_edges: int = Field(description="Limite aplicado nesta resposta")
+    n_nodes: int = Field(description="Nós no grafo e na resposta — nós nunca são cortados")
+    n_edges_total: int = Field(description="Arestas no artefato em disco")
+    n_edges_returned: int = Field(description="Arestas nesta resposta")
+    criterion: Literal["top_weight"] = "top_weight"
+
+
 class GraphResponse(BaseModel):
     """Resposta de ``GET /datasets/{dataset}/projections/{projection_id}``.
 
@@ -66,6 +83,7 @@ class GraphResponse(BaseModel):
     spec: dict[str, Any]
     nodes: list[NodeOut]
     edges: list[EdgeOut]
+    truncation: TruncationInfo
     community: dict[str, int] | None = None
     centrality: dict[str, dict[str, float]] | None = None
 

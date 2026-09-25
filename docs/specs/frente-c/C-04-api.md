@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026)
 
 ## Objetivo
 
@@ -51,17 +51,17 @@ Ver `docs/contratos/` e `src/edugraph/api/schemas.py`.
 
 ## Critérios de aceite
 
-- [ ] Dada a fixture, cada rota responde 200 e o corpo valida contra o
+- [x] Dada a fixture, cada rota responde 200 e o corpo valida contra o
       schema pydantic.
-- [ ] Dado um dataset inexistente, então 404 com a mensagem do contrato,
+- [x] Dado um dataset inexistente, então 404 com a mensagem do contrato,
       citando as raízes consultadas.
-- [ ] Dada uma projeção com mais arestas que o limite, então a resposta
+- [x] Dada uma projeção com mais arestas que o limite, então a resposta
       traz o subconjunto **e** diz que cortou.
-- [ ] `?partition=louvain__student_simple` embute o `membership` na
+- [x] `?partition=louvain__student_simple` embute o `membership` na
       mesma resposta.
-- [ ] A API **não importa** `edugraph.community` nem `edugraph.data` — o
+- [x] A API **não importa** `edugraph.community` nem `edugraph.data` — o
       teste de fronteira continua verde.
-- [ ] `edugraph api openapi` gera o esquema que tipa o front.
+- [x] `edugraph api openapi` gera o esquema que tipa o front.
 
 ## Testes exigidos
 
@@ -80,3 +80,20 @@ Ver `docs/contratos/` e `src/edugraph/api/schemas.py`.
 
 Nenhum diretamente. Habilita a C-05, de onde saem as capturas do capítulo
 3.
+
+## Como ficou (25/09/2026)
+
+- **Corte de arestas.** Padrão de 5.000 arestas por resposta (`?max_edges=`,
+  teto de 50.000). Quando corta, ficam as de **maior peso**, com
+  desempate pelo par de nós, e **todos os nós** permanecem — são eles
+  que carregam comunidade e centralidade. O corpo traz o bloco
+  `truncation` (`truncated`, `n_edges_total`, `n_edges_returned`…), que
+  o front usa para avisar. Foi o único acréscimo aos schemas, e o
+  `frontend/src/types.ts` mudou no mesmo commit.
+- **Números medidos no OULAD.** `oulad_module_presentation`/`discipline_simple`
+  com as três centralidades embutidas: 0,1 s. `oulad_vle_bbb_2013j`/`student_simple`
+  (1.870 nós, 1,75 M arestas): 3,6 s e 0,42 MB, cortada em 5.000. Sem
+  cache: o tempo é o da leitura do CSV pelo `contracts.io`, e não
+  compensou a memória de manter o grafo carregado.
+- **Erros.** 404 cita o artefato e as raízes consultadas; métrica
+  inexistente em `?metrics=` dá 422 com a lista das válidas.
