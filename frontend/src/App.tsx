@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { ApiError, api } from "./api";
 import { CommunityLegend } from "./components/CommunityLegend";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { GraphView } from "./components/GraphView";
 import { NodePanel } from "./components/NodePanel";
 import type {
@@ -282,13 +283,15 @@ export default function App() {
             {grafo?.status === "carregando" && <Vazio>carregando grafo…</Vazio>}
             {grafo?.status === "erro" && <Vazio>{grafo.erro.message}</Vazio>}
             {dadosGrafo && (
-              <GraphView
-                graph={dadosGrafo}
-                membership={membership}
-                sizeBy={metricaAtiva}
-                selected={selecionado}
-                onSelect={setSelecionado}
-              />
+              <ErrorBoundary resetKey={`${datasetAtivo}/${projecaoAtiva}`}>
+                <GraphView
+                  graph={dadosGrafo}
+                  membership={membership}
+                  sizeBy={metricaAtiva}
+                  selected={selecionado}
+                  onSelect={setSelecionado}
+                />
+              </ErrorBoundary>
             )}
           </motion.div>
         </AnimatePresence>

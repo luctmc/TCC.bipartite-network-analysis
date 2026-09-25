@@ -181,6 +181,49 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
   ];
 }
 
+/**
+ * Roda o fcose, com duas redes de proteção.
+ *
+ * Com a maioria dos nós já posicionada, o layout continua de onde o grafo
+ * anterior parou; sem isso, parte do zero. Nos dois casos a amostragem é
+ * gulosa, não aleatória: mesma entrada, mesmo desenho.
+ *
+ * **Só continua em grafo conexo.** Com `randomize: false`, o fcose
+ * quebra em grafo desconexo ("Cannot read properties of undefined
+ * (reading 'nodeIndexes')", em `relocateComponent`) — o passo que
+ * reposiciona as componentes depende do passo espectral, que só roda com
+ * `randomize: true`. Se ainda assim o layout falhar, tenta do zero; se
+ * falhar de novo, fica a grade: um desenho feio é melhor que uma tela em
+ * branco na apresentação.
+ */
+function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesado: boolean }) {
+  const base = {
+    name: "fcose",
+    samplingType: false,
+    quality: pesado ? "draft" : "default",
+    animate: !pesado,
+    animationDuration: 700,
+    nodeRepulsion: 6000,
+    idealEdgeLength: 60,
+    fit: true,
+    padding: 24,
+  };
+  const conexo = cy.elements().components().length <= 1;
+  const tentativas = [
+    { ...base, randomize: !(continuar && conexo) },
+    { ...base, randomize: true, packComponents: true },
+    { name: "grid", fit: true, padding: 24 },
+  ];
+  for (const opcoes of tentativas) {
+    try {
+      cy.layout(opcoes as cytoscape.LayoutOptions).run();
+      return;
+    } catch (erro) {
+      console.warn(`[GraphView] layout ${opcoes.name} falhou, tentando o próximo`, erro);
+    }
+  }
+}
+
 export function GraphView({ graph, membership, sizeBy, selected, onSelect }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
@@ -200,21 +243,7 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
       container: containerRef.current,
       elements: toElements(graph),
       style: estilo(graph),
-      layout: {
-        name: "fcose",
-        // Com a maioria dos nós já posicionada, o layout continua de onde
-        // o grafo anterior parou; sem isso, parte do zero. Nos dois casos
-        // a amostragem é gulosa, não aleatória: mesma entrada, mesmo desenho.
-        randomize: !continuar,
-        samplingType: false,
-        quality: pesado ? "draft" : "default",
-        animate: !pesado,
-        animationDuration: 700,
-        nodeRepulsion: 6000,
-        idealEdgeLength: 60,
-        fit: true,
-        padding: 24,
-      } as cytoscape.LayoutOptions,
+      layout: { name: "preset" },
       wheelSensitivity: 0.2,
       minZoom: 0.05,
       maxZoom: 4,
@@ -225,6 +254,8 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
         posicoes.set(node.id(), { ...node.position() });
       });
     });
+    rodarLayout(cy, { continuar, pesado });
+
     cy.on("tap", "node", (event) => onSelectRef.current(event.target.id()));
     cy.on("tap", (event) => {
       if (event.target === cy) onSelectRef.current(null);
