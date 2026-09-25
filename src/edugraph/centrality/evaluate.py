@@ -291,7 +291,8 @@ def figure_outcome_by_quantile(
     ax.axhline(1 - base, color="black", lw=0.8, ls="--")
     ax.set_ylim(0, 1)
     ax.set_ylabel("fração dos alunos")
-    ax.set_xlabel(f"faixa de {metric} (Q1 = menor)")
+    nome = {"degree": "grau", "betweenness": "intermediação", "eigenvector": "autovetor"}
+    ax.set_xlabel(f"faixa de {nome.get(metric, metric)} (Q1 = menor)")
     ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), frameon=False, fontsize=7)
     fig.tight_layout()
 

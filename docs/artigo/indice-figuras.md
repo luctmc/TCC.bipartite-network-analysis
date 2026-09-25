@@ -13,8 +13,8 @@
 | 4 | Comunidades na projeção aluno↔aluno | B-07 | presente | `fig4-comunidades-synthetic_v1-girvan_newman__student_simple.{png,svg}`, `fig4-comunidades-synthetic_v1-louvain__student_simple.{png,svg}` | seção de comunidades |
 | 5 | Distribuição de tamanhos de comunidade | B-07 | presente | `fig5-tamanhos-synthetic_v1.{png,svg}` | seção de comunidades |
 | 6 | Q × tempo por algoritmo | B-04/B-07 | presente | `fig6-q-tempo-synthetic_v1.{png,svg}` | comparação de algoritmos |
-| 7 | Ranking de disciplinas por intermediação | C-03/C-07 | pendente | — | disciplinas críticas |
-| 8 | Desfecho por quartil de centralidade | C-06 | pendente | — | validação |
+| 7 | Ranking de disciplinas por intermediação | C-03/C-07 | presente | `fig7-disciplinas-oulad_module_presentation-discipline_simple.{png,svg}`, `fig7-disciplinas-oulad_vle_bbb_2013j-discipline_simple.{png,svg}` | disciplinas críticas |
+| 8 | Desfecho por quartil de centralidade | C-06 | presente | `fig8-validacao-oulad_vle_bbb_2013j-student_simple-betweenness.{png,svg}`, `fig8-validacao-oulad_vle_bbb_2013j-student_simple-degree.{png,svg}`, `fig8-validacao-oulad_vle_bbb_2013j-student_simple-eigenvector.{png,svg}` | validação |
 | 9 | Capturas da interface | C-05 | pendente | — | aplicação |
 
 ## Legendas geradas
@@ -30,6 +30,16 @@
 **`fig5-tamanhos-synthetic_v1`** — Distribuição de tamanhos das comunidades, um painel por algoritmo, sobre 2 partições de synthetic_v1. Tamanhos em ordem decrescente; 0 comunidades de um nó só no total. Cores da escala cividis.
 
 **`fig6-q-tempo-synthetic_v1`** — Modularidade × tempo de execução em synthetic_v1, 2 execuções. Marcador vazado indica execução que não terminou dentro do orçamento (ADR-0006). O mais lento levou 399× o tempo do mais rápido. Escala logarítmica no tempo.
+
+**`fig7-disciplinas-oulad_module_presentation-discipline_simple`** — Disciplinas de oulad_module_presentation ordenadas pela intermediação na projeção discipline_simple (weight_mode = none). Quanto maior a barra, mais caminhos mínimos entre outras disciplinas passam por ela. Spec C-07.
+
+**`fig7-disciplinas-oulad_vle_bbb_2013j-discipline_simple`** — Disciplinas de oulad_vle_bbb_2013j ordenadas pela intermediação na projeção discipline_simple (weight_mode = inverse, estimativa com k = 200). Quanto maior a barra, mais caminhos mínimos entre outras disciplinas passam por ela. Spec C-07.
+
+**`fig8-validacao-oulad_vle_bbb_2013j-student_simple-betweenness`** — Desfecho histórico por faixa de centralidade (betweenness) na projeção student_simple de oulad_vle_bbb_2013j. Faixas por posição no ranking, Q1 = menor centralidade. A linha tracejada marca a fração de concluintes da base (57.3%): quando os aprovados (Distinction + Pass) da faixa ficam abaixo dela, a faixa tem mais não conclusão (Fail + Withdrawn) que a base. Validação a posteriori (spec C-06): o desfecho não entra em nenhum cálculo de centralidade.
+
+**`fig8-validacao-oulad_vle_bbb_2013j-student_simple-degree`** — Desfecho histórico por faixa de centralidade (degree) na projeção student_simple de oulad_vle_bbb_2013j. Faixas por posição no ranking, Q1 = menor centralidade. A linha tracejada marca a fração de concluintes da base (57.3%): quando os aprovados (Distinction + Pass) da faixa ficam abaixo dela, a faixa tem mais não conclusão (Fail + Withdrawn) que a base. Validação a posteriori (spec C-06): o desfecho não entra em nenhum cálculo de centralidade.
+
+**`fig8-validacao-oulad_vle_bbb_2013j-student_simple-eigenvector`** — Desfecho histórico por faixa de centralidade (eigenvector) na projeção student_simple de oulad_vle_bbb_2013j. Faixas por posição no ranking, Q1 = menor centralidade. A linha tracejada marca a fração de concluintes da base (57.3%): quando os aprovados (Distinction + Pass) da faixa ficam abaixo dela, a faixa tem mais não conclusão (Fail + Withdrawn) que a base. Validação a posteriori (spec C-06): o desfecho não entra em nenhum cálculo de centralidade.
 
 
 ## Regras

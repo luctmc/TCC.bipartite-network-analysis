@@ -51,6 +51,9 @@ TOP_N = 5
 #: Comunidades descritas uma a uma; as demais entram só na contagem.
 MAX_COMMUNITIES = 8
 
+#: Nós listados por comunidade: uma lista de 187 ids não é lida por ninguém.
+MAX_NAMES = 12
+
 METRIC_NAMES: dict[str, str] = {
     "degree": "grau",
     "betweenness": "intermediação",
@@ -118,6 +121,15 @@ def _section_data(roots: ArtifactRoots, dataset: str) -> list[str]:
     return lines
 
 
+def _discipline_noun(roots: ArtifactRoots, dataset: str) -> str:
+    """Como chamar o nó do lado V: no AVA, ele é um recurso, não uma disciplina."""
+    try:
+        granularity = io.load_bipartite(roots, dataset).spec.granularity
+    except ArtifactNotFoundError:
+        return "disciplinas"
+    return "recursos do AVA" if granularity == "vle_site" else "disciplinas"
+
+
 def _section_communities(roots: ArtifactRoots, dataset: str, labels: dict[str, str]) -> list[str]:
     lines = ["## Comunidades", ""]
     partitions = roots.partitions(dataset)
@@ -156,10 +168,13 @@ def _section_communities(roots: ArtifactRoots, dataset: str, labels: dict[str, s
         if partition.projection_id.startswith("student_"):
             lines += _student_communities(roots, dataset, partition.artifact_id, total)
         else:
+            noun = _discipline_noun(roots, dataset)
             for community, nodes in groups[:MAX_COMMUNITIES]:
-                names = ", ".join(labels.get(n, n) for n in nodes)
+                names = ", ".join(labels.get(n, n) for n in nodes[:MAX_NAMES])
+                if len(nodes) > MAX_NAMES:
+                    names += f" e mais {len(nodes) - MAX_NAMES}"
                 lines.append(
-                    f"- **Comunidade {community}** ({len(nodes)} disciplinas, "
+                    f"- **Comunidade {community}** ({len(nodes)} {noun}, "
                     f"{_pct(len(nodes) / total, 0)}): {names}"
                 )
             if len(groups) > MAX_COMMUNITIES:
@@ -353,6 +368,14 @@ def _section_validation(roots: ArtifactRoots, dataset: str, projections: list[st
             f"(base {_pct(low['base_rate_not_passed'])}).",
             "",
         ]
+        if abs(low["rate_not_passed"] - high["rate_not_passed"]) >= 0.15:
+            lines += [
+                "**Cuidado com essa diferença.** A posição do aluno na rede reflete o "
+                "quanto ele participou; quem desiste participa menos até sair e, por isso, "
+                "fica menos central. A relação mostra que as duas coisas andam juntas — "
+                "não que a centralidade cause o desfecho nem que sirva para prevê-lo.",
+                "",
+            ]
     return lines
 
 

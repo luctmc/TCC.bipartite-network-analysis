@@ -636,6 +636,42 @@ que a centralidade não é um proxy disfarçado da reprovação. Um gargalo
 estrutural é um ponto de passagem no currículo, não uma disciplina
 difícil.
 
+**Os alunos no AVA: sinal forte, e a leitura cuidadosa que ele exige.**
+Em `oulad_vle_bbb_2013j` (1.870 alunos, base 42,7%), o desfecho varia
+muito com a centralidade do aluno na projeção aluno↔aluno:
+
+| Faixa | Autovetor | Intermediação (`inverse`, k = 200) |
+|---|---|---|
+| Q1 (menor) | 89,3% | 71,5% |
+| Q2 | 52,6% | 50,9% |
+| Q3 | 18,4% | 33,4% |
+| Q4 (maior) | **10,5%** | 15,0% |
+
+(Taxas de não conclusão; tabelas em `tab8b-desfecho-faixa-*.csv`,
+figura `fig8-validacao-*`.) O grau não serve aqui: a projeção é
+completa, e três dos quatro quartis têm grau 1,0.
+
+**O que isso não é.** Não é poder de previsão. O peso da aresta é o
+número de recursos do AVA que os dois alunos acessaram, e **quem desiste
+para de acessar**: tem menos recursos em comum com os outros e, por
+construção, menor centralidade. Parte do sinal é mecânica — a
+centralidade aqui mede sobretudo **volume de engajamento acumulado até
+o fim da apresentação**, que o próprio desfecho trunca. Para afirmar que
+a posição na rede antecipa o desfecho, seria preciso calcular a
+centralidade só com a atividade das primeiras semanas, antes de qualquer
+desistência — fica como trabalho futuro, e a banca provavelmente vai
+perguntar.
+
+**O que dá para dizer.** Que a estrutura de interação no AVA, obtida
+sem nenhum rótulo, **separa** os alunos que concluem dos que não
+concluem com nitidez (Q1 × Q4: 89% contra 11%), enquanto a estrutura
+curricular (disciplinas do `module_presentation`) quase não separa. É a
+mesma diferença que a A-08 encontrou para as comunidades: o sinal está
+no comportamento, não na matrícula. Do lado dos recursos do AVA, a
+tabela de "disciplinas" críticas não informa nada — os recursos centrais
+são acessados por quase todos os alunos (1.866 dos 1.870 no primeiro),
+então a taxa deles é a da base.
+
 **Duas ressalvas que precisam ir para o texto.**
 
 1. **Desfecho por aluno, não por matrícula.** O ETL guarda um desfecho
