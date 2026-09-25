@@ -28,13 +28,26 @@ cytoscape.use(fcose);
 /** Acima disto, o navegador começa a engasgar e a figura deixa de comunicar. */
 export const MAX_EDGES_CONFORTAVEL = 3000;
 
-/** Acima disto, os rótulos só aparecem no nó selecionado e na vizinhança. */
-const MAX_NODES_ROTULADOS = 150;
+/**
+ * Acima disto, os rótulos só aparecem no nó selecionado, na vizinhança e
+ * sob o mouse: desenhar texto para milhares de nós pesa no canvas.
+ * Abaixo, aparecem conforme o zoom deixa ler (`min-zoomed-font-size`).
+ */
+const MAX_NODES_ROTULADOS = 600;
 
 const TAMANHO_MIN = 10;
 const TAMANHO_MAX = 42;
 const TAMANHO_NEUTRO = 16;
 const DURACAO_MS = 450;
+
+/**
+ * Fator de escala dos nós pelo tamanho do grafo. Com 22 disciplinas os
+ * nós podem ser grandes; com 1.870 alunos, no mesmo tamanho, viram uma
+ * mancha. Raiz quadrada: a área ocupada cresce devagar com n.
+ */
+export function escala(n: number): number {
+  return Math.min(1, Math.max(0.35, Math.sqrt(60 / Math.max(n, 1))));
+}
 
 /**
  * Posições por id de nó, compartilhadas entre montagens do componente.
@@ -60,8 +73,9 @@ export function nodeSizes(
 ): Map<string, number> {
   const scores = sizeBy ? graph.centrality?.[sizeBy] : undefined;
   const sizes = new Map<string, number>();
+  const f = escala(graph.nodes.length);
   if (!scores) {
-    for (const node of graph.nodes) sizes.set(node.id, TAMANHO_NEUTRO);
+    for (const node of graph.nodes) sizes.set(node.id, TAMANHO_NEUTRO * f);
     return sizes;
   }
   const values = graph.nodes.map((node) => scores[node.id] ?? 0);
@@ -69,7 +83,7 @@ export function nodeSizes(
   const max = Math.max(...values);
   for (const node of graph.nodes) {
     const t = max > min ? ((scores[node.id] ?? 0) - min) / (max - min) : 0.5;
-    sizes.set(node.id, TAMANHO_MIN + t * (TAMANHO_MAX - TAMANHO_MIN));
+    sizes.set(node.id, f * (TAMANHO_MIN + t * (TAMANHO_MAX - TAMANHO_MIN)));
   }
   return sizes;
 }
@@ -120,6 +134,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
     discipline: themeColor("--node-discipline", "#f0a868"),
     edge: themeColor("--edge", "#3c4654"),
     surface: themeColor("--surface", "#171b21"),
+    bg: themeColor("--bg", "#0f1216"),
     text: themeColor("--text", "#e6e9ee"),
     muted: themeColor("--text-muted", "#9aa5b1"),
     accent: themeColor("--accent", "#6ea8fe"),
@@ -132,9 +147,15 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
         "background-color": cor.student,
         label: rotularTodos ? "data(label)" : "",
         "font-size": 8,
+        // Só desenha o rótulo quando ele fica legível na tela: longe, o
+        // grafo é forma; perto, é nome.
+        "min-zoomed-font-size": 7,
         color: cor.muted,
         "text-valign": "bottom",
         "text-margin-y": 3,
+        "text-outline-width": 2,
+        "text-outline-color": cor.bg,
+        "text-outline-opacity": 0.8,
         width: "data(size)",
         height: "data(size)",
         "border-width": 1,
@@ -168,10 +189,27 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
         "transition-duration": DURACAO_MS,
       },
     },
+    {
+      // Aresta dentro de uma comunidade ganha a cor dela: os grupos
+      // aparecem pela trama, não só pelos nós.
+      selector: "edge[color]",
+      style: { "line-color": "data(color)", opacity: 0.35 },
+    },
     { selector: ".apagado", style: { opacity: 0.08 } },
     {
+      selector: "node.realce",
+      style: {
+        label: "data(label)",
+        "min-zoomed-font-size": 0,
+        color: cor.text,
+        "border-width": 2,
+        "border-color": cor.text,
+        "z-index": 20,
+      },
+    },
+    {
       selector: "node.vizinho, node:selected",
-      style: { label: "data(label)", color: cor.text, "z-index": 10 },
+      style: { label: "data(label)", "min-zoomed-font-size": 0, color: cor.text, "z-index": 10 },
     },
     { selector: "edge.vizinho", style: { opacity: 0.9, "line-color": cor.accent } },
     {
@@ -256,6 +294,14 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
     });
     rodarLayout(cy, { continuar, pesado });
 
+    cy.on("mouseover", "node", (event) => {
+      event.target.addClass("realce");
+      if (containerRef.current) containerRef.current.style.cursor = "pointer";
+    });
+    cy.on("mouseout", "node", (event) => {
+      event.target.removeClass("realce");
+      if (containerRef.current) containerRef.current.style.cursor = "";
+    });
     cy.on("tap", "node", (event) => onSelectRef.current(event.target.id()));
     cy.on("tap", (event) => {
       if (event.target === cy) onSelectRef.current(null);
@@ -284,6 +330,15 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
           node.data({ color, shape });
         } else {
           node.removeData("color shape");
+        }
+      });
+      cy.edges().forEach((edge) => {
+        const a = membership?.[edge.source().id()];
+        const b = membership?.[edge.target().id()];
+        if (ordem && a !== undefined && a === b) {
+          edge.data("color", communityStyle(ordem.get(a) ?? 0).color);
+        } else {
+          edge.removeData("color");
         }
       });
     });

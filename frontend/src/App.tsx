@@ -21,6 +21,7 @@ import { CommunityLegend } from "./components/CommunityLegend";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { GraphView } from "./components/GraphView";
 import { NodePanel } from "./components/NodePanel";
+import { StatsBar } from "./components/StatsBar";
 import type {
   CentralityMetric,
   DatasetSummary,
@@ -270,6 +271,7 @@ export default function App() {
       </aside>
 
       <main className="palco">
+        {dadosGrafo && <StatsBar graph={dadosGrafo} partition={particao} />}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${datasetAtivo}/${projecaoAtiva}/${grafo?.status}`}
