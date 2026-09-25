@@ -65,8 +65,16 @@ def test_openapi_e_gerado(client: TestClient) -> None:
     assert "/health" in response.json()["paths"]
 
 
-def test_raiz_sem_build_explica_como_gerar(client: TestClient) -> None:
-    """Sem ``npm run build``, ``/`` diz o que fazer em vez de dar 404."""
+def test_raiz_sem_build_explica_como_gerar(artifact_roots, tmp_path, monkeypatch) -> None:
+    """Sem ``npm run build``, ``/`` diz o que fazer em vez de dar 404.
+
+    A pasta do build é trocada por uma vazia: quem já rodou o build na
+    própria máquina não pode ver este teste quebrar por isso.
+    """
+    import edugraph.api.app as app_module
+
+    monkeypatch.setattr(app_module, "STATIC_DIR", tmp_path / "static")
+    client = TestClient(create_app(artifact_roots))
     response = client.get("/")
     assert response.status_code == 200
     assert "npm" in response.json()["detail"]

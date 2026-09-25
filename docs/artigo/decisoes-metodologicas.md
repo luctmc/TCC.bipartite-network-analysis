@@ -476,11 +476,51 @@ O mesmo vale para o uso do grupo plantado e do desfecho histórico: eles
 entram **depois** de o algoritmo ter rodado, como categorias contra as
 quais a estrutura é comparada, nunca como entrada.
 
+### O peso na intermediação: caminho em saltos (C-01)
+
+**Decisão.** A intermediação principal usa `weight_mode = "none"`: o
+caminho mínimo é contado em saltos, ignorando o peso das arestas. O modo
+`inverse` (distância `1/w`) é calculado e reportado como **análise de
+sensibilidade**. O modo `raw` não é usado: em NetworkX o peso num caminho
+mínimo é distância, e usar o número de alunos em comum como distância
+inverteria a semântica da projeção (mais alunos em comum significaria
+disciplinas mais *distantes*).
+
+**Por que não `inverse` como principal.** Na projeção
+disciplina↔disciplina de `oulad_module_presentation` (22 nós, 93
+arestas), os pesos vão de 1 a 144 e são concentrados: a mediana das
+arestas entre módulos diferentes é 2, e as cinco mais pesadas saem todas
+de CCC, o módulo com mais matrículas. Com `1/w`, esse punhado de arestas
+vira o atalho de quase todo caminho mínimo: **13 das 22 disciplinas ficam
+com intermediação zero**, contra nenhuma no modo em saltos. O ranking
+passa a medir sobretudo o tamanho do módulo — o que o grau já mede — em
+vez da posição de ponte no currículo, que é o que a Introdução chama de
+gargalo.
+
+**O que muda no ranking (medido em 25/09/2026).** Correlação de Spearman
+entre os dois modos: 0,56. No topo em saltos: FFF_2014B, DDD_2014J,
+FFF_2014J. No topo com `1/w`: CCC_2014J, FFF_2014J, GGG_2013J. A tabela
+de disciplinas críticas precisa dizer na legenda qual modo usou, e a de
+sensibilidade mostra o outro.
+
+**Pergunta de banca provável.** *"Por que jogar fora o peso?"* O peso não
+é jogado fora: ele entra no grau ponderado (força) e no autovetor, que
+usam afinidade no sentido certo. Só a intermediação o ignora, porque ali
+o peso precisaria ser convertido em distância, e a conversão `1/w` deixa
+o resultado refém de poucas arestas muito pesadas.
+
+**Amostragem de pivôs.** Com `k` menor que o número de nós, a
+intermediação é estimada a partir de `k` pivôs sorteados com `seed`
+fixa; o artefato registra `estimate = true`, e a tabela precisa dizer que
+o valor é estimativa. Com `k` maior ou igual ao número de nós, o cálculo
+é exato e o artefato diz isso — é o caso das 22 disciplinas do OULAD,
+mesmo com o `k = 500` da configuração.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |
 |---|---|---|
-| `weight_mode` da intermediação (`none`/`inverse`/`raw`) | C-01 | **muda o ranking**; em NetworkX peso é distância, não afinidade |
+| ~~`weight_mode` da intermediação~~ | ~~C-01~~ | **decidido**: `none`, com `inverse` como sensibilidade (ver acima) |
 | Interpretação do resultado da validação a posteriori | ~~B-06~~, C-06 | **decidida para as comunidades** (ver acima); segue aberta para a centralidade |
 
 ## O que o artigo não deve afirmar

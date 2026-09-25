@@ -25,7 +25,6 @@ def _expected(path: Path) -> list[dict[str, str]]:
 
 
 @pytest.mark.dataset("tiny_v1")
-@pytest.mark.xfail(reason="C-01 não implementada", raises=NotImplementedError, strict=True)
 def test_grau_bate_com_o_calculo_a_mao(tiny_projection, tiny_expected: Path) -> None:
     """Grau normalizado por n−1 = 5."""
     projection = tiny_projection("student_simple")
@@ -36,7 +35,6 @@ def test_grau_bate_com_o_calculo_a_mao(tiny_projection, tiny_expected: Path) -> 
 
 
 @pytest.mark.dataset("tiny_v1")
-@pytest.mark.xfail(reason="C-01 não implementada", raises=NotImplementedError, strict=True)
 def test_intermediacao_aponta_o_vertice_de_corte(tiny_projection, tiny_expected: Path) -> None:
     """S3 é a ponte: 0,6; todos os outros, 0."""
     projection = tiny_projection("student_simple")
@@ -46,6 +44,116 @@ def test_intermediacao_aponta_o_vertice_de_corte(tiny_projection, tiny_expected:
         assert result.scores[row["node_id"]] == pytest.approx(float(row["betweenness"]))
 
     assert result.top(1)[0][0] == "S3"
+
+
+@pytest.mark.dataset("tiny_v1")
+def test_scores_cobrem_exatamente_os_nos_da_projecao(tiny_projection) -> None:
+    """Contrato: nenhum nó a mais, nenhum a menos, faixa [0, 1]."""
+    from edugraph.contracts.validate import validate_centrality
+
+    for projection_id in ("student_simple", "discipline_simple"):
+        projection = tiny_projection(projection_id)
+        for metric in (DegreeCentrality(), BetweennessCentrality()):
+            result = metric.compute(projection)
+            assert set(result.scores) == set(projection.graph.nodes)
+            validate_centrality(result, projection)
+
+
+@pytest.mark.dataset("tiny_v1")
+def test_params_registram_o_que_muda_o_ranking(tiny_projection) -> None:
+    """``normalized`` e ``weight_mode`` sempre; ``k`` e ``seed`` só com amostra."""
+    projection = tiny_projection("student_simple")
+
+    exata = BetweennessCentrality().compute(projection)
+    assert exata.params["normalized"] is True
+    assert exata.params["weight_mode"] == "none"
+    assert exata.params["k"] is None
+    assert exata.params["estimate"] is False
+    assert "seed" not in exata.params
+
+    amostra = BetweennessCentrality().compute(projection, k=3, seed=7)
+    assert amostra.params["k"] == 3
+    assert amostra.params["seed"] == 7
+    assert amostra.params["estimate"] is True
+
+    grau = DegreeCentrality().compute(projection)
+    assert grau.params == {"normalized": True, "weight": None, "normalization": "n_minus_1"}
+
+
+@pytest.mark.dataset("tiny_v1")
+def test_k_maior_ou_igual_a_n_e_calculo_exato(tiny_projection) -> None:
+    """Pedir mais pivôs que nós não é amostra: o artefato não diz estimativa."""
+    projection = tiny_projection("student_simple")
+    result = BetweennessCentrality().compute(projection, k=500, seed=42)
+
+    assert result.params["estimate"] is False
+    assert result.params["k"] is None
+    assert result.scores["S3"] == pytest.approx(0.6)
+
+
+@pytest.mark.dataset("tiny_v1")
+def test_amostra_de_pivos_e_deterministica_com_seed(tiny_projection) -> None:
+    projection = tiny_projection("student_simple")
+    primeira = BetweennessCentrality().compute(projection, k=3, seed=11)
+    segunda = BetweennessCentrality().compute(projection, k=3, seed=11)
+    assert primeira.scores == segunda.scores
+
+
+def test_peso_inverso_encurta_a_aresta_forte_e_nao_altera_a_projecao() -> None:
+    """``inverse`` usa 1/w: a aresta de peso alto vira o caminho curto.
+
+    Quadrado A-B-C-D-A com A-B e B-C fortes (peso 10) e A-D, D-C fracos
+    (peso 1). Sem peso há dois caminhos mínimos de A a C e B e D dividem
+    a intermediação; com ``inverse`` o caminho por B custa 0,2 contra 2,0
+    por D, e só B fica com ela. Com ``raw`` é o contrário — a inversão
+    de semântica que a C-01 existe para evitar.
+    """
+    import networkx as nx
+
+    from edugraph.contracts.types import BipartiteSpec, ProjectionBundle, ProjectionSpec
+
+    graph = nx.Graph()
+    graph.add_edge("DA", "DB", weight=10.0)
+    graph.add_edge("DB", "DC", weight=10.0)
+    graph.add_edge("DA", "DD", weight=1.0)
+    graph.add_edge("DD", "DC", weight=1.0)
+    for node in graph:
+        graph.nodes[node]["kind"] = "discipline"
+    bundle = ProjectionBundle(
+        graph=graph,
+        spec=ProjectionSpec(side="discipline", weighting="simple"),
+        source=BipartiteSpec(dataset="t"),
+    )
+
+    sem_peso = BetweennessCentrality().compute(bundle, weight_mode="none")
+    inverso = BetweennessCentrality().compute(bundle, weight_mode="inverse")
+    cru = BetweennessCentrality().compute(bundle, weight_mode="raw")
+
+    assert sem_peso.scores["DB"] == pytest.approx(sem_peso.scores["DD"])
+    assert inverso.scores["DB"] > 0 and inverso.scores["DD"] == pytest.approx(0.0)
+    assert cru.scores["DD"] > 0 and cru.scores["DB"] == pytest.approx(0.0)
+    assert all("_distance" not in data for _, _, data in graph.edges(data=True))
+
+
+@pytest.mark.dataset("tiny_v1")
+def test_forca_ponderada_normaliza_pela_maior_forca(tiny_projection) -> None:
+    projection = tiny_projection("discipline_simple")  # DA-DB=3, DA-DC=DB-DC=1
+    result = DegreeCentrality().compute(projection, weight="weight")
+
+    assert result.scores == pytest.approx({"DA": 1.0, "DB": 1.0, "DC": 0.5})
+    assert result.params["normalization"] == "max_strength"
+
+
+@pytest.mark.dataset("tiny_v1")
+def test_parametro_desconhecido_e_recusado(tiny_projection) -> None:
+    """``weigth_mode`` digitado errado não pode rodar com o padrão em silêncio."""
+    from edugraph.contracts.errors import ContractError
+
+    projection = tiny_projection("student_simple")
+    with pytest.raises(ContractError, match="weigth_mode"):
+        BetweennessCentrality().compute(projection, weigth_mode="inverse")
+    with pytest.raises(ContractError, match="weight_mode"):
+        BetweennessCentrality().compute(projection, weight_mode="afinidade")
 
 
 @pytest.mark.dataset("tiny_v1")
@@ -138,7 +246,6 @@ def test_ranking_de_disciplinas_e_deterministico(synthetic_projection) -> None:
 
 
 @pytest.mark.dataset("synthetic_v1")
-@pytest.mark.xfail(reason="C-01 não implementada", raises=NotImplementedError, strict=True)
 def test_projecao_disciplina_de_synthetic_e_degenerada(synthetic_projection) -> None:
     """Documenta a degeneração da decisão D1 como comportamento esperado.
 

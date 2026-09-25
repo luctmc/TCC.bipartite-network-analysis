@@ -10,6 +10,10 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:  # pragma: no cover - só para anotação
+    from edugraph.contracts.types import CentralityResult
 
 
 def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentParser) -> None:
@@ -27,6 +31,15 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
     )
     run_all.add_argument("--dataset", required=True)
     run_all.add_argument("--projection", default=None, help="restringe a uma projeção")
+    run_all.add_argument(
+        "--metric",
+        action="append",
+        choices=["degree", "betweenness", "eigenvector"],
+        default=None,
+        dest="metrics",
+        help="restringe a estas métricas; repita. Padrão: as três",
+    )
+    _add_metric_params(run_all)
     run_all.add_argument("--out", type=Path, default=Path("data/processed"))
     run_all.set_defaults(func=cmd_all)
 
@@ -34,7 +47,7 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
     one.add_argument("--dataset", required=True)
     one.add_argument("--projection", required=True)
     one.add_argument("--metric", choices=["degree", "betweenness", "eigenvector"], required=True)
-    one.add_argument("--implementation", choices=["manual", "networkx"], default="manual")
+    _add_metric_params(one)
     one.add_argument("--out", type=Path, default=Path("data/processed"))
     one.set_defaults(func=cmd_compute)
 
@@ -58,17 +71,93 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
     report.set_defaults(func=cmd_report)
 
 
+def _add_metric_params(parser: argparse.ArgumentParser) -> None:
+    """Parâmetros que mudam o ranking — todos acabam em ``params``."""
+    parser.add_argument(
+        "--weight-mode",
+        choices=["none", "inverse", "raw"],
+        default="none",
+        dest="weight_mode",
+        help="peso como distância na intermediação (C-01). Padrão: none",
+    )
+    parser.add_argument(
+        "--k", type=int, default=None, help="pivôs amostrados na intermediação (estimativa)"
+    )
+    parser.add_argument("--seed", type=int, default=42, help="semente da amostragem de pivôs")
+    parser.add_argument(
+        "--implementation",
+        choices=["manual", "networkx"],
+        default="manual",
+        help="autovetor à mão ou pelo NetworkX (C-02)",
+    )
+
+
 # ---------------------------------------------------------------------
-# Handlers
+# Auxiliares comuns aos handlers
+# ---------------------------------------------------------------------
+
+
+def _metric_params(args: argparse.Namespace) -> dict[str, dict[str, Any]]:
+    """Os argumentos da linha de comando, repartidos por métrica."""
+    betweenness: dict[str, Any] = {"weight_mode": args.weight_mode}
+    if args.k is not None:
+        betweenness.update(k=args.k, seed=args.seed)
+    return {
+        "degree": {},
+        "betweenness": betweenness,
+        "eigenvector": {"implementation": args.implementation},
+    }
+
+
+def _print_result(result: CentralityResult) -> None:
+    """Resumo de uma métrica, na mesma forma em todos os comandos."""
+    top = ", ".join(f"{node} {score:.4f}" for node, score in result.top(3))
+    nota = "" if result.converged else " (fallback: não convergiu)"
+    print(
+        f"[centrality] {result.projection_id}/{result.metric}: "
+        f"{len(result.scores)} nós, {result.runtime_s:.3f}s{nota}; topo: {top}"
+    )
+
+
+# ---------------------------------------------------------------------
+# Handlers — cada um fecha com a sua spec
 # ---------------------------------------------------------------------
 
 
 def cmd_all(args: argparse.Namespace) -> int:
-    raise NotImplementedError("C-01/C-02: ver docs/specs/frente-c/")
+    """Todas as métricas em todas as projeções do dataset (C-01, C-02)."""
+    from edugraph.centrality.stage import DEFAULT_METRICS, compute_all
+    from edugraph.contracts.errors import ArtifactNotFoundError
+    from edugraph.contracts.paths import as_roots
+
+    roots = as_roots(args.roots)
+    projection_ids = [args.projection] if args.projection else roots.projections(args.dataset)
+    if not projection_ids:
+        raise ArtifactNotFoundError(
+            f"nenhuma projeção do dataset {args.dataset!r} sob "
+            f"{', '.join(str(r) for r in roots)}; confira o --root"
+        )
+    metrics = args.metrics or list(DEFAULT_METRICS)
+
+    results = compute_all(
+        roots, args.out, args.dataset, projection_ids, metrics, _metric_params(args)
+    )
+    for result in results:
+        _print_result(result)
+    print(f"[centrality] gravado em: {args.out / args.dataset / 'centrality'}")
+    return 0
 
 
 def cmd_compute(args: argparse.Namespace) -> int:
-    raise NotImplementedError("C-01/C-02: ver docs/specs/frente-c/")
+    """Uma métrica em uma projeção (C-01, C-02)."""
+    from edugraph.centrality.stage import compute_metric
+    from edugraph.contracts import io
+
+    projection = io.load_projection(args.roots, args.dataset, args.projection)
+    result = compute_metric(projection, args.metric, _metric_params(args)[args.metric])
+    _print_result(result)
+    print(f"[centrality] gravado: {io.save_centrality(result, args.out, args.dataset)}")
+    return 0
 
 
 def cmd_critical(args: argparse.Namespace) -> int:
