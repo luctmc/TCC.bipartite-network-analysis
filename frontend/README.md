@@ -66,7 +66,8 @@ Rode a API com o build (`npm run build` antes) e abra
 python -m edugraph api serve --root data/processed --root data/fixtures
 ```
 
-1. **Abrir.** O dataset `synthetic_v1` aparece com a projeção colorida
+1. **Abrir** e escolher o dataset `synthetic_v1` (com `data/processed` na
+   raiz, a tela abre no primeiro dataset do OULAD que tiver partição). Ele aparece com a projeção colorida
    pela partição Louvain e a legenda com três comunidades.
 2. **Trocar a projeção** para `student_simple`. O grafo é redesenhado;
    a partição acompanha (`louvain__student_simple`, Q ≈ 0,4666).

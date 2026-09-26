@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** concluída (25/09/2026) — funcional; o acabamento visual fica para depois
+**Status:** concluída (25/09/2026), com o acabamento visual
 
 ## Objetivo
 
@@ -82,6 +82,17 @@ que está sendo mostrado na banca.
 - `frontend/src/App.tsx` — seletores de partição e métrica.
 - `frontend/src/components/NodePanel.tsx` (novo).
 - `frontend/README.md` — roteiro de verificação.
+
+Acrescentados durante a implementação:
+
+- `frontend/src/palette.ts` — cores de Okabe & Ito, formas e leitura das
+  cores do tema.
+- `frontend/src/components/CommunityLegend.tsx`, `StatsBar.tsx`,
+  `ErrorBoundary.tsx` (novos) — legenda, faixa de números e proteção do
+  grafo.
+- `frontend/src/api.ts`, `types.ts` — `availableMetrics` e o bloco
+  `truncation` da API.
+- `frontend/src/styles.css` — painel, legenda e acabamento.
 
 ## Impacto no artigo
 

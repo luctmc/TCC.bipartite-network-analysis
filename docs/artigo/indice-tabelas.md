@@ -12,9 +12,10 @@ Lista planejada, com a spec que produz cada tabela.
 | 3 | **Louvain × Girvan-Newman × ponderação** | B-04 | `metrics/communities.csv` | **tabela principal** |
 | 4 | Perfil das comunidades | B-05 | `communities/*/profile.csv` | comunidades |
 | 5 | Validação: NMI, pureza, desfecho por comunidade | B-06 | `results/tables/tab5-validacao-*.csv` | validação |
-| 6 | Disciplinas críticas por métrica | C-03 | `metrics/centrality_top.csv` | disciplinas críticas |
-| 7 | Discordância entre métricas | C-03 | — | discussão |
-| 8 | Reprovação nas disciplinas críticas × base | C-06 | — | validação |
+| 6 | Disciplinas críticas por métrica | C-03 | `results/tables/tab6-criticas-*.csv` (de `metrics/centrality_top.csv`) | disciplinas críticas |
+| 7 | Discordância entre métricas | C-03 | `results/tables/tab7-discordancia-*.csv` | discussão |
+| 8 | Reprovação nas disciplinas críticas × base | C-06 | `results/tables/tab8-reprovacao-*.csv` | validação |
+| 8b | Desfecho por faixa de centralidade do aluno | C-06 | `results/tables/tab8b-desfecho-faixa-*.csv` | validação |
 | 9 | Tamanhos por recorte de escala | A-06 | — | limitações |
 
 ## Regras

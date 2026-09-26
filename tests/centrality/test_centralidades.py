@@ -470,6 +470,7 @@ def test_centrality_top_e_idempotente_pela_chave(tmp_path) -> None:
     assert len(chaves) == len(segunda)
 
 
+@pytest.mark.dataset("synthetic_v1")
 def test_spearman_bate_com_o_scipy_e_e_nan_no_empate_total(synthetic_projection) -> None:
     from scipy.stats import spearmanr
 
@@ -539,3 +540,15 @@ def test_k_zero_ou_negativo_e_recusado(tiny_projection) -> None:
     for k in (0, -3):
         with pytest.raises(ContractError, match="k precisa ser >= 1"):
             BetweennessCentrality().compute(projection, k=k)
+
+
+def test_conjunto_critico_segue_a_ordem_do_ranking() -> None:
+    """``critical_set``: a primeira da lista é a mais central, por métrica."""
+    from edugraph.centrality.critical_disciplines import critical_set
+
+    conjuntos = critical_set(_ponte_entre_dois_blocos(), top_n=2)
+
+    assert list(conjuntos) == ["degree", "betweenness", "eigenvector"]
+    assert conjuntos["betweenness"][0] == "DB"
+    assert conjuntos["degree"] == ["DA1", "DC1"]  # empate desfeito por id
+    assert all(len(nos) == 2 for nos in conjuntos.values())

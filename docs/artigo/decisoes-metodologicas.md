@@ -687,6 +687,35 @@ então a taxa deles é a da base.
    precisaria de um bipartido por matrícula (sem limiar), que a Frente A
    pode gerar — fica como sugestão, não como bloqueio.
 
+### Três escolhas da aplicação que a banca pode perguntar (C-04, C-05, C-07)
+
+**O corte de arestas da API é um esqueleto, não as mais pesadas (C-04).**
+Um grafo de 1,75 M arestas não se desenha; a API manda no máximo 5.000
+por resposta. Ficar com as 5.000 de maior peso parecia o óbvio, mas na
+projeção aluno↔aluno do AVA elas tocam só **193 dos 1.870 alunos**: o
+resto aparece solto e a figura sugere uma estrutura que não existe. O
+padrão passou a ser o **esqueleto** (`cut = backbone`): as k arestas mais
+fortes de cada nó, com o maior k que cabe no limite (k = 2, 3.732
+arestas, todos os alunos ligados). A resposta declara o critério e o k,
+e a interface avisa. Consequência para o texto: capturas de tela de
+grafo grande mostram o esqueleto, e a legenda precisa dizer isso. As
+figuras do artigo não saem do front, e sim de `reporting/figures.py`.
+
+**Cor e forma por comunidade (C-05).** A paleta é a de Okabe & Ito, feita
+para quem tem daltonismo, mas ela não separa todas as cores em escala de
+cinza, e as capturas podem ser impressas. Cada comunidade recebe também
+uma forma (círculo, triângulo, quadrado…); em cinza, é a forma que
+identifica o grupo. A maior comunidade fica sempre com a primeira cor,
+para o mesmo grafo sair com as mesmas cores em qualquer execução.
+
+**O relatório interno não traz o perfil das comunidades de disciplinas
+(C-07).** O perfil da B-05 caracteriza cada comunidade pelo outro lado do
+bipartido. Numa partição de disciplinas, esse lado são os **alunos**, e no
+OULAD o rótulo do aluno é o número de matrícula. Publicar esse perfil
+exporia alunos individualmente, que é o uso que o trabalho não se propõe
+a habilitar. O relatório lista só as disciplinas de cada comunidade, e o
+texto é varrido atrás de ids e rótulos de aluno antes de ser gravado.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |

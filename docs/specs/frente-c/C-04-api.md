@@ -101,8 +101,10 @@ Nenhum diretamente. Habilita a C-05, de onde saem as capturas do capítulo
   `frontend/src/types.ts` mudou junto.
 - **Números medidos no OULAD.** `oulad_module_presentation`/`discipline_simple`
   com as três centralidades embutidas: 0,1 s. `oulad_vle_bbb_2013j`/`student_simple`
-  (1.870 nós, 1,75 M arestas): 3,6 s e 0,42 MB, cortada em 5.000. Sem
-  cache: o tempo é o da leitura do CSV pelo `contracts.io`, e não
-  compensou a memória de manter o grafo carregado.
+  (1.870 nós, 1,75 M arestas), com o corte `backbone` padrão (k = 2,
+  3.732 arestas): 6,3 s e 0,30 MB sem métricas; 6,7 s e 0,47 MB com as
+  três embutidas (medido em 26/09/2026). Sem cache: o tempo é quase todo
+  a leitura do CSV pelo `contracts.io`, e não compensou a memória de
+  manter o grafo carregado.
 - **Erros.** 404 cita o artefato e as raízes consultadas; métrica
   inexistente em `?metrics=` dá 422 com a lista das válidas.

@@ -69,3 +69,22 @@ mesma regra do `evaluate.py` da Frente B.
 artigo reporta que centralidade estrutural e desempenho histórico são
 dimensões independentes — o que, aliás, reforça que a centralidade não é
 um proxy disfarçado do desfecho.
+
+## Como ficou (25/09/2026)
+
+- `python -m edugraph centrality evaluate --root data/processed --dataset <ds>
+  --metric <m> --tables results/tables --figures results/figures`.
+- **Não conclusão = `Fail` + `Withdrawn`**; `rate_Fail` fica na tabela
+  para a reprovação estrita. Taxas sobre os alunos com desfecho conhecido
+  (`n_labeled`).
+- **Tabela 8** (`tab8-reprovacao-<ds>-<métrica>.csv`): cada disciplina do
+  top-N, o conjunto delas (`critical_all`), as demais (`others`) e a base,
+  com o excesso sobre a base. **Tabela 8b**
+  (`tab8b-desfecho-faixa-<ds>-<métrica>.csv`) e **figura 8**: desfecho por
+  quartil de centralidade do aluno, por posição no ranking.
+- **Métrica degenerada** (tudo igual, como a intermediação em K₇) não gera
+  tabela: sai uma nota explicando a decisão D1.
+- Só `evaluate.py` chama `load_outcomes`; o relatório (C-07) recebe as
+  taxas agregadas da função `evaluate`.
+- Resultados e as duas ressalvas (desfecho por aluno; matrícula com limiar
+  de nota 40) em `docs/artigo/decisoes-metodologicas.md`.
