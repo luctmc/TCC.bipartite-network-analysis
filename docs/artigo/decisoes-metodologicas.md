@@ -476,12 +476,252 @@ O mesmo vale para o uso do grupo plantado e do desfecho histórico: eles
 entram **depois** de o algoritmo ter rodado, como categorias contra as
 quais a estrutura é comparada, nunca como entrada.
 
+### O peso na intermediação: caminho em saltos (C-01)
+
+**Decisão.** A intermediação principal usa `weight_mode = "none"`: o
+caminho mínimo é contado em saltos, ignorando o peso das arestas. O modo
+`inverse` (distância `1/w`) é calculado e reportado como **análise de
+sensibilidade**. O modo `raw` não é usado: em NetworkX o peso num caminho
+mínimo é distância, e usar o número de alunos em comum como distância
+inverteria a semântica da projeção (mais alunos em comum significaria
+disciplinas mais *distantes*).
+
+**Por que não `inverse` como principal.** Na projeção
+disciplina↔disciplina de `oulad_module_presentation` (22 nós, 93
+arestas), os pesos vão de 1 a 144 e são concentrados: a mediana das
+arestas entre módulos diferentes é 2, e as cinco mais pesadas saem todas
+de CCC, o módulo com mais matrículas. Com `1/w`, esse punhado de arestas
+vira o atalho de quase todo caminho mínimo: **13 das 22 disciplinas ficam
+com intermediação zero**, contra nenhuma no modo em saltos. O ranking
+passa a medir sobretudo o tamanho do módulo — o que o grau já mede — em
+vez da posição de ponte no currículo, que é o que a Introdução chama de
+gargalo.
+
+**O que muda no ranking (medido em 25/09/2026).** Correlação de Spearman
+entre os dois modos: 0,56. No topo em saltos: FFF_2014B, DDD_2014J,
+FFF_2014J. No topo com `1/w`: CCC_2014J, FFF_2014J, GGG_2013J. A tabela
+de disciplinas críticas precisa dizer na legenda qual modo usou, e a de
+sensibilidade mostra o outro.
+
+**Pergunta de banca provável.** *"Por que jogar fora o peso?"* O peso não
+é jogado fora: ele entra no grau ponderado (força) e no autovetor, que
+usam afinidade no sentido certo. Só a intermediação o ignora, porque ali
+o peso precisaria ser convertido em distância, e a conversão `1/w` deixa
+o resultado refém de poucas arestas muito pesadas.
+
+**A exceção: projeções quase completas usam `inverse`.** O modo em
+saltos só discrimina se o grafo não for (quase) completo. Na projeção
+aluno↔aluno de `oulad_vle_bbb_2013j`, a densidade é **1,000** (1.746.901
+de 1.747.515 pares possíveis): todo par de alunos é vizinho, nenhum
+caminho mínimo passa por um terceiro, e a intermediação em saltos dá
+**zero para os 1.870 alunos**. Ali só o peso distingue, e a configuração
+usa `inverse` (com 200 pivôs amostrados, porque a versão exata com peso
+não termina em tempo razoável). O Pedro já tinha visto isso na A-09 e
+escrito `"distance"`, que o contrato não aceita; o valor foi corrigido
+para `inverse`, que é a mesma intenção. A regra, portanto: **`none` onde
+a projeção é esparsa o bastante para haver caminhos de mais de um salto
+(as disciplinas do `module_presentation`, com 40% de densidade); `inverse`
+onde ela é quase completa.** A legenda de cada tabela diz qual foi usado.
+
+**Amostragem de pivôs.** Com `k` menor que o número de nós, a
+intermediação é estimada a partir de `k` pivôs sorteados com `seed`
+fixa; o artefato registra `estimate = true`, e a tabela precisa dizer que
+o valor é estimativa. Com `k` maior ou igual ao número de nós, o cálculo
+é exato e o artefato diz isso — é o caso das 22 disciplinas do OULAD,
+mesmo com o `k = 500` da configuração.
+
+### Autovetor à mão: iteração sobre A + I (C-02)
+
+**O que dizer.** A centralidade de autovetor é calculada por iteração de
+potência implementada à mão, a partir do vetor uniforme `1/n` (não
+aleatório, para ser reproduzível), com normalização L2 a cada passo e
+parada quando a variação L1 entre iterações fica abaixo de `tol · n`,
+com `tol = 1e-8`.
+
+**A escolha não-óbvia: iterar sobre `A + I`, não sobre `A`.** Somar a
+identidade não muda os autovetores — só desloca os autovalores em uma
+unidade —, então o resultado é o mesmo autovetor principal. O que muda é
+a convergência: num grafo bipartido, `A` tem `−λ` com o mesmo módulo de
+`λ`, e a iteração pura oscila entre dois vetores sem nunca parar. O teste
+`test_iteracao_sem_deslocamento_oscila_em_grafo_bipartido` mostra isso
+numa estrela. É o mesmo recurso que o NetworkX usa internamente, e o
+artefato registra `params.shift = 1.0`.
+
+**Validação contra o NetworkX (medida em 25/09/2026).** Em `tiny_v1`, o
+resultado bate com a forma fechada `λ = (3+√17)/2` com erro abaixo de
+1e-8. Em `synthetic_v1`/`student_simple`, a implementação à mão fica a
+7,7e-8 do autovetor exato (decomposição espectral), e o NetworkX com a
+tolerância padrão dele (1e-6) fica a 7,0e-6: **a comparação só é justa
+com o mesmo critério de parada dos dois lados**, e com ele as duas batem
+abaixo de 1e-6.
+
+**Convergência no OULAD.** Nenhuma projeção precisou do fallback:
+43 iterações em `oulad_module_presentation`/`discipline_simple`, 45 em
+`discipline_resource_allocation` e 7 na projeção aluno↔aluno de
+`oulad_vle_bbb_2013j` (1.870 alunos). O fallback por decomposição
+espectral existe e é testado, mas, se aparecer numa rodada, vira nota de
+rodapé da tabela.
+
+### Disciplinas críticas: o que a C-03 mediu
+
+**O resultado (OULAD, `oulad_module_presentation`/`discipline_simple`,
+22 disciplinas, 25/09/2026).** As três métricas apontam disciplinas
+diferentes, e é isso que o artigo discute:
+
+| Métrica | Topo 3 | O que mede |
+|---|---|---|
+| grau | DDD_2014J, FFF_2014J, CCC_2014B | com quantas disciplinas a disciplina compartilha alunos |
+| intermediação | FFF_2014B, DDD_2014J, FFF_2014J | por onde passam os caminhos entre partes do currículo |
+| autovetor | CCC_2014J, CCC_2014B, DDD_2013J | ligação com disciplinas que também são centrais |
+
+Tabelas completas em `results/tables/tab6-criticas-*.csv` (ranking) e
+`tab7-discordancia-*.csv` (conjuntos e correlações).
+
+**A discordância é o achado.** No top 5, **FFF_2014B, FFF_2013J e
+BBB_2014J aparecem só na intermediação**: são pontes sem ser populares —
+o perfil de gargalo estrutural que a Introdução descreve. No outro
+extremo, EEE_2013J e EEE_2014B aparecem só no autovetor, puxadas pela
+vizinhança com CCC, o módulo com mais matrículas. Nenhuma disciplina está
+no top 5 das três métricas. Spearman: grau × autovetor 0,84 (medem quase
+o mesmo), grau × intermediação 0,53, intermediação × autovetor **0,21**
+— ser ponte e estar num bloco central são dimensões diferentes.
+
+**Duas ressalvas que a banca pode levantar.**
+
+1. **Na alocação de recursos, grau e intermediação não mudam.** A
+   projeção `discipline_resource_allocation` tem as mesmas 93 arestas
+   que a `discipline_simple`; como a intermediação ignora o peso (C-01)
+   e o grau é a contagem de vizinhos, só o autovetor difere entre as
+   duas. Isso é consequência da decisão da C-01, não coincidência.
+2. **Posição sob empate.** A chave de `centrality_top.csv` inclui a
+   posição, então empates são desfeitos por `node_id`: DDD_2014J e
+   FFF_2014J têm o mesmo grau (0,667) e ocupam as posições 1 e 2 por
+   ordem alfabética. A tabela precisa ser lida com o score ao lado. Em
+   `synthetic_v1` (K₇), a tabela inteira é ordem alfabética e o Spearman
+   é **indefinido** (`nan`), não zero: todos os nós empatam.
+
+**O que não afirmar.** Que as disciplinas de alta intermediação são
+difíceis ou que reprovam mais — isso é a pergunta da C-06, respondida
+a posteriori contra `outcomes.csv`, nunca premissa do ranking.
+
+### A validação da centralidade: o que a C-06 mediu
+
+**O método.** Depois de calculado o ranking — sem nenhum rótulo —, a
+taxa de **não conclusão** (`Fail` + `Withdrawn`) dos alunos de cada
+disciplina crítica é posta ao lado da taxa da base. `Withdrawn` entra
+porque, para a gestão, desistir também é não concluir; `rate_Fail`
+fica na tabela para quem quiser a reprovação estrita. Para os alunos, o
+desfecho é distribuído por faixa de centralidade (quartis por posição).
+Tudo descritivo: a spec deixa teste de significância fora de escopo.
+
+**O resultado (OULAD, `oulad_module_presentation`, 22.425 alunos, base
+37,6%, 25/09/2026).** O sinal é **fraco e depende da métrica**:
+
+| Top 5 por | Não conclusão no conjunto | Excesso sobre a base |
+|---|---|---|
+| intermediação | 38,8% | **+1,2 p.p.** |
+| grau | 40,0% | +2,4 p.p. |
+| autovetor | 41,6% | +4,0 p.p. |
+
+Individualmente, as disciplinas-ponte vão de FFF_2014B (+9,2 p.p.) a
+BBB_2014J (**−6,4 p.p.**, abaixo da base). Tabelas em
+`results/tables/tab8-reprovacao-*.csv`.
+
+**Como ler, e o que dizer na banca.** A intermediação — a métrica que a
+Introdução associa a gargalo — praticamente **não separa** as
+disciplinas críticas pelo desfecho. A spec já previa essa leitura: se a
+relação não aparece, o artigo reporta que centralidade estrutural e
+desempenho histórico são dimensões **independentes**, e isso reforça
+que a centralidade não é um proxy disfarçado da reprovação. Um gargalo
+estrutural é um ponto de passagem no currículo, não uma disciplina
+difícil.
+
+**Os alunos no AVA: sinal forte, e a leitura cuidadosa que ele exige.**
+Em `oulad_vle_bbb_2013j` (1.870 alunos, base 42,7%), o desfecho varia
+muito com a centralidade do aluno na projeção aluno↔aluno:
+
+| Faixa | Autovetor | Intermediação (`inverse`, k = 200) |
+|---|---|---|
+| Q1 (menor) | 89,3% | 71,5% |
+| Q2 | 52,6% | 50,9% |
+| Q3 | 18,4% | 33,4% |
+| Q4 (maior) | **10,5%** | 15,0% |
+
+(Taxas de não conclusão; tabelas em `tab8b-desfecho-faixa-*.csv`,
+figura `fig8-validacao-*`.) O grau não serve aqui: a projeção é
+completa, e três dos quatro quartis têm grau 1,0.
+
+**O que isso não é.** Não é poder de previsão. O peso da aresta é o
+número de recursos do AVA que os dois alunos acessaram, e **quem desiste
+para de acessar**: tem menos recursos em comum com os outros e, por
+construção, menor centralidade. Parte do sinal é mecânica — a
+centralidade aqui mede sobretudo **volume de engajamento acumulado até
+o fim da apresentação**, que o próprio desfecho trunca. Para afirmar que
+a posição na rede antecipa o desfecho, seria preciso calcular a
+centralidade só com a atividade das primeiras semanas, antes de qualquer
+desistência — fica como trabalho futuro, e a banca provavelmente vai
+perguntar.
+
+**O que dá para dizer.** Que a estrutura de interação no AVA, obtida
+sem nenhum rótulo, **separa** os alunos que concluem dos que não
+concluem com nitidez (Q1 × Q4: 89% contra 11%), enquanto a estrutura
+curricular (disciplinas do `module_presentation`) quase não separa. É a
+mesma diferença que a A-08 encontrou para as comunidades: o sinal está
+no comportamento, não na matrícula. Do lado dos recursos do AVA, a
+tabela de "disciplinas" críticas não informa nada — os recursos centrais
+são acessados por quase todos os alunos (1.866 dos 1.870 no primeiro),
+então a taxa deles é a da base.
+
+**Duas ressalvas que precisam ir para o texto.**
+
+1. **Desfecho por aluno, não por matrícula.** O ETL guarda um desfecho
+   por aluno, o da apresentação mais recente (A-02). Para 91,8% dos
+   alunos do `module_presentation`, que cursaram uma só disciplina, é o
+   daquela disciplina; para os demais, pode ser de outra.
+2. **Matrícula vinda do bipartido com `score_threshold = 40`.** Só há
+   aresta onde a nota passou do limiar: 3.674 alunos sem nenhuma nota
+   acima de 40 ficaram fora do bipartido (A-03), e são justamente os que
+   mais reprovam. A taxa **absoluta** fica subestimada; a comparação
+   crítica × base continua válida como contraste, porque as duas são
+   medidas sobre a mesma população. Uma validação sem esse viés
+   precisaria de um bipartido por matrícula (sem limiar), que a Frente A
+   pode gerar — fica como sugestão, não como bloqueio.
+
+### Três escolhas da aplicação que a banca pode perguntar (C-04, C-05, C-07)
+
+**O corte de arestas da API é um esqueleto, não as mais pesadas (C-04).**
+Um grafo de 1,75 M arestas não se desenha; a API manda no máximo 5.000
+por resposta. Ficar com as 5.000 de maior peso parecia o óbvio, mas na
+projeção aluno↔aluno do AVA elas tocam só **193 dos 1.870 alunos**: o
+resto aparece solto e a figura sugere uma estrutura que não existe. O
+padrão passou a ser o **esqueleto** (`cut = backbone`): as k arestas mais
+fortes de cada nó, com o maior k que cabe no limite (k = 2, 3.732
+arestas, todos os alunos ligados). A resposta declara o critério e o k,
+e a interface avisa. Consequência para o texto: capturas de tela de
+grafo grande mostram o esqueleto, e a legenda precisa dizer isso. As
+figuras do artigo não saem do front, e sim de `reporting/figures.py`.
+
+**Cor e forma por comunidade (C-05).** A paleta é a de Okabe & Ito, feita
+para quem tem daltonismo, mas ela não separa todas as cores em escala de
+cinza, e as capturas podem ser impressas. Cada comunidade recebe também
+uma forma (círculo, triângulo, quadrado…); em cinza, é a forma que
+identifica o grupo. A maior comunidade fica sempre com a primeira cor,
+para o mesmo grafo sair com as mesmas cores em qualquer execução.
+
+**O relatório interno não traz o perfil das comunidades de disciplinas
+(C-07).** O perfil da B-05 caracteriza cada comunidade pelo outro lado do
+bipartido. Numa partição de disciplinas, esse lado são os **alunos**, e no
+OULAD o rótulo do aluno é o número de matrícula. Publicar esse perfil
+exporia alunos individualmente, que é o uso que o trabalho não se propõe
+a habilitar. O relatório lista só as disciplinas de cada comunidade, e o
+texto é varrido atrás de ids e rótulos de aluno antes de ser gravado.
+
 ## A decidir nas specs
 
 | Pendência | Spec | Por que importa |
 |---|---|---|
-| `weight_mode` da intermediação (`none`/`inverse`/`raw`) | C-01 | **muda o ranking**; em NetworkX peso é distância, não afinidade |
-| Interpretação do resultado da validação a posteriori | ~~B-06~~, C-06 | **decidida para as comunidades** (ver acima); segue aberta para a centralidade |
+| ~~`weight_mode` da intermediação~~ | ~~C-01~~ | **decidido**: `none` em projeção esparsa, `inverse` em projeção quase completa (ver acima) |
+| ~~Interpretação do resultado da validação a posteriori~~ | ~~B-06~~, ~~C-06~~ | **decidida** para as comunidades e para a centralidade (ver acima) |
 
 ## O que o artigo não deve afirmar
 

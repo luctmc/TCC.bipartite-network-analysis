@@ -53,6 +53,36 @@ class EdgeOut(BaseModel):
     weight: float
 
 
+class TruncationInfo(BaseModel):
+    """O corte de arestas, declarado no corpo para que a interface avise.
+
+    Um grafo de um milhão de arestas não renderiza e não deve sequer ser
+    transferido. Quando corta, mantém **todos os nós** — são eles que
+    carregam comunidade e centralidade — e escolhe as arestas por um de
+    dois critérios, sempre com desempate determinístico:
+
+    - ``backbone`` (padrão): as ``k_per_node`` arestas mais fortes de cada
+      nó, com o maior ``k`` que cabe no limite. Todo nó que tinha vizinho
+      continua com pelo menos um.
+    - ``top_weight``: as ``max_edges`` arestas de maior peso do grafo
+      inteiro. Mais fiel ao peso, mas concentra tudo em poucos nós.
+    """
+
+    truncated: bool
+    max_edges: int = Field(description="Limite aplicado nesta resposta")
+    n_nodes: int = Field(description="Nós no grafo e na resposta — nós nunca são cortados")
+    n_edges_total: int = Field(description="Arestas no artefato em disco")
+    n_edges_returned: int = Field(description="Arestas nesta resposta")
+    criterion: Literal["backbone", "top_weight"] = "backbone"
+    k_per_node: int | None = Field(
+        default=None,
+        description=(
+            "No corte backbone, quantas arestas por nó couberam; 0 = nem uma por nó "
+            "coube, e ficaram as mais pesadas entre as melhores de cada nó"
+        ),
+    )
+
+
 class GraphResponse(BaseModel):
     """Resposta de ``GET /datasets/{dataset}/projections/{projection_id}``.
 
@@ -66,6 +96,7 @@ class GraphResponse(BaseModel):
     spec: dict[str, Any]
     nodes: list[NodeOut]
     edges: list[EdgeOut]
+    truncation: TruncationInfo
     community: dict[str, int] | None = None
     centrality: dict[str, dict[str, float]] | None = None
 

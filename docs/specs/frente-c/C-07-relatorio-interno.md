@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026)
 
 ## Objetivo
 
@@ -46,14 +46,14 @@ interno da instituição. O sistema não expõe dados a terceiros."
 
 ## Critérios de aceite
 
-- [ ] Dado um dataset com métricas, quando gerar, então sai um Markdown
+- [x] Dado um dataset com métricas, quando gerar, então sai um Markdown
       em `results/` legível por quem não programa.
-- [ ] O relatório traz a seção de limitações, com o que a centralidade
+- [x] O relatório traz a seção de limitações, com o que a centralidade
       estrutural **não** diz.
-- [ ] Nenhum aluno aparece nominalmente ou por id — só agregados.
-- [ ] Dado um dataset sem alguma métrica, então a seção correspondente é
+- [x] Nenhum aluno aparece nominalmente ou por id — só agregados.
+- [x] Dado um dataset sem alguma métrica, então a seção correspondente é
       omitida com nota, em vez de quebrar.
-- [ ] Rodar duas vezes produz o mesmo arquivo.
+- [x] Rodar duas vezes produz o mesmo arquivo.
 
 ## Testes exigidos
 
@@ -73,3 +73,22 @@ interno da instituição. O sistema não expõe dados a terceiros."
 **Saída obrigatória**: é a evidência de aplicabilidade prática que a
 Conclusão precisa citar, e o que sustenta a afirmação de que o trabalho
 serve à gestão pedagógica.
+
+## Como ficou (25/09/2026)
+
+- `python -m edugraph centrality report --root data/processed --dataset <ds>`
+  grava `results/relatorio-interno-<ds>.md` e a figura 7 em
+  `results/figures/`, com caminho relativo.
+- **Perfil de partição de disciplinas não entra.** O `profile.csv` da B-05
+  caracteriza cada comunidade pelo outro lado do bipartido; numa partição
+  de disciplinas, isso são **alunos** (no OULAD, números de matrícula).
+  O relatório lista só as disciplinas de cada comunidade. Nas partições
+  de alunos entra o perfil (disciplinas características), nunca os
+  membros.
+- **Guarda antes de gravar:** o texto é varrido atrás de ids de aluno
+  (`S` + dígitos) e recusado se algum aparecer; o teste de contrato
+  confere também os rótulos.
+- A validação (C-06) entra só como taxas agregadas devolvidas por
+  `centrality.evaluate` — o relatório não lê `outcomes.csv`.
+- Seção sem artefato vira nota em itálico; rodar duas vezes dá o mesmo
+  arquivo (sem data nem caminho absoluto).

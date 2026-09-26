@@ -38,7 +38,11 @@ caminho mínimo é **distância**: peso alto vira caminho longo. Mas nas
 projeções peso alto significa *mais* afinidade, ou seja, distância
 *menor*. Passar `weight="weight"` direto inverte a semântica.
 
-A spec C-01 precisa decidir e registrar em `params.weight_mode`:
+A spec C-01 decidiu (ver `docs/artigo/decisoes-metodologicas.md`): `none`
+em projeção esparsa, `inverse` em projeção quase completa. O valor fica
+registrado em `params.weight_mode`, junto com `k`, `seed` e `estimate`
+quando há amostragem de pivôs; o autovetor registra também `shift`,
+`fallback` e `n_iter`. As opções do contrato:
 
 | `weight_mode` | O que faz |
 |---|---|

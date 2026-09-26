@@ -87,7 +87,18 @@ metrics = ["degree", "betweenness", "eigenvector"]
 [centrality.betweenness]
 # Grafo quase completo: a intermediação não-ponderada é quase uniforme.
 # O peso é o que discrimina aqui.
-weight_mode = "distance"
+#
+# "inverse" é o peso como distância no sentido certo (1/w: mais recursos
+# em comum, mais perto) — o contrato só aceita none/inverse/raw, e o
+# "distance" de antes levantava erro de contrato. Medido em 25/09/2026
+# (C-01): na projeção aluno↔aluno (densidade 1,000), "none" dá zero em
+# todos os 1.870 alunos; "inverse" discrimina.
+weight_mode = "inverse"
+# Intermediação exata com peso em 1,75 M arestas não termina em tempo
+# razoável (~1,3 s por pivô): estimativa com 200 pivôs, ~4,5 min por
+# projeção de alunos (o estágio inteiro, com as duas, levou 8m47s).
+k = 200
+seed = 42
 
 [centrality.eigenvector]
 implementation = "manual"

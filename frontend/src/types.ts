@@ -44,12 +44,30 @@ export interface GraphEdge {
   weight: number;
 }
 
+/**
+ * O corte de arestas da resposta. Quando `truncated`, a API manteve todos
+ * os nós e escolheu as arestas por `criterion`: `backbone` (as
+ * `k_per_node` mais fortes de cada nó) ou `top_weight` (as mais pesadas
+ * do grafo inteiro).
+ */
+export interface TruncationInfo {
+  truncated: boolean;
+  max_edges: number;
+  n_nodes: number;
+  n_edges_total: number;
+  n_edges_returned: number;
+  criterion: "backbone" | "top_weight";
+  /** No `backbone`: arestas por nó que couberam; 0 = nem uma por nó coube. */
+  k_per_node: number | null;
+}
+
 export interface GraphResponse {
   dataset: string;
   projection_id: string;
   spec: Record<string, unknown>;
   nodes: GraphNode[];
   edges: GraphEdge[];
+  truncation: TruncationInfo;
   /** Nó → comunidade, quando a partição foi pedida junto. */
   community?: Record<string, number> | null;
   /** Métrica → (nó → score), quando as centralidades foram pedidas junto. */
@@ -77,4 +95,11 @@ export interface CentralityResponse {
   params: Record<string, unknown>;
   /** Pares [nó, score], já ordenados do maior para o menor. */
   ranking: [string, number][];
+}
+
+export interface MetricsResponse {
+  dataset: string;
+  name: string;
+  /** Linhas de `metrics/<name>.csv`; números já convertidos. */
+  rows: Record<string, string | number>[];
 }

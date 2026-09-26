@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026)
 
 ## Objetivo
 
@@ -52,16 +52,16 @@ desfecho: o gargalo é topológico.
 
 ## Critérios de aceite
 
-- [ ] Dado `synthetic_v1`/`discipline_simple`, quando ranquear duas
+- [x] Dado `synthetic_v1`/`discipline_simple`, quando ranquear duas
       vezes, então o resultado é **idêntico** — mesmo com todos os nós
       empatados.
-- [ ] `metrics/centrality_top.csv` tem as colunas de `METRICS_COLUMNS` e
+- [x] `metrics/centrality_top.csv` tem as colunas de `METRICS_COLUMNS` e
       é idempotente por `(dataset, projection_id, metric, rank)`.
-- [ ] Dado um `top_n` maior que o número de disciplinas, então devolve o
+- [x] Dado um `top_n` maior que o número de disciplinas, então devolve o
       ranking inteiro sem erro — com 7 ou 22 disciplinas, esse é o caso
       desejável.
-- [ ] `disagreement` devolve os quatro conjuntos, ordenados.
-- [ ] Dada uma granularidade mais fina (`module_presentation`), então o
+- [x] `disagreement` devolve os quatro conjuntos, ordenados.
+- [x] Dada uma granularidade mais fina (`module_presentation`), então o
       ranking **discrimina** — se continuar empatando tudo, a decisão D1
       precisa ser revisitada e isso vira achado.
 

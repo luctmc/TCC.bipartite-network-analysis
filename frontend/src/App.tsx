@@ -1,36 +1,64 @@
 /**
- * Aplicação — Frente C, specs C-04 e C-05.
+ * Aplicação — Frente C, spec C-05.
  *
- * Estado do dia 0: conecta na API, mostra sobre que raízes ela está
- * olhando e lista o que já existe em disco. Os seletores são montados a
- * partir de `/datasets`, sem nome de dataset embutido no código — quando
- * a Frente A gravar o OULAD em `data/processed`, ele aparece aqui
- * sozinho.
+ * Os seletores são montados a partir de `/datasets`, sem nome de dataset
+ * embutido no código: o que estiver em disco sob as raízes da API
+ * aparece aqui.
  *
- * O grafo depende da rota de projeção, que é a spec C-04. Enquanto ela
- * responde 501, a interface diz isso explicitamente em vez de fingir
- * erro.
+ * Duas requisições por tela, de propósito:
+ *
+ * - a **projeção**, com as centralidades embutidas, muda quando muda o
+ *   dataset ou a projeção — e só então o grafo é redesenhado;
+ * - a **partição** vem à parte, para que trocar a cor não recarregue nem
+ *   re-diagrame o grafo: só os nós mudam de cor, com transição.
  */
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { ApiError, api } from "./api";
+import { CommunityLegend } from "./components/CommunityLegend";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { GraphView } from "./components/GraphView";
-import type { DatasetSummary, GraphResponse, HealthResponse } from "./types";
+import { NodePanel } from "./components/NodePanel";
+import { StatsBar } from "./components/StatsBar";
+import type {
+  CentralityMetric,
+  DatasetSummary,
+  GraphResponse,
+  HealthResponse,
+  PartitionResponse,
+} from "./types";
 
 type Estado<T> =
   | { status: "carregando" }
   | { status: "pronto"; dados: T }
-  | { status: "erro"; erro: ApiError }
-  | { status: "aguardando-spec"; spec: string };
+  | { status: "erro"; erro: ApiError };
+
+const METRICAS: { id: CentralityMetric; nome: string }[] = [
+  { id: "degree", nome: "Grau" },
+  { id: "betweenness", nome: "Intermediação" },
+  { id: "eigenvector", nome: "Autovetor" },
+];
+
+/** Partições da projeção ativa: `<algoritmo>__<projection_id>`, Louvain primeiro. */
+function particoesDa(resumo: DatasetSummary | null, projecao: string | null): string[] {
+  if (!resumo || !projecao) return [];
+  return resumo.partitions
+    .filter((id) => id.endsWith(`__${projecao}`))
+    .sort((a, b) => Number(!a.startsWith("louvain")) - Number(!b.startsWith("louvain")) || a.localeCompare(b));
+}
 
 export default function App() {
   const [health, setHealth] = useState<Estado<HealthResponse>>({ status: "carregando" });
   const [datasets, setDatasets] = useState<Estado<DatasetSummary[]>>({ status: "carregando" });
   const [datasetAtivo, setDatasetAtivo] = useState<string | null>(null);
   const [projecaoAtiva, setProjecaoAtiva] = useState<string | null>(null);
+  const [particaoAtiva, setParticaoAtiva] = useState<string | null>(null);
+  const [metricaAtiva, setMetricaAtiva] = useState<CentralityMetric | null>("degree");
+  const [selecionado, setSelecionado] = useState<string | null>(null);
   const [grafo, setGrafo] = useState<Estado<GraphResponse> | null>(null);
+  const [particao, setParticao] = useState<PartitionResponse | null>(null);
 
   useEffect(() => {
     api
@@ -42,7 +70,10 @@ export default function App() {
       .datasets()
       .then(({ datasets: lista }) => {
         setDatasets({ status: "pronto", dados: lista });
-        const primeiro = lista.find((d) => d.projections.length > 0) ?? lista[0];
+        const primeiro =
+          lista.find((d) => d.projections.length > 0 && d.partitions.length > 0) ??
+          lista.find((d) => d.projections.length > 0) ??
+          lista[0];
         if (primeiro) {
           setDatasetAtivo(primeiro.dataset);
           setProjecaoAtiva(primeiro.projections[0] ?? null);
@@ -58,25 +89,67 @@ export default function App() {
         : null,
     [datasets, datasetAtivo],
   );
+  const particoes = useMemo(
+    () => particoesDa(resumoAtivo, projecaoAtiva),
+    [resumoAtivo, projecaoAtiva],
+  );
 
+  // Ao trocar de projeção: a primeira partição dela, e nenhum nó selecionado.
+  useEffect(() => {
+    setParticaoAtiva(particoes[0] ?? null);
+    setSelecionado(null);
+  }, [particoes]);
+
+  // A projeção, com as centralidades que existirem em disco.
   useEffect(() => {
     if (!datasetAtivo || !projecaoAtiva) {
       setGrafo(null);
       return;
     }
+    let cancelado = false;
+    const temCentralidade = resumoAtivo?.centralities.includes(projecaoAtiva) ?? false;
+    const todas = METRICAS.map((m) => m.id);
 
     setGrafo({ status: "carregando" });
+    (temCentralidade
+      ? api.availableMetrics(datasetAtivo, projecaoAtiva, todas)
+      : Promise.resolve<CentralityMetric[]>([])
+    )
+      .then((metrics) => api.projection(datasetAtivo, projecaoAtiva, { metrics }))
+      .then((dados) => !cancelado && setGrafo({ status: "pronto", dados }))
+      .catch((erro: ApiError) => !cancelado && setGrafo({ status: "erro", erro }));
+    return () => {
+      cancelado = true;
+    };
+  }, [datasetAtivo, projecaoAtiva, resumoAtivo]);
+
+  // A partição, à parte: trocar a cor não redesenha o grafo.
+  useEffect(() => {
+    // Limpa já: sem isto a legenda e o Q da partição anterior ficam na
+    // tela até a resposta nova chegar.
+    setParticao(null);
+    if (!datasetAtivo || !particaoAtiva) return;
+    let cancelado = false;
     api
-      .projection(datasetAtivo, projecaoAtiva)
-      .then((dados) => setGrafo({ status: "pronto", dados }))
-      .catch((erro: ApiError) =>
-        setGrafo(
-          erro.notImplemented
-            ? { status: "aguardando-spec", spec: "C-04" }
-            : { status: "erro", erro },
-        ),
-      );
-  }, [datasetAtivo, projecaoAtiva]);
+      .partition(datasetAtivo, particaoAtiva)
+      .then((dados) => !cancelado && setParticao(dados))
+      .catch(() => !cancelado && setParticao(null));
+    return () => {
+      cancelado = true;
+    };
+  }, [datasetAtivo, particaoAtiva]);
+
+  const dadosGrafo = grafo?.status === "pronto" ? grafo.dados : null;
+  const metricasDisponiveis = METRICAS.filter((m) => dadosGrafo?.centrality?.[m.id]);
+  const membership = particao?.membership ?? null;
+  const chaveMetricas = metricasDisponiveis.map((m) => m.id).join(",");
+
+  // Se a métrica escolhida não existe nesta projeção, cai na primeira que existir.
+  useEffect(() => {
+    if (!dadosGrafo) return;
+    const ids = chaveMetricas ? (chaveMetricas.split(",") as CentralityMetric[]) : [];
+    setMetricaAtiva((atual) => (atual === null || ids.includes(atual) ? atual : (ids[0] ?? null)));
+  }, [dadosGrafo, chaveMetricas]);
 
   return (
     <div className="app">
@@ -141,23 +214,64 @@ export default function App() {
             </section>
 
             <section>
-              <h2>Disponível em disco</h2>
-              <dl className="inventario">
-                <dt>projeções</dt>
-                <dd>{resumoAtivo.projections.length}</dd>
-                <dt>partições</dt>
-                <dd>{resumoAtivo.partitions.length}</dd>
-                <dt>centralidades</dt>
-                <dd>{resumoAtivo.centralities.length}</dd>
-              </dl>
-              {/* TODO C-05: seletores de partição (cor) e de métrica
-                  (tamanho), alimentados por estas duas listas. */}
+              <h2>Cor: comunidades</h2>
+              {particoes.length === 0 ? (
+                <p className="dim">nenhuma partição desta projeção em disco</p>
+              ) : (
+                <select
+                  value={particaoAtiva ?? ""}
+                  onChange={(event) => setParticaoAtiva(event.target.value || null)}
+                >
+                  <option value="">sem cor por comunidade</option>
+                  {particoes.map((id) => (
+                    <option key={id} value={id}>
+                      {id.split("__")[0]}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {particao && membership && (
+                <>
+                  <p className="dim resumo-particao">
+                    Q = {particao.modularity.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} · {particao.n_communities} comunidades
+                    {particao.status !== "ok" && ` · ${particao.status}`}
+                  </p>
+                  <CommunityLegend membership={membership} />
+                </>
+              )}
+            </section>
+
+            <section>
+              <h2>Tamanho: centralidade</h2>
+              {dadosGrafo && metricasDisponiveis.length === 0 ? (
+                <p className="dim">
+                  sem centralidades desta projeção em disco
+                  <br />
+                  <code>python -m edugraph centrality all</code>
+                </p>
+              ) : (
+                <div className="segmentado" role="radiogroup" aria-label="Métrica de tamanho">
+                  {[{ id: null, nome: "Igual" }, ...metricasDisponiveis].map((m) => (
+                    <button
+                      key={m.id ?? "nenhuma"}
+                      type="button"
+                      role="radio"
+                      aria-checked={metricaAtiva === m.id}
+                      className={metricaAtiva === m.id ? "ativo" : ""}
+                      onClick={() => setMetricaAtiva(m.id as CentralityMetric | null)}
+                    >
+                      {m.nome}
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
           </>
         )}
       </aside>
 
       <main className="palco">
+        {dadosGrafo && <StatsBar graph={dadosGrafo} partition={particao} />}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${datasetAtivo}/${projecaoAtiva}/${grafo?.status}`}
@@ -169,18 +283,30 @@ export default function App() {
           >
             {grafo === null && <Vazio>Escolha um dataset e uma projeção.</Vazio>}
             {grafo?.status === "carregando" && <Vazio>carregando grafo…</Vazio>}
-            {grafo?.status === "aguardando-spec" && (
-              <Vazio>
-                A rota de projeção é a spec <strong>{grafo.spec}</strong>, ainda aberta.
-                <br />
-                <span className="dim">
-                  O resto da interface já funciona sobre os artefatos em disco.
-                </span>
-              </Vazio>
-            )}
             {grafo?.status === "erro" && <Vazio>{grafo.erro.message}</Vazio>}
-            {grafo?.status === "pronto" && <GraphView graph={grafo.dados} />}
+            {dadosGrafo && (
+              <ErrorBoundary resetKey={`${datasetAtivo}/${projecaoAtiva}`}>
+                <GraphView
+                  graph={dadosGrafo}
+                  membership={membership}
+                  sizeBy={metricaAtiva}
+                  selected={selecionado}
+                  onSelect={setSelecionado}
+                />
+              </ErrorBoundary>
+            )}
           </motion.div>
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {dadosGrafo && selecionado && (
+            <NodePanel
+              graph={dadosGrafo}
+              membership={membership}
+              nodeId={selecionado}
+              onSelect={setSelecionado}
+            />
+          )}
         </AnimatePresence>
       </main>
 

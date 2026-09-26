@@ -6,15 +6,19 @@ Grau, intermediação, autovetor, disciplinas críticas, API e front-end.
 interface. **Consome** `projections/`, `communities/` e os próprios
 `centrality/`.
 
-| ID | Spec | Consome | Cumpre | Artigo |
-|---|---|---|---|---|
-| [C-01](C-01-grau-intermediacao.md) | Grau e intermediação | Projection (fixture) | CentralityResult | decisão sobre o peso |
-| [C-02](C-02-autovetor.md) | Autovetor por iteração de potência | Projection (fixture) | CentralityResult | **algoritmo implementado à mão** |
-| [C-03](C-03-disciplinas-criticas.md) | Disciplinas críticas e discordância | CentralityResult | `metrics/centrality_top.csv` | **saída obrigatória** + tabela |
-| [C-04](C-04-api.md) | API somente leitura | todos os bundles (fixture) | API | — |
-| [C-05](C-05-frontend.md) | Front-end React + Cytoscape.js | API | visualização | capturas do cap. 3 |
-| [C-06](C-06-validacao-centralidade.md) | Validação a posteriori | CentralityResult, Outcomes | — | tabela + figura |
-| [C-07](C-07-relatorio-interno.md) | Relatório interno | `metrics/` | `results/` | **saída obrigatória** |
+| ID | Spec | Consome | Cumpre | Artigo | Status |
+|---|---|---|---|---|---|
+| [C-01](C-01-grau-intermediacao.md) | Grau e intermediação | Projection (fixture) | CentralityResult | decisão sobre o peso | concluída |
+| [C-02](C-02-autovetor.md) | Autovetor por iteração de potência | Projection (fixture) | CentralityResult | **algoritmo implementado à mão** | concluída |
+| [C-03](C-03-disciplinas-criticas.md) | Disciplinas críticas e discordância | CentralityResult | `metrics/centrality_top.csv` | **saída obrigatória** + tabela | concluída |
+| [C-04](C-04-api.md) | API somente leitura | todos os bundles (fixture) | API | — | concluída |
+| [C-05](C-05-frontend.md) | Front-end React + Cytoscape.js | API | visualização | capturas do cap. 3 | concluída |
+| [C-06](C-06-validacao-centralidade.md) | Validação a posteriori | CentralityResult, Outcomes | — | tabela + figura | concluída |
+| [C-07](C-07-relatorio-interno.md) | Relatório interno | `metrics/` | `results/` | **saída obrigatória** | concluída |
+
+**As sete fecharam em 25/09/2026**, sobre as fixtures e sobre o OULAD em
+`data/processed`. O que vai para o texto está em
+[`docs/artigo/decisoes-metodologicas.md`](../../artigo/decisoes-metodologicas.md).
 
 ## Ordem sugerida
 
@@ -39,13 +43,21 @@ decisão D1, e nenhum teste deve afirmar que uma disciplina específica
 lidera o ranking nessa fixture. Ver
 `data/fixtures/synthetic_v1/REFERENCE.md`.
 
-## O que já existe no dia 0
+## Como rodar a frente inteira
 
-- `/health` e `/datasets` **funcionando** e testados.
-- O esqueleto do front conectando na API, com seletores montados a partir
-  de `/datasets`.
-- As centralidades de referência nas fixtures, para o front ter o que
-  mostrar antes de C-01 e C-02.
+```bash
+python -m edugraph centrality all --root data/processed --dataset oulad_module_presentation
+python -m edugraph centrality critical --root data/processed --dataset oulad_module_presentation --tables results/tables
+python -m edugraph centrality evaluate --root data/processed --dataset oulad_vle_bbb_2013j --metric eigenvector --tables results/tables --figures results/figures
+python -m edugraph centrality report --root data/processed --dataset oulad_module_presentation
+python -m edugraph api serve --root data/processed --root data/fixtures
+```
+
+Ou por configuração: `python -m edugraph run configs/<config>.toml --only
+centrality --root data/processed`, que grava também o
+`metrics/centrality_top.csv` das projeções de disciplina. As fixtures
+continuam trazendo centralidades de referência, para o front ter o que
+mostrar sem rodar nada.
 
 ## O que a Frente A entrega — leia antes de escolher o `--root`
 
@@ -57,7 +69,7 @@ indiferente**, e a razão está na spec A-08:
 | `oulad_vle_bbb_2013j` | coorte BBB 2013J pelo **AVA**: 1.870 alunos × 320 recursos, projeção aluno↔aluno com 1,75 M arestas | **comunidades de alunos** — é o único com sinal |
 | `oulad_vle_bbb_2013j_null0..4` | réplicas nulas do anterior | a linha de base da B-06 |
 | `oulad_module_presentation` | base inteira por módulo×apresentação, 22.425 alunos, 22 disciplinas | **projeção de disciplina** e disciplinas críticas (C-03) |
-| `oulad_module_presentation_null0..2` | réplicas nulas do anterior | linha de base |
+| `oulad_module_presentation_null0..4` | réplicas nulas do anterior | linha de base |
 | `oulad_bbb_2013j` | coorte por avaliação, 1.706 alunos | comparação Louvain × Girvan-Newman (grafo menor) |
 
 **O aviso que evita concluir o contrário do certo.** Na projeção

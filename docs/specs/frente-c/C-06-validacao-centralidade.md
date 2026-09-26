@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026)
 
 ## Objetivo
 
@@ -41,15 +41,15 @@ mesma regra do `evaluate.py` da Frente B.
 
 ## Critérios de aceite
 
-- [ ] Dada a fixture, quando avaliar, então a tabela traz a taxa de
+- [x] Dada a fixture, quando avaliar, então a tabela traz a taxa de
       reprovação das disciplinas críticas e a da base, lado a lado.
-- [ ] Dada a centralidade dos alunos, então a distribuição de desfechos
+- [x] Dada a centralidade dos alunos, então a distribuição de desfechos
       por quartil sai com uma linha por quartil.
-- [ ] Dado `synthetic_v1`, onde a intermediação das disciplinas é toda
+- [x] Dado `synthetic_v1`, onde a intermediação das disciplinas é toda
       zero (K₇), então a spec **reporta isso** em vez de produzir um
       ranking sem sentido — a validação só é informativa com
       granularidade mais fina.
-- [ ] Nenhum rótulo alimenta cálculo: `test_outcomes_isolation` verde.
+- [x] Nenhum rótulo alimenta cálculo: `test_outcomes_isolation` verde.
 
 ## Testes exigidos
 
@@ -69,3 +69,22 @@ mesma regra do `evaluate.py` da Frente B.
 artigo reporta que centralidade estrutural e desempenho histórico são
 dimensões independentes — o que, aliás, reforça que a centralidade não é
 um proxy disfarçado do desfecho.
+
+## Como ficou (25/09/2026)
+
+- `python -m edugraph centrality evaluate --root data/processed --dataset <ds>
+  --metric <m> --tables results/tables --figures results/figures`.
+- **Não conclusão = `Fail` + `Withdrawn`**; `rate_Fail` fica na tabela
+  para a reprovação estrita. Taxas sobre os alunos com desfecho conhecido
+  (`n_labeled`).
+- **Tabela 8** (`tab8-reprovacao-<ds>-<métrica>.csv`): cada disciplina do
+  top-N, o conjunto delas (`critical_all`), as demais (`others`) e a base,
+  com o excesso sobre a base. **Tabela 8b**
+  (`tab8b-desfecho-faixa-<ds>-<métrica>.csv`) e **figura 8**: desfecho por
+  quartil de centralidade do aluno, por posição no ranking.
+- **Métrica degenerada** (tudo igual, como a intermediação em K₇) não gera
+  tabela: sai uma nota explicando a decisão D1.
+- Só `evaluate.py` chama `load_outcomes`; o relatório (C-07) recebe as
+  taxas agregadas da função `evaluate`.
+- Resultados e as duas ressalvas (desfecho por aluno; matrícula com limiar
+  de nota 40) em `docs/artigo/decisoes-metodologicas.md`.

@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026)
 
 ## Objetivo
 
@@ -51,17 +51,17 @@ Ver `docs/contratos/` e `src/edugraph/api/schemas.py`.
 
 ## Critérios de aceite
 
-- [ ] Dada a fixture, cada rota responde 200 e o corpo valida contra o
+- [x] Dada a fixture, cada rota responde 200 e o corpo valida contra o
       schema pydantic.
-- [ ] Dado um dataset inexistente, então 404 com a mensagem do contrato,
+- [x] Dado um dataset inexistente, então 404 com a mensagem do contrato,
       citando as raízes consultadas.
-- [ ] Dada uma projeção com mais arestas que o limite, então a resposta
+- [x] Dada uma projeção com mais arestas que o limite, então a resposta
       traz o subconjunto **e** diz que cortou.
-- [ ] `?partition=louvain__student_simple` embute o `membership` na
+- [x] `?partition=louvain__student_simple` embute o `membership` na
       mesma resposta.
-- [ ] A API **não importa** `edugraph.community` nem `edugraph.data` — o
+- [x] A API **não importa** `edugraph.community` nem `edugraph.data` — o
       teste de fronteira continua verde.
-- [ ] `edugraph api openapi` gera o esquema que tipa o front.
+- [x] `edugraph api openapi` gera o esquema que tipa o front.
 
 ## Testes exigidos
 
@@ -80,3 +80,31 @@ Ver `docs/contratos/` e `src/edugraph/api/schemas.py`.
 
 Nenhum diretamente. Habilita a C-05, de onde saem as capturas do capítulo
 3.
+
+## Como ficou (25/09/2026)
+
+- **Corte de arestas.** Padrão de 5.000 arestas por resposta (`?max_edges=`,
+  teto de 50.000), e **todos os nós** permanecem — são eles que carregam
+  comunidade e centralidade. Dois critérios (`?cut=`), com desempate
+  determinístico:
+  - `backbone` (**padrão**, acrescentado na C-05): as k arestas mais
+    fortes de cada nó, com o maior k que cabe. No AVA do OULAD
+    (`oulad_vle_bbb_2013j`/`student_simple`), k = 2 dá 3.732 arestas e
+    **os 1.870 alunos continuam ligados**;
+  - `top_weight`: as de maior peso do grafo inteiro. Na mesma projeção,
+    as 5.000 mais pesadas tocam só **193** dos 1.870 alunos — o resto
+    aparece solto, e a figura engana. Foi o que motivou a troca.
+
+  O corpo traz o bloco `truncation` (`truncated`, `criterion`,
+  `k_per_node`, `n_edges_total`, `n_edges_returned`…), que o front usa
+  para avisar. Foi o único acréscimo aos schemas, e o
+  `frontend/src/types.ts` mudou junto.
+- **Números medidos no OULAD.** `oulad_module_presentation`/`discipline_simple`
+  com as três centralidades embutidas: 0,1 s. `oulad_vle_bbb_2013j`/`student_simple`
+  (1.870 nós, 1,75 M arestas), com o corte `backbone` padrão (k = 2,
+  3.732 arestas): 6,3 s e 0,30 MB sem métricas; 6,7 s e 0,47 MB com as
+  três embutidas (medido em 26/09/2026). Sem cache: o tempo é quase todo
+  a leitura do CSV pelo `contracts.io`, e não compensou a memória de
+  manter o grafo carregado.
+- **Erros.** 404 cita o artefato e as raízes consultadas; métrica
+  inexistente em `?metrics=` dá 422 com a lista das válidas.

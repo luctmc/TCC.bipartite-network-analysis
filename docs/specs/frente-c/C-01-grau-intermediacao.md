@@ -2,7 +2,7 @@
 
 **Frente:** C
 **Dono:** Lucas
-**Status:** não iniciada
+**Status:** concluída (25/09/2026)
 
 ## Objetivo
 
@@ -48,19 +48,19 @@ Ver `docs/contratos/centrality.md`.
 
 ## Critérios de aceite
 
-- [ ] Dado `tiny_v1`/`student_simple`, o grau bate com
+- [x] Dado `tiny_v1`/`student_simple`, o grau bate com
       `expected/student_simple.centrality.csv`: S3 = 1,0; S1 = S2 = S6 =
       0,6; S4 = S5 = 0,4.
-- [ ] Dado o mesmo, a intermediação sem peso bate: S3 = 0,6, todos os
+- [x] Dado o mesmo, a intermediação sem peso bate: S3 = 0,6, todos os
       outros 0 — S3 é o único vértice de corte.
-- [ ] Dado `synthetic_v1`/`discipline_simple`, **todos** os nós têm
+- [x] Dado `synthetic_v1`/`discipline_simple`, **todos** os nós têm
       intermediação 0 e grau 1,0: a projeção é K₇. O teste **afirma a
       degeneração** (decisão D1), não a contorna.
-- [ ] `params` registra `normalized`, `weight_mode` e, se houver, `k` e
+- [x] `params` registra `normalized`, `weight_mode` e, se houver, `k` e
       `seed`.
-- [ ] `validate_centrality` passa, inclusive a faixa [0, 1] com
+- [x] `validate_centrality` passa, inclusive a faixa [0, 1] com
       `normalized=True`.
-- [ ] A escolha de `weight_mode` está em
+- [x] A escolha de `weight_mode` está em
       `docs/artigo/decisoes-metodologicas.md`.
 
 ## Testes exigidos
