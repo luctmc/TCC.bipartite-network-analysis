@@ -15,7 +15,7 @@
 | 6 | Q × tempo por algoritmo | B-04/B-07 | presente | `fig6-q-tempo-synthetic_v1.{png,svg}` | comparação de algoritmos |
 | 7 | Ranking de disciplinas por intermediação | C-03/C-07 | presente | `fig7-disciplinas-oulad_module_presentation-discipline_simple.{png,svg}`, `fig7-disciplinas-oulad_vle_bbb_2013j-discipline_simple.{png,svg}` | disciplinas críticas |
 | 8 | Desfecho por quartil de centralidade | C-06 | presente | `fig8-validacao-oulad_vle_bbb_2013j-student_simple-betweenness.{png,svg}`, `fig8-validacao-oulad_vle_bbb_2013j-student_simple-degree.{png,svg}`, `fig8-validacao-oulad_vle_bbb_2013j-student_simple-eigenvector.{png,svg}` | validação |
-| 9 | Capturas da interface | C-05 | pendente | — | aplicação |
+| 9 | Capturas da interface | C-05 | presente | `ui-1-comunidades-synthetic_v1.{png}`, `ui-2-intermediacao-synthetic_v1.{png}`, `ui-3-disciplinas-criticas-oulad_module_presentation.{png}`, `ui-4-alunos-ava-oulad_vle_bbb_2013j.{png}` | aplicação |
 
 ## Legendas geradas
 
@@ -40,6 +40,14 @@
 **`fig8-validacao-oulad_vle_bbb_2013j-student_simple-degree`** — Desfecho histórico por faixa de centralidade (grau) na projeção student_simple de oulad_vle_bbb_2013j. Faixas por posição no ranking, Q1 = menor centralidade. A linha tracejada marca a fração de concluintes da base (57,3%): quando os aprovados (Distinction + Pass) da faixa ficam abaixo dela, a faixa tem mais não conclusão (Fail + Withdrawn) que a base. Validação a posteriori (spec C-06): o desfecho não entra em nenhum cálculo de centralidade.
 
 **`fig8-validacao-oulad_vle_bbb_2013j-student_simple-eigenvector`** — Desfecho histórico por faixa de centralidade (autovetor) na projeção student_simple de oulad_vle_bbb_2013j. Faixas por posição no ranking, Q1 = menor centralidade. A linha tracejada marca a fração de concluintes da base (57,3%): quando os aprovados (Distinction + Pass) da faixa ficam abaixo dela, a faixa tem mais não conclusão (Fail + Withdrawn) que a base. Validação a posteriori (spec C-06): o desfecho não entra em nenhum cálculo de centralidade.
+
+**`ui-1-comunidades-synthetic_v1`** — Interface do edugraph sobre a base sintética (synthetic_v1, projeção aluno↔aluno): as três comunidades encontradas pelo Louvain (Q = 0,467), cada uma com uma cor e uma forma, correspondem às três áreas plantadas no gerador. Captura da spec C-05.
+
+**`ui-2-intermediacao-synthetic_v1`** — Mesma rede com o tamanho dos nós pela intermediação: os alunos que ligam as comunidades crescem. O painel mostra o nó selecionado com as três métricas e a posição no ranking (1º em grau e em intermediação, 15º em autovetor). Captura da spec C-05.
+
+**`ui-3-disciplinas-criticas-oulad_module_presentation`** — Projeção disciplina↔disciplina do OULAD (22 disciplinas, módulo × apresentação), com o tamanho pela intermediação: as maiores são as disciplinas críticas da spec C-03 (FFF_2014B, DDD_2014J, FFF_2014J). Cores pelas comunidades do Louvain. Captura da spec C-05.
+
+**`ui-4-alunos-ava-oulad_vle_bbb_2013j`** — Os 1.870 alunos da coorte BBB 2013J ligados pelo uso do AVA (1,75 milhão de arestas), desenhados pelo esqueleto da API: as 2 ligações mais fortes de cada aluno, como diz a faixa de aviso. Tamanho pelo autovetor; cores pelo Louvain (Q = 0,039, estrutura fraca). Captura da spec C-05.
 
 
 ## Regras

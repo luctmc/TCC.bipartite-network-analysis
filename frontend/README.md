@@ -47,6 +47,10 @@ saber onde está rodando.
   seleciona. A vizinhança do nó selecionado fica em destaque no grafo.
 - **Transição entre projeções**: os nós em comum partem da posição em
   que estavam.
+- **Rótulos**: disciplinas sempre com nome, quando o zoom deixa ler; alunos
+  (números de matrícula) só em grafos de até 40 nós. Acima disso, o nome
+  aparece sob o mouse, no nó selecionado e nos vizinhos dele quando são até
+  15 — com mais, a lista fica no painel.
 - **Grafos grandes**: a API corta a resposta em 5.000 arestas por padrão
   pelo **esqueleto** (as k ligações mais fortes de cada nó, com o maior
   k que cabe), e a interface diz que cortou. Acima de
@@ -87,6 +91,27 @@ python -m edugraph api serve --root data/processed --root data/fixtures
    `document.documentElement.style.filter = "grayscale(1)"`: as
    comunidades continuam distinguíveis pela forma.
 8. `npm run typecheck` passa.
+
+## Capturas para o artigo (figura 9)
+
+`npm run capture` gera as capturas da interface em `results/figures/`
+(`ui-*.png`, 3200 × 2000, com a legenda em `ui-*.caption.txt`). O script
+(`scripts/capture.mjs`) abre a interface num Edge ou Chrome headless, monta
+cada cena pelos próprios controles da tela e fotografa. Não instala nada: usa
+o WebSocket nativo do Node 22+.
+
+```bash
+python -m edugraph api serve --root data/processed --root data/fixtures   # terminal 1
+npm run capture                                                           # terminal 2
+python -m edugraph figures --index                                        # atualiza o índice
+```
+
+As cenas seguem o roteiro acima: comunidades em `synthetic_v1`, a mesma rede
+por intermediação com um nó selecionado, as disciplinas críticas do OULAD e
+os alunos do AVA pelo esqueleto. Sem o OULAD em `data/processed`, as duas
+últimas são puladas. Refaça as capturas sempre que a interface mudar. Elas
+não são reproduzíveis byte a byte (o layout anima), ao contrário das figuras
+de `reporting/figures.py`.
 
 ## Limite de escala
 

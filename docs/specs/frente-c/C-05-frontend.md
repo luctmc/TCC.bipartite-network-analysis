@@ -119,3 +119,9 @@ seção de ferramentas — visualização é meio, não resultado.
   alunos do AVA soltos; a API passou a cortar pelo esqueleto (ver C-04).
 - **Teste de interface.** Não automatizado, como a spec previa: roteiro
   manual em `frontend/README.md`, e `npm run typecheck`.
+- **Capturas do capítulo 3 (26/09/2026).** `npm run capture`
+  (`frontend/scripts/capture.mjs`) gera as quatro capturas da figura 9 em
+  `results/figures/ui-*.png`. Fazê-las mostrou que os números de matrícula
+  poluíam a rede de 98 alunos; desde então, rótulo de aluno só aparece em
+  grafo de até 40 nós, sob o mouse, no nó selecionado e numa vizinhança de
+  até 15 nós.

@@ -29,11 +29,18 @@ cytoscape.use(fcose);
 export const MAX_EDGES_CONFORTAVEL = 3000;
 
 /**
- * Acima disto, os rótulos só aparecem no nó selecionado, na vizinhança e
- * sob o mouse: desenhar texto para milhares de nós pesa no canvas.
- * Abaixo, aparecem conforme o zoom deixa ler (`min-zoomed-font-size`).
+ * Rótulos visíveis sem interação, conforme o zoom deixa ler
+ * (`min-zoomed-font-size`). Acima destes limites, só no nó sob o mouse, no
+ * selecionado e na vizinhança dele.
+ *
+ * Disciplinas têm nome que diz algo (`DDD_2014J`) e são poucas; alunos são
+ * números de matrícula que, a partir de umas dezenas, só se sobrepõem.
  */
-const MAX_NODES_ROTULADOS = 600;
+const MAX_DISCIPLINAS_ROTULADAS = 600;
+const MAX_ALUNOS_ROTULADOS = 40;
+
+/** Vizinhos do nó selecionado com nome visível; acima disto, só o painel lista. */
+const MAX_VIZINHOS_ROTULADOS = 15;
 
 const TAMANHO_MIN = 10;
 const TAMANHO_MAX = 42;
@@ -128,7 +135,8 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
   const pesos = graph.edges.map((edge) => edge.weight);
   const pesoMin = pesos.length ? Math.min(...pesos) : 0;
   const pesoMax = pesos.length ? Math.max(...pesos) : 1;
-  const rotularTodos = graph.nodes.length <= MAX_NODES_ROTULADOS;
+  const rotularAlunos = graph.nodes.length <= MAX_ALUNOS_ROTULADOS;
+  const rotularDisciplinas = graph.nodes.length <= MAX_DISCIPLINAS_ROTULADAS;
   const cor = {
     student: themeColor("--node-student", "#6ea8fe"),
     discipline: themeColor("--node-discipline", "#f0a868"),
@@ -145,7 +153,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
       selector: "node",
       style: {
         "background-color": cor.student,
-        label: rotularTodos ? "data(label)" : "",
+        label: rotularAlunos ? "data(label)" : "",
         "font-size": 8,
         // Só desenha o rótulo quando ele fica legível na tela: longe, o
         // grafo é forma; perto, é nome.
@@ -171,6 +179,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
         "background-color": cor.discipline,
         shape: "round-rectangle",
         "font-size": 10,
+        label: rotularDisciplinas ? "data(label)" : "",
       },
     },
     {
@@ -210,7 +219,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
       },
     },
     {
-      selector: "node.vizinho, node:selected",
+      selector: "node.rotulo, node:selected",
       style: { label: "data(label)", "min-zoomed-font-size": 0, color: cor.text, "z-index": 10 },
     },
     { selector: "edge.vizinho", style: { opacity: 0.9, "line-color": cor.accent } },
@@ -365,7 +374,7 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
     const cy = cyRef.current;
     if (!cy) return;
     cy.batch(() => {
-      cy.elements().removeClass("apagado vizinho");
+      cy.elements().removeClass("apagado vizinho rotulo");
       cy.nodes(":selected").unselect();
       if (!selected) return;
       const alvo = cy.getElementById(selected);
@@ -373,6 +382,11 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
       alvo.select();
       const vizinhanca = alvo.closedNeighborhood();
       vizinhanca.addClass("vizinho");
+      // Nome dos vizinhos só em vizinhança pequena: com dezenas, os rótulos
+      // se sobrepõem, e a lista completa já está no painel do nó.
+      if (vizinhanca.nodes().length <= MAX_VIZINHOS_ROTULADOS + 1) {
+        vizinhanca.nodes().addClass("rotulo");
+      }
       cy.elements().difference(vizinhanca).addClass("apagado");
     });
   }, [graph, selected]);

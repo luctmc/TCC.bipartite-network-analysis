@@ -16,6 +16,8 @@ Ver as regras em [`README.md`](README.md).
 - **Como resolver:** decidir com o grupo; se entrarem, fazer o commit dos
   dois arquivos.
 
+## Resolvidas
+
 ### C-OBS-02 · Figura 9: capturas da interface
 
 - **De:** revisão final (Claude, sessão do Lucas) · **Data:** 26/09/2026
@@ -24,7 +26,6 @@ Ver as regras em [`README.md`](README.md).
   com o prefixo `ui-` em `results/figures/`. Nenhuma foi gerada.
 - **Como resolver:** capturar as telas do roteiro do `frontend/README.md` e
   regenerar o índice com `python -m edugraph figures --index`.
-
-## Resolvidas
-
-Nenhuma ainda.
+- **Resolvida:** 26/09/2026 por Lucas, branch `c/C-05-capturas` — quatro capturas
+  geradas por `npm run capture` (`frontend/scripts/capture.mjs`) e índice
+  regenerado; a figura 9 passou a "presente".
