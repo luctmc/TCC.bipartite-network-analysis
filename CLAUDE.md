@@ -15,15 +15,30 @@ alterar qualquer coisa:
 2. Leia a seção **Abertas** do arquivo dessa pessoa e do `para-todos.md`,
    e avise o usuário das observações abertas antes de seguir com o pedido
    dele — em especial das que tocam nos arquivos que ele vai mexer.
-3. Ao resolver uma observação, mova-a para **Resolvidas** com data, autor
-   e commit, no mesmo commit da correção.
 
-**Achou um problema num arquivo de outra frente? Não corrija: registre.**
-Acrescente uma observação no arquivo do dono, no formato de
-[`observacoes/README.md`](observacoes/README.md), com caminho, linha,
-evidência e correção sugerida. Só altere arquivo de outra frente se o
-usuário pedir explicitamente — e, nesse caso, deixe uma observação
-avisando o dono do que mudou.
+### Manter a pasta em dia é automático — ninguém precisa pedir
+
+Anotar e fechar observações faz parte de toda tarefa, como rodar os
+testes. **Não espere o usuário pedir e não pergunte se deve fazer.**
+
+- **Fechar.** Antes de cada commit, confira se algum arquivo alterado
+  aparece numa observação aberta (de qualquer pessoa, não só de quem está
+  trabalhando) e se a mudança resolve o que ela pede — mesmo que a tarefa
+  fosse outra. Se resolve, mova o item para **Resolvidas** no mesmo commit,
+  com a linha `- **Resolvida:** data por <pessoa>, commit/branch — o que foi
+  feito`. Se resolve só em parte, atualize o texto do item e deixe-o em
+  **Abertas**. Nunca apague itens: "tirar" é mover para **Resolvidas**.
+- **Anotar.** Achou um problema num arquivo de outra frente, ou uma
+  pendência que depende de outra pessoa? **Não corrija: registre** no
+  arquivo do dono, no formato de
+  [`observacoes/README.md`](observacoes/README.md), com caminho, linha,
+  evidência e correção sugerida. Pendência da própria pessoa que ficou para
+  depois também vira observação no arquivo dela.
+- **Avisar.** Ao terminar, diga ao usuário quais observações foram abertas
+  ou fechadas na tarefa.
+
+Só altere arquivo de outra frente se o usuário pedir explicitamente — e,
+nesse caso, deixe uma observação avisando o dono do que mudou.
 
 ## As três regras que não se negociam
 

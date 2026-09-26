@@ -6,7 +6,11 @@ A regra do grupo é **não mexer no código de outra frente**; quem acha algo
 registra aqui, e o dono resolve.
 
 O `CLAUDE.md` manda ler esta pasta no começo de toda sessão de trabalho,
-então o recado chega mesmo quando a pessoa trabalha com o Claude.
+então o recado chega mesmo quando a pessoa trabalha com o Claude. E manda
+mantê-la em dia **sem que ninguém peça**: o Claude anota sozinho o que
+achar nos arquivos de outra frente e, antes de cada commit, move para
+**Resolvidas** toda observação que a mudança resolver, mesmo que a tarefa
+fosse outra.
 
 ## Os arquivos
 
