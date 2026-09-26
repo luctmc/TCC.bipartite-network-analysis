@@ -3,6 +3,28 @@
 TCC Grupo 16 — UniAnchieta. Análise topológica de redes educacionais
 bipartidas. Leia [`docs/README.md`](docs/README.md) para o mapa completo.
 
+## Antes de qualquer trabalho: leia `observacoes/`
+
+A pasta [`observacoes/`](observacoes/README.md) guarda os recados que uma
+frente deixa para outra. **No começo de toda sessão**, antes de propor ou
+alterar qualquer coisa:
+
+1. Descubra quem está trabalhando: pergunte, ou use `git config user.name`
+   e o nome do branch. Pedro = Frente A (`para-pedro.md`), Gabriel =
+   Frente B (`para-gabriel.md`), Lucas = Frente C (`para-lucas.md`).
+2. Leia a seção **Abertas** do arquivo dessa pessoa e do `para-todos.md`,
+   e avise o usuário das observações abertas antes de seguir com o pedido
+   dele — em especial das que tocam nos arquivos que ele vai mexer.
+3. Ao resolver uma observação, mova-a para **Resolvidas** com data, autor
+   e commit, no mesmo commit da correção.
+
+**Achou um problema num arquivo de outra frente? Não corrija: registre.**
+Acrescente uma observação no arquivo do dono, no formato de
+[`observacoes/README.md`](observacoes/README.md), com caminho, linha,
+evidência e correção sugerida. Só altere arquivo de outra frente se o
+usuário pedir explicitamente — e, nesse caso, deixe uma observação
+avisando o dono do que mudou.
+
 ## As três regras que não se negociam
 
 ### 1. Sem IA, sem aprendizado de máquina

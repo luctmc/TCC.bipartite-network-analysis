@@ -11,6 +11,7 @@ histórico do chat ou na cabeça de quem implementou.
 |---|---|
 | entender um termo que apareceu (grafo, projeção, modularidade) | [glossario.md](glossario.md) |
 | entender a arquitetura em 10 minutos | [arquitetura/visao-geral.md](arquitetura/visao-geral.md) |
+| saber se alguém deixou um recado para você | [../observacoes/](../observacoes/README.md) → o seu arquivo e o `para-todos.md` |
 | começar a trabalhar na sua frente | [specs/README.md](specs/README.md) → o README da sua frente |
 | saber por que algo foi decidido assim | [adr/README.md](adr/README.md) |
 | implementar contra um contrato | [contratos/README.md](contratos/README.md) |
