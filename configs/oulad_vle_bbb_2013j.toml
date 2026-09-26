@@ -95,7 +95,8 @@ metrics = ["degree", "betweenness", "eigenvector"]
 # todos os 1.870 alunos; "inverse" discrimina.
 weight_mode = "inverse"
 # Intermediação exata com peso em 1,75 M arestas não termina em tempo
-# razoável (~1,3 s por pivô): estimativa com 200 pivôs, ~4,5 min.
+# razoável (~1,3 s por pivô): estimativa com 200 pivôs, ~4,5 min por
+# projeção de alunos (o estágio inteiro, com as duas, levou 8m47s).
 k = 200
 seed = 42
 

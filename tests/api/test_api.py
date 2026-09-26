@@ -267,3 +267,23 @@ def test_openapi_descreve_as_rotas_de_dados(client: TestClient) -> None:
     ):
         assert rota in paths
         assert "post" not in paths[rota]  # somente leitura (ADR-0004)
+
+
+def test_esqueleto_declara_k_zero_quando_nem_uma_por_no_cabe() -> None:
+    """Três arestas disjuntas e limite 2: não há como dar um vizinho a cada nó."""
+    from edugraph.api.routes import _backbone
+
+    arestas = [("A", "B", 3.0), ("C", "D", 2.0), ("E", "F", 1.0)]
+    mantidas, k = _backbone(arestas, max_edges=2)
+    assert k == 0
+    assert mantidas == [("A", "B", 3.0), ("C", "D", 2.0)]
+
+
+@pytest.mark.dataset("synthetic_v1")
+def test_particao_de_outra_projecao_da_422(client: TestClient) -> None:
+    response = client.get(
+        "/datasets/synthetic_v1/projections/discipline_simple",
+        params={"partition": "louvain__student_simple"},
+    )
+    assert response.status_code == 422
+    assert "student_simple" in response.json()["detail"]

@@ -75,7 +75,11 @@ class TruncationInfo(BaseModel):
     n_edges_returned: int = Field(description="Arestas nesta resposta")
     criterion: Literal["backbone", "top_weight"] = "backbone"
     k_per_node: int | None = Field(
-        default=None, description="No corte backbone, quantas arestas por nó couberam"
+        default=None,
+        description=(
+            "No corte backbone, quantas arestas por nó couberam; 0 = nem uma por nó "
+            "coube, e ficaram as mais pesadas entre as melhores de cada nó"
+        ),
     )
 
 

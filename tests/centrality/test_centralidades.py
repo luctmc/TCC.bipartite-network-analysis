@@ -528,3 +528,14 @@ def test_linhas_de_discordancia_trazem_conjuntos_e_correlacoes() -> None:
         "spearman_degree_eigenvector",
         "spearman_betweenness_eigenvector",
     }
+
+
+@pytest.mark.dataset("tiny_v1")
+def test_k_zero_ou_negativo_e_recusado(tiny_projection) -> None:
+    """``k = 0`` no TOML derrubava o estágio com ZeroDivisionError do NetworkX."""
+    from edugraph.contracts.errors import ContractError
+
+    projection = tiny_projection("student_simple")
+    for k in (0, -3):
+        with pytest.raises(ContractError, match="k precisa ser >= 1"):
+            BetweennessCentrality().compute(projection, k=k)

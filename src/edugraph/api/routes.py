@@ -122,7 +122,8 @@ def _backbone(
     fica com o menor dos dois, e entram todas as de posto menor que ``k``.
     Assim todo nó que tinha vizinho continua com pelo menos um.
 
-    Se nem ``k = 1`` couber, fica com as de posto 0 de maior peso.
+    Se nem ``k = 1`` couber, fica com as de posto 0 de maior peso e devolve
+    ``k = 0``: aí nem todo nó conserva um vizinho, e a resposta diz isso.
     Desempates por id: a mesma requisição devolve o mesmo subconjunto.
     """
     ids = sorted({n for u, v, _ in edges for n in (u, v)})
@@ -150,8 +151,10 @@ def _backbone(
     cumulative = np.cumsum(counts)  # cumulative[k-1] = arestas com posto < k
     fits = np.flatnonzero(cumulative <= max_edges)
     if fits.size == 0:
+        # Nem uma aresta por nó cabe: ficam as mais pesadas entre as
+        # "melhores de cada nó", e k = 0 diz que a garantia não vale.
         firsts = [edges[i] for i in np.flatnonzero(edge_rank == 0)]
-        return _top_weight(firsts, max_edges), 1
+        return _top_weight(firsts, max_edges), 0
     k = int(fits[-1]) + 1
     return [edges[i] for i in np.flatnonzero(edge_rank < k)], k
 
@@ -276,7 +279,16 @@ def get_projection(
 
     community = None
     if partition:
-        community = io.load_partition(roots, dataset, partition).membership
+        loaded = io.load_partition(roots, dataset, partition)
+        if loaded.projection_id != projection_id:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"a partição {partition!r} é da projeção {loaded.projection_id!r}, "
+                    f"não de {projection_id!r}"
+                ),
+            )
+        community = loaded.membership
 
     centrality = None
     if names:

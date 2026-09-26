@@ -125,10 +125,10 @@ export default function App() {
 
   // A partição, à parte: trocar a cor não redesenha o grafo.
   useEffect(() => {
-    if (!datasetAtivo || !particaoAtiva) {
-      setParticao(null);
-      return;
-    }
+    // Limpa já: sem isto a legenda e o Q da partição anterior ficam na
+    // tela até a resposta nova chegar.
+    setParticao(null);
+    if (!datasetAtivo || !particaoAtiva) return;
     let cancelado = false;
     api
       .partition(datasetAtivo, particaoAtiva)
@@ -233,7 +233,7 @@ export default function App() {
               {particao && membership && (
                 <>
                   <p className="dim resumo-particao">
-                    Q = {particao.modularity.toFixed(4)} · {particao.n_communities} comunidades
+                    Q = {particao.modularity.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} · {particao.n_communities} comunidades
                     {particao.status !== "ok" && ` · ${particao.status}`}
                   </p>
                   <CommunityLegend membership={membership} />

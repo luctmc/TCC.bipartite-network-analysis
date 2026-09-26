@@ -108,7 +108,12 @@ export const api = {
         api
           .centrality(dataset, projectionId, metric, 1)
           .then(() => metric)
-          .catch(() => null),
+          // Só 404 quer dizer "não calculada"; qualquer outro erro (API fora,
+          // 500) sobe, em vez de se passar por métrica ausente.
+          .catch((erro: unknown) => {
+            if (erro instanceof ApiError && erro.notFound) return null;
+            throw erro;
+          }),
       ),
     );
     return found.filter((metric): metric is CentralityMetric => metric !== null);

@@ -28,9 +28,17 @@ interface NodePanelProps {
   onSelect: (nodeId: string | null) => void;
 }
 
+/**
+ * Ordem por ponto de código, a mesma do `sorted` do Python — `localeCompare`
+ * ordena por idioma e, num empate, daria uma posição diferente da API.
+ */
+function porCodigo(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 /** Posição do nó no ranking da métrica (1 = maior), com o mesmo desempate por id da API. */
 function posicao(scores: Record<string, number>, nodeId: string): number {
-  const ordenados = Object.entries(scores).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const ordenados = Object.entries(scores).sort((a, b) => b[1] - a[1] || porCodigo(a[0], b[0]));
   return ordenados.findIndex(([id]) => id === nodeId) + 1;
 }
 
@@ -45,7 +53,7 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
       id: edge.source === nodeId ? edge.target : edge.source,
       weight: edge.weight,
     }))
-    .sort((a, b) => b.weight - a.weight || a.id.localeCompare(b.id));
+    .sort((a, b) => b.weight - a.weight || porCodigo(a.id, b.id));
 
   const comunidade = membership?.[nodeId];
   const estiloComunidade =
@@ -135,7 +143,7 @@ function FragmentoMetrica(props: {
           <span className="dim">não calculada</span>
         ) : (
           <>
-            {props.valor.toFixed(4)}{" "}
+            {props.valor.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}{" "}
             <span className="dim">
               {props.posicao}º/{props.total}
             </span>

@@ -253,6 +253,11 @@ def figure_outcome_by_quantile(
     nenhum. Cores em tons que também se distinguem em cinza, e hachura
     nas duas categorias de não conclusão, para a versão impressa.
     """
+    import matplotlib
+
+    # Sem janela: no Windows o backend padrão é o Tk, que falha sem
+    # tcl instalado (e não faz sentido num processo de linha de comando).
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     from edugraph.reporting.figures import COLUMN_WIDTH_IN, apply_style, save_figure
@@ -301,11 +306,12 @@ def figure_outcome_by_quantile(
     plt.close(fig)
 
     caption = (
-        f"Desfecho histórico por faixa de centralidade ({metric}) na projeção "
+        f"Desfecho histórico por faixa de centralidade ({nome.get(metric, metric)}) na projeção "
         f"{projection_id} de {dataset}. Faixas por posição no ranking, Q1 = menor "
         f"centralidade. A linha tracejada marca a fração de concluintes da base "
-        f"({1 - base:.1%}): quando os aprovados (Distinction + Pass) da faixa ficam "
-        f"abaixo dela, a faixa tem mais não conclusão (Fail + Withdrawn) que a base. "
+        f"({f'{1 - base:.1%}'.replace('.', ',')}): quando os aprovados "
+        f"(Distinction + Pass) da faixa ficam abaixo dela, a faixa tem mais não "
+        f"conclusão (Fail + Withdrawn) que a base. "
         f"Validação a posteriori (spec {PRODUCER}): o desfecho não entra em nenhum "
         f"cálculo de centralidade."
     )

@@ -111,6 +111,8 @@ class BetweennessCentrality:
         # k >= n não é amostra: é o cálculo exato com mais passos. Tratar
         # como exato evita declarar estimativa onde não há.
         k_param = params.get("k")
+        if k_param is not None and int(k_param) < 1:
+            raise ContractError(f"intermediação: k precisa ser >= 1; recebeu {k_param!r}")
         k = int(k_param) if k_param is not None and int(k_param) < n else None
         seed = int(params.get("seed", DEFAULT_SEED)) if k is not None else None
 

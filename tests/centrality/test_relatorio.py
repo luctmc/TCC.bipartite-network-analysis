@@ -101,3 +101,22 @@ def test_dataset_inexistente_e_recusado(artifact_roots, tmp_path) -> None:
 
     with pytest.raises(ArtifactNotFoundError, match="nao_existe"):
         build_internal_report("nao_existe", list(artifact_roots), tmp_path)
+
+
+def test_guarda_pega_o_numero_de_matricula_sem_o_prefixo() -> None:
+    """O rótulo do aluno no OULAD é o número puro; ``S100282_x`` também é pego."""
+    ids = {"S100282", "100282"}
+    with pytest.raises(ContractError, match="100282"):
+        check_no_student_ids("Destaque para o aluno 100282 na comunidade 1.", ids)
+    with pytest.raises(ContractError, match="S100282"):
+        check_no_student_ids("ver S100282_x", ids)
+
+
+@pytest.mark.dataset("synthetic_v1")
+def test_numero_que_tambem_nomeia_disciplina_nao_e_alarme(artifact_roots) -> None:
+    from edugraph.centrality.report import _student_identifiers
+
+    identificadores = _student_identifiers(artifact_roots, "synthetic_v1")
+    assert "S100001" in identificadores
+    assert "100001" in identificadores  # o rótulo do aluno
+    assert "AAA" not in identificadores  # disciplina

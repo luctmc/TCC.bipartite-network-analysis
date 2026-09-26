@@ -149,7 +149,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
         "font-size": 8,
         // Só desenha o rótulo quando ele fica legível na tela: longe, o
         // grafo é forma; perto, é nome.
-        "min-zoomed-font-size": 7,
+        "min-zoomed-font-size": 11,
         color: cor.muted,
         "text-valign": "bottom",
         "text-margin-y": 3,
@@ -174,7 +174,9 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
       },
     },
     {
-      selector: "node[color]",
+      // Por classe, não por "[color]": o Cytoscape não reavalia seletor de
+      // dado quando o dado é removido, e a cor antiga ficava na tela.
+      selector: "node.comunidade",
       // "data(shape)" é válido no Cytoscape, mas os tipos só aceitam formas literais.
       style: { "background-color": "data(color)", shape: "data(shape)" } as unknown as cytoscape.Css.Node,
     },
@@ -192,7 +194,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
     {
       // Aresta dentro de uma comunidade ganha a cor dela: os grupos
       // aparecem pela trama, não só pelos nós.
-      selector: "edge[color]",
+      selector: "edge.intra",
       style: { "line-color": "data(color)", opacity: 0.35 },
     },
     { selector: ".apagado", style: { opacity: 0.08 } },
@@ -328,8 +330,9 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
         if (ordem && comunidade !== undefined) {
           const { color, shape } = communityStyle(ordem.get(comunidade) ?? 0);
           node.data({ color, shape });
+          node.addClass("comunidade");
         } else {
-          node.removeData("color shape");
+          node.removeClass("comunidade");
         }
       });
       cy.edges().forEach((edge) => {
@@ -337,8 +340,9 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
         const b = membership?.[edge.target().id()];
         if (ordem && a !== undefined && a === b) {
           edge.data("color", communityStyle(ordem.get(a) ?? 0).color);
+          edge.addClass("intra");
         } else {
-          edge.removeData("color");
+          edge.removeClass("intra");
         }
       });
     });
@@ -382,9 +386,11 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
         <p className="aviso" role="status">
           {truncation.truncated && (
             <>
-              {truncation.criterion === "backbone"
+              {truncation.criterion === "backbone" && (truncation.k_per_node ?? 0) > 0
                 ? `Esqueleto: as ${truncation.k_per_node} ligações mais fortes de cada nó`
-                : "As arestas de maior peso"}{" "}
+                : truncation.criterion === "backbone"
+                  ? "Nem uma ligação por nó coube no limite: ficaram as mais fortes, e alguns nós aparecem soltos"
+                  : "As arestas de maior peso"}{" "}
               — {truncation.n_edges_returned.toLocaleString("pt-BR")} de{" "}
               {truncation.n_edges_total.toLocaleString("pt-BR")} arestas; todos os{" "}
               {truncation.n_nodes.toLocaleString("pt-BR")} nós estão aqui.{" "}

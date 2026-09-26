@@ -123,7 +123,9 @@ def fallback_numpy(projection: ProjectionBundle, **params: Any) -> dict[str, flo
         principal = vectors[:, -1]  # eigh devolve em ordem crescente
     else:
         try:
-            _, vectors = eigsh(matrix, k=1, which="LA")
+            # v0 fixo: sem ele o ARPACK parte de um vetor aleatório, e com
+            # autovalor repetido o resultado mudaria entre execuções.
+            _, vectors = eigsh(matrix, k=1, which="LA", v0=np.ones(n))
             principal = vectors[:, 0]
         except ArpackNoConvergence as error:
             # Melhor aproximação que o ARPACK chegou a ter, se houver.

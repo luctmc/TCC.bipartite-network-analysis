@@ -57,6 +57,7 @@ export interface TruncationInfo {
   n_edges_total: number;
   n_edges_returned: number;
   criterion: "backbone" | "top_weight";
+  /** No `backbone`: arestas por nó que couberam; 0 = nem uma por nó coube. */
   k_per_node: number | null;
 }
 

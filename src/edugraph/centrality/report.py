@@ -60,8 +60,13 @@ METRIC_NAMES: dict[str, str] = {
     "eigenvector": "autovetor",
 }
 
-#: Um id de aluno no formato do contrato (``S`` + dígitos).
-_STUDENT_ID = re.compile(r"\bS\d{2,}\b")
+#: Pedaços alfanuméricos do texto. Sem ``_`` na classe de propósito:
+#: ``S100282_x`` precisa virar ``S100282`` + ``x`` para ser pego.
+_TOKEN = re.compile(r"[A-Za-z0-9]+")
+
+#: Rótulos de aluno mais curtos que isto não entram na guarda (ver
+#: :func:`_student_identifiers`); o id com prefixo ``S`` entra sempre.
+MIN_LABEL_LEN = 4
 
 
 # ---------------------------------------------------------------------
@@ -429,6 +434,11 @@ def figure_centrality_ranking(dataset: str, roots: list[Path], out: Path) -> Pat
     ``discipline_simple`` (ou da primeira ``discipline_*``), da mais para
     a menos intermediária. Devolve o PNG; o SVG e a legenda ficam ao lado.
     """
+    import matplotlib
+
+    # Sem janela: no Windows o backend padrão é o Tk, que falha sem
+    # tcl instalado (e não faz sentido num processo de linha de comando).
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     from edugraph.reporting.figures import COLUMN_WIDTH_IN, apply_style, save_figure
@@ -466,8 +476,9 @@ def figure_centrality_ranking(dataset: str, roots: list[Path], out: Path) -> Pat
     plt.close(fig)
 
     params = result.params
+    noun = _discipline_noun(resolved, dataset).capitalize()
     caption = (
-        f"Disciplinas de {dataset} ordenadas pela intermediação na projeção "
+        f"{noun} de {dataset} ordenados pela intermediação na projeção "
         f"{projection_id} (weight_mode = {params.get('weight_mode')}"
         + (f", estimativa com k = {params.get('k')}" if params.get("estimate") else "")
         + "). Quanto maior a barra, mais caminhos mínimos entre outras disciplinas "
@@ -482,23 +493,46 @@ def figure_centrality_ranking(dataset: str, roots: list[Path], out: Path) -> Pat
 # ---------------------------------------------------------------------
 
 
-def _student_ids(roots: ArtifactRoots, dataset: str) -> set[str]:
+def _student_identifiers(roots: ArtifactRoots, dataset: str) -> set[str]:
+    """Ids **e rótulos** dos alunos, menos o que também nomeia uma disciplina.
+
+    O rótulo de um aluno no OULAD é o número de matrícula (``S100282`` →
+    ``100282``); o de um recurso do AVA também é um número. Um token que
+    nomeia os dois não identifica ninguém, e contá-lo daria falso alarme.
+    """
     try:
-        return io.load_bipartite(roots, dataset).students
+        graph = io.load_bipartite(roots, dataset).graph
     except ArtifactNotFoundError:
         return set()
+    students: set[str] = set()
+    others: set[str] = set()
+    for node, data in graph.nodes(data=True):
+        label = str(data.get("label", node))
+        if data.get("kind") == "student":
+            students.add(str(node))
+            # Rótulo curto ("3" em tiny_v1) não identifica ninguém e colidiria
+            # com qualquer contagem do texto; matrícula tem 4+ caracteres.
+            if len(label) >= MIN_LABEL_LEN:
+                students.add(label)
+        else:
+            others.update({str(node), label})
+    return students - others
 
 
 def check_no_student_ids(text: str, student_ids: set[str]) -> None:
-    """Recusa o texto se algum id de aluno aparecer nele.
+    """Recusa o texto se algum id ou rótulo de aluno aparecer nele.
+
+    Compara **tokens exatos** do texto com ``student_ids`` (ids e rótulos
+    dos alunos — ver :func:`_student_identifiers`), então pega também o
+    número de matrícula sem o prefixo ``S``.
 
     Raises
     ------
     ContractError
-        Com os primeiros ids encontrados. É a proteção da restrição de uso
+        Com os primeiros encontrados. É a proteção da restrição de uso
         interno: o relatório fala de grupos, nunca de pessoas.
     """
-    found = sorted({m for m in _STUDENT_ID.findall(text) if m in student_ids or not student_ids})
+    found = sorted(set(_TOKEN.findall(text)) & student_ids)
     if found:
         raise ContractError(
             f"{PRODUCER}: o relatório citaria alunos individualmente ({found[:5]}); "
@@ -565,7 +599,7 @@ def build_internal_report(
     lines += _section_limitations(resolved, dataset)
 
     text = "\n".join(lines).rstrip() + "\n"
-    check_no_student_ids(text, _student_ids(resolved, dataset))
+    check_no_student_ids(text, _student_identifiers(resolved, dataset))
 
     out.mkdir(parents=True, exist_ok=True)
     path = out / f"relatorio-interno-{dataset}.md"
