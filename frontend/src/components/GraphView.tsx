@@ -42,6 +42,11 @@ const MAX_ALUNOS_ROTULADOS = 40;
 /** Vizinhos do nó selecionado com nome visível; acima disto, só o painel lista. */
 const MAX_VIZINHOS_ROTULADOS = 15;
 
+/** Mesma pilha de fontes do CSS: o rótulo do canvas combina com a interface. */
+const FONTE = 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+const PADDING_FIT = 72;
+const PADDING_FIT_ESTREITO = 28;
 const TAMANHO_MIN = 10;
 const TAMANHO_MAX = 42;
 const TAMANHO_NEUTRO = 16;
@@ -141,11 +146,11 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
     student: themeColor("--node-student", "#6ea8fe"),
     discipline: themeColor("--node-discipline", "#f0a868"),
     edge: themeColor("--edge", "#3c4654"),
-    surface: themeColor("--surface", "#171b21"),
-    bg: themeColor("--bg", "#0f1216"),
-    text: themeColor("--text", "#e6e9ee"),
-    muted: themeColor("--text-muted", "#9aa5b1"),
-    accent: themeColor("--accent", "#6ea8fe"),
+    surface: themeColor("--surface", "#131820"),
+    bg: themeColor("--bg", "#0c0f13"),
+    text: themeColor("--text", "#e9edf2"),
+    muted: themeColor("--text-muted", "#8e9aa8"),
+    accent: themeColor("--accent", "#7db4ff"),
   };
 
   return [
@@ -154,6 +159,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
       style: {
         "background-color": cor.student,
         label: rotularAlunos ? "data(label)" : "",
+        "font-family": FONTE,
         "font-size": 8,
         // Só desenha o rótulo quando ele fica legível na tela: longe, o
         // grafo é forma; perto, é nome.
@@ -161,13 +167,14 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
         color: cor.muted,
         "text-valign": "bottom",
         "text-margin-y": 3,
-        "text-outline-width": 2,
+        "text-outline-width": 2.5,
         "text-outline-color": cor.bg,
-        "text-outline-opacity": 0.8,
+        "text-outline-opacity": 0.9,
         width: "data(size)",
         height: "data(size)",
-        "border-width": 1,
-        "border-color": cor.surface,
+        "overlay-opacity": 0,
+        "border-width": 1.5,
+        "border-color": cor.bg,
         "transition-property": "width, height, background-color, opacity",
         "transition-duration": DURACAO_MS,
         "transition-timing-function": "ease-in-out-cubic",
@@ -195,7 +202,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
         width: pesoMax > pesoMin ? `mapData(weight, ${pesoMin}, ${pesoMax}, 0.5, 4)` : 1,
         "line-color": cor.edge,
         "curve-style": "haystack",
-        opacity: 0.45,
+        opacity: 0.4,
         "transition-property": "opacity, line-color",
         "transition-duration": DURACAO_MS,
       },
@@ -206,14 +213,14 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
       selector: "edge.intra",
       style: { "line-color": "data(color)", opacity: 0.35 },
     },
-    { selector: ".apagado", style: { opacity: 0.08 } },
+    { selector: ".apagado", style: { opacity: 0.07 } },
     {
       selector: "node.realce",
       style: {
         label: "data(label)",
         "min-zoomed-font-size": 0,
         color: cor.text,
-        "border-width": 2,
+        "border-width": 2.5,
         "border-color": cor.text,
         "z-index": 20,
       },
@@ -225,7 +232,13 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
     { selector: "edge.vizinho", style: { opacity: 0.9, "line-color": cor.accent } },
     {
       selector: "node:selected",
-      style: { "border-width": 3, "border-color": cor.accent, "font-size": 11 },
+      style: {
+        "border-width": 3.5,
+        "border-color": cor.accent,
+        "font-size": 11,
+        "font-weight": 600,
+        "overlay-opacity": 0,
+      },
     },
   ];
 }
@@ -246,6 +259,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
  * branco na apresentação.
  */
 function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesado: boolean }) {
+  const padding = cy.width() < 600 ? PADDING_FIT_ESTREITO : PADDING_FIT;
   const base = {
     name: "fcose",
     samplingType: false,
@@ -255,13 +269,15 @@ function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesa
     nodeRepulsion: 6000,
     idealEdgeLength: 60,
     fit: true,
-    padding: 24,
+    // Folga maior que a de antes: a faixa de números e o painel do nó
+    // flutuam sobre o palco e cobriam os nós da borda.
+    padding,
   };
   const conexo = cy.elements().components().length <= 1;
   const tentativas = [
     { ...base, randomize: !(continuar && conexo) },
     { ...base, randomize: true, packComponents: true },
-    { name: "grid", fit: true, padding: 24 },
+    { name: "grid", fit: true, padding },
   ];
   for (const opcoes of tentativas) {
     try {
