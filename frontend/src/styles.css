@@ -1024,6 +1024,50 @@ code {
 .vizinhos-bloco > p.resto { margin: var(--s-2) 0 0 0.55rem; }
 
 /* ---------------------------------------------------------------------
+ * Controles de zoom: barra vertical sobre o canto superior direito do grafo
+ * ------------------------------------------------------------------- */
+
+.zoom-controles {
+  grid-area: grafo;
+  justify-self: end;
+  align-self: start;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--s-3);
+  padding: 4px;
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow-float);
+}
+.zoom-controles button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background-color var(--t-fast) ease,
+    color var(--t-fast) ease,
+    transform var(--t-fast) var(--ease-out);
+}
+.zoom-controles button:active { transform: scale(0.92); }
+@media (hover: hover) and (pointer: fine) {
+  .zoom-controles button:hover { background: var(--surface-3); color: var(--text); }
+}
+@media (prefers-reduced-motion: reduce) { .zoom-controles button:active { transform: none; } }
+/* O aviso de corte do grafo não passa por baixo da barra. */
+.graph-view .aviso { margin-right: calc(var(--s-3) + 52px); }
+/* O canvas aceita foco (atalhos + − 0): anel por dentro, que o palco não corta. */
+.graph-canvas:focus-visible { outline-offset: -3px; border-radius: 0; }
+
+/* ---------------------------------------------------------------------
  * Faixa de números sob o grafo
  * ------------------------------------------------------------------- */
 

@@ -16,7 +16,7 @@
  * avisa.
  */
 
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import cytoscape, { type Core, type ElementDefinition, type Position } from "cytoscape";
 import fcose from "cytoscape-fcose";
 
@@ -80,6 +80,10 @@ const FAIXAS_POR_OITAVA = 6;
 
 /** Abaixo deste tamanho na tela o reflexo só polui o nó. */
 const BRILHO_MIN_PX = 14;
+
+/** Controles de zoom: passo por clique e duração da animação (nenhuma com movimento reduzido). */
+const PASSO_ZOOM = 1.25;
+const DURACAO_ZOOM_MS = 200;
 
 const PADDING_FIT = 72;
 const PADDING_FIT_ESTREITO = 28;
@@ -432,6 +436,50 @@ function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.Stylesh
   ];
 }
 
+/** Folga do enquadramento: menor em tela estreita. */
+function paddingDoFit(cy: Core): number {
+  return cy.width() < 600 ? PADDING_FIT_ESTREITO : PADDING_FIT;
+}
+
+const movimentoReduzido = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Zoom em torno do centro do viewport, respeitando minZoom/maxZoom do Cytoscape. */
+function zoomPorPasso(cy: Core, fator: number) {
+  const nivel = Math.min(cy.maxZoom(), Math.max(cy.minZoom(), cy.zoom() * fator));
+  const centro = { x: cy.width() / 2, y: cy.height() / 2 };
+  cy.stop();
+  if (movimentoReduzido()) cy.zoom({ level: nivel, renderedPosition: centro });
+  else
+    cy.animate(
+      { zoom: { level: nivel, renderedPosition: centro } },
+      { duration: DURACAO_ZOOM_MS, easing: "ease-out" },
+    );
+}
+
+/**
+ * Enquadra o grafo como no fim do layout: mesma folga, e o mesmo limite de
+ * zoom (`ZOOM_MAX_ENQUADRAMENTO`) para que grafo pequeno não vire gigante.
+ * Não mexe em posições, seleção nem dados.
+ */
+function enquadrar(cy: Core) {
+  if (cy.elements().empty()) return;
+  const padding = paddingDoFit(cy);
+  const caixa = cy.elements().boundingBox();
+  const livreX = Math.max(cy.width() - 2 * padding, 1);
+  const livreY = Math.max(cy.height() - 2 * padding, 1);
+  const nivel = Math.max(
+    cy.minZoom(),
+    Math.min(cy.maxZoom(), ZOOM_MAX_ENQUADRAMENTO, livreX / Math.max(caixa.w, 1), livreY / Math.max(caixa.h, 1)),
+  );
+  const pan = {
+    x: cy.width() / 2 - nivel * (caixa.x1 + caixa.w / 2),
+    y: cy.height() / 2 - nivel * (caixa.y1 + caixa.h / 2),
+  };
+  cy.stop();
+  if (movimentoReduzido()) cy.viewport({ zoom: nivel, pan });
+  else cy.animate({ zoom: nivel, pan }, { duration: DURACAO_ZOOM_MS, easing: "ease-out" });
+}
+
 /**
  * Roda o fcose, com duas redes de proteção.
  *
@@ -448,7 +496,7 @@ function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.Stylesh
  * branco na apresentação.
  */
 function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesado: boolean }) {
-  const padding = cy.width() < 600 ? PADDING_FIT_ESTREITO : PADDING_FIT;
+  const padding = paddingDoFit(cy);
   const base = {
     name: "fcose",
     samplingType: false,
@@ -478,12 +526,32 @@ function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesa
   }
 }
 
-export function GraphView({ graph, membership, sizeBy, selected, tema, onSelect }: GraphViewProps) {
+/** O que o pai pode pedir ao grafo (controles de zoom do palco). */
+export interface GraphViewHandle {
+  aproximar: () => void;
+  afastar: () => void;
+  centralizar: () => void;
+}
+
+export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
+  { graph, membership, sizeBy, selected, tema, onSelect },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   // O callback mais recente sem recriar o Cytoscape quando o pai re-renderiza.
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      aproximar: () => cyRef.current && zoomPorPasso(cyRef.current, PASSO_ZOOM),
+      afastar: () => cyRef.current && zoomPorPasso(cyRef.current, 1 / PASSO_ZOOM),
+      centralizar: () => cyRef.current && enquadrar(cyRef.current),
+    }),
+    [],
+  );
 
   // 1. Um Cytoscape por grafo.
   useEffect(() => {
@@ -658,7 +726,13 @@ export function GraphView({ graph, membership, sizeBy, selected, tema, onSelect 
           )}
         </p>
       )}
-      <div ref={containerRef} className="graph-canvas" />
+      <div
+        ref={containerRef}
+        className="graph-canvas"
+        tabIndex={0}
+        role="group"
+        aria-label="Grafo interativo. Com o foco aqui: + aproxima, − afasta e 0 centraliza."
+      />
     </div>
   );
-}
+});

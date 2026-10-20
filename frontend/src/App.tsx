@@ -13,13 +13,13 @@
  *   re-diagrame o grafo: só os nós mudam de cor, com transição.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 
 import { ApiError, api } from "./api";
 import { CommunityLegend } from "./components/CommunityLegend";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { GraphView } from "./components/GraphView";
+import { GraphView, type GraphViewHandle } from "./components/GraphView";
 import { NodePanel } from "./components/NodePanel";
 import { Seletor } from "./components/Seletor";
 import { StatsBar } from "./components/StatsBar";
@@ -60,6 +60,7 @@ function temaInicial(): Tema {
 
 export default function App() {
   const [tema, setTema] = useState<Tema>(temaInicial);
+  const grafoRef = useRef<GraphViewHandle>(null);
   // Timeout que tira a classe de transição do tema; só pode haver um.
   const fimTransicaoTema = useRef(0);
 
@@ -123,6 +124,22 @@ export default function App() {
       /* sem armazenamento: a escolha vale só nesta sessão */
     }
     setTema(novo);
+  };
+
+  /** Atalhos de zoom: valem só com o foco dentro do palco (grafo, controles ou painel do nó). */
+  const atalhosDoPalco = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const acao =
+      event.key === "+" || event.key === "="
+        ? grafoRef.current?.aproximar
+        : event.key === "-" || event.key === "_"
+          ? grafoRef.current?.afastar
+          : event.key === "0"
+            ? grafoRef.current?.centralizar
+            : undefined;
+    if (!acao) return;
+    event.preventDefault();
+    acao();
   };
 
   const resumoAtivo = useMemo(
@@ -381,7 +398,7 @@ export default function App() {
         <GuiaDeLeitura />
       </aside>
 
-      <main className="palco">
+      <main className="palco" onKeyDown={atalhosDoPalco}>
         {dadosGrafo && <StatsBar graph={dadosGrafo} partition={particao} />}
         <AnimatePresence mode="wait">
           <motion.div
@@ -410,6 +427,7 @@ export default function App() {
             {dadosGrafo && (
               <ErrorBoundary resetKey={`${datasetAtivo}/${projecaoAtiva}`}>
                 <GraphView
+                  ref={grafoRef}
                   graph={dadosGrafo}
                   membership={membership}
                   sizeBy={metricaAtiva}
@@ -422,6 +440,13 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
 
+        {dadosGrafo && (
+          <ControlesZoom
+            aoAproximar={() => grafoRef.current?.aproximar()}
+            aoAfastar={() => grafoRef.current?.afastar()}
+            aoCentralizar={() => grafoRef.current?.centralizar()}
+          />
+        )}
         {!(dadosGrafo && selecionado) && (
           <aside className="inspetor-vazio">
             <span className="vazio-icone" aria-hidden="true">
@@ -632,6 +657,37 @@ const ICONE_METRICA: Record<string, React.ReactNode> = {
     15,
   ),
 };
+
+/** Barra flutuante de zoom: aproximar, afastar e centralizar o grafo. */
+function ControlesZoom(props: {
+  aoAproximar: () => void;
+  aoAfastar: () => void;
+  aoCentralizar: () => void;
+}) {
+  const traco = (filhos: React.ReactNode) => (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {filhos}
+    </svg>
+  );
+  return (
+    <div className="zoom-controles" role="group" aria-label="Zoom do grafo">
+      <button type="button" onClick={props.aoAproximar} aria-label="Aproximar o grafo" title="Aproximar (+)">
+        {traco(<path d="M12 5v14M5 12h14" />)}
+      </button>
+      <button type="button" onClick={props.aoAfastar} aria-label="Afastar o grafo" title="Afastar (−)">
+        {traco(<path d="M5 12h14" />)}
+      </button>
+      <button type="button" onClick={props.aoCentralizar} aria-label="Centralizar o grafo" title="Centralizar (0)">
+        {traco(
+          <>
+            <path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" />
+            <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+          </>,
+        )}
+      </button>
+    </div>
+  );
+}
 
 function BotaoTema({ tema, onAlternar }: { tema: Tema; onAlternar: () => void }) {
   const claro = tema === "light";
