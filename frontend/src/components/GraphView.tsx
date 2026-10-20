@@ -66,6 +66,21 @@ const MAX_EDGES_CURVAS = 400;
  */
 const ZOOM_MAX_ENQUADRAMENTO = 2.4;
 
+/**
+ * Acima disto o desenho é "fixo": sem gradiente, sem reflexo e sem funções de
+ * estilo que dependem do zoom. Cada atualização de estilo reavalia o grafo
+ * inteiro (medido pelo revisor: ~5 ms em 81 nós, ~31 ms em 1250 nós/5000
+ * arestas), e gradiente/imagem por nó também custam no canvas.
+ */
+const MAX_NOS_DINAMICO = 400;
+const MAX_ARESTAS_DINAMICO = 1600;
+
+/** O zoom é quantizado em 6 faixas por oitava (~12%): o estilo só reavalia ao trocar de faixa. */
+const FAIXAS_POR_OITAVA = 6;
+
+/** Abaixo deste tamanho na tela o reflexo só polui o nó. */
+const BRILHO_MIN_PX = 14;
+
 const PADDING_FIT = 72;
 const PADDING_FIT_ESTREITO = 28;
 const TAMANHO_MIN = 10;
@@ -157,7 +172,70 @@ function toElements(graph: GraphResponse): ElementDefinition[] {
   return [...nodes, ...edges];
 }
 
-function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJson {
+function ehDinamico(graph: GraphResponse): boolean {
+  return graph.nodes.length <= MAX_NOS_DINAMICO && graph.edges.length <= MAX_ARESTAS_DINAMICO;
+}
+
+/** Faixa de zoom (índice inteiro) e o zoom representativo dela. */
+function faixaDeZoom(zoom: number): number {
+  return Math.round(Math.log2(Math.max(zoom, 0.01)) * FAIXAS_POR_OITAVA);
+}
+function zoomDaFaixa(faixa: number): number {
+  return 2 ** (faixa / FAIXAS_POR_OITAVA);
+}
+
+/** Mistura `cor` (#rrggbb) com `alvo` na proporção `t` (0 = cor, 1 = alvo). */
+function misturar(cor: string, alvo: string, t: number): string {
+  const canais = (hex: string) => {
+    const h = hex.replace("#", "");
+    const n = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+    return [0, 2, 4].map((i) => parseInt(n.slice(i, i + 2), 16));
+  };
+  const a = canais(cor);
+  const b = canais(alvo);
+  const saida = a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  return `#${saida.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * Tons de acabamento derivados da cor-base do nó: claro (topo), escuro
+ * (base) e anel. A cor-base continua sendo a da paleta Okabe & Ito.
+ */
+function tons(cor: string) {
+  const claro = misturar(cor, "#ffffff", 0.26);
+  const escuro = misturar(cor, "#000000", 0.28);
+  return { claro, escuro, anel: misturar(cor, "#ffffff", 0.5), grad: `${claro} ${cor} ${escuro}` };
+}
+
+/**
+ * Mesma família de forma, versão de cantos arredondados do Cytoscape. A forma
+ * continua separando os grupos em escala de cinza (triângulo segue triângulo).
+ */
+const FORMA_ARREDONDADA: Record<string, string> = {
+  triangle: "round-triangle",
+  diamond: "round-diamond",
+  hexagon: "round-hexagon",
+  pentagon: "round-pentagon",
+};
+function arredondar(forma: string): string {
+  return FORMA_ARREDONDADA[forma] ?? forma;
+}
+
+/** Reflexo de vidro no terço superior; o Cytoscape o recorta pela forma do nó. */
+const BRILHO_URI =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" preserveAspectRatio="none">' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#fff" stop-opacity="0.24"/>' +
+      '<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>' +
+      '<ellipse cx="50" cy="30" rx="46" ry="28" fill="url(#g)"/></svg>',
+  );
+
+function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.StylesheetJson {
+  const dinamico = ehDinamico(graph);
+  // Em grafo grande o zoom não entra no estilo (valores fixos, sem reavaliar).
+  const zoom = dinamico ? zoomReal : () => 1;
   const fonteRotulo = (base: number) => () => Math.min(base, ROTULO_TELA / Math.max(zoom(), 0.01));
   const fonteDestaque = () => ROTULO_TELA / Math.max(zoom(), 0.01);
   // Larguras em px **de tela**: em unidades do modelo elas escalam com o zoom
@@ -189,12 +267,36 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
   // limite o haystack (reta curta, sem controle) segura o desenho.
   const estiloCurva = graph.edges.length <= MAX_EDGES_CURVAS ? "bezier" : "haystack";
 
+  /**
+   * Acabamento do nó: gradiente vertical (claro → base → escuro), anel na cor
+   * do próprio nó e reflexo — o reflexo só quando o nó tem >= BRILHO_MIN_PX na tela.
+   */
+  const acabamento = (base: string) => {
+    const t = tons(base);
+    const comum = { "border-color": t.anel };
+    if (!dinamico) return comum;
+    return {
+      ...comum,
+      "background-fill": "linear-gradient",
+      "background-gradient-direction": "to-bottom",
+      "background-gradient-stop-colors": t.grad,
+      "background-gradient-stop-positions": "0% 55% 100%",
+      "background-image": (no: cytoscape.NodeSingular) =>
+        Number(no.data("size")) * zoom() >= BRILHO_MIN_PX ? BRILHO_URI : "none",
+      "background-fit": "cover",
+      "background-width": "100%",
+      "background-height": "100%",
+      "background-clip": "node",
+      "background-image-opacity": 1,
+    };
+  };
+
   return [
     {
       selector: "node",
       style: {
         "background-color": cor.student,
-        "background-opacity": 0.95,
+        ...acabamento(cor.student),
         label: rotularAlunos ? "data(label)" : "",
         "font-family": FONTE,
         "font-size": fonteRotulo(ROTULO_ALUNO),
@@ -221,8 +323,7 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         height: "data(size)",
         // Anel fino e claro: dá borda ao nó sem desenhar um adesivo.
         "border-width": px(1.2),
-        "border-color": "#ffffff",
-        "border-opacity": 0.32,
+        "border-opacity": 0.6,
         "transition-property": "width, height, background-color, underlay-color, underlay-opacity, opacity",
         "transition-duration": DURACAO_MS,
         "transition-timing-function": "ease-in-out-cubic",
@@ -232,6 +333,7 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
       selector: 'node[kind = "discipline"]',
       style: {
         "background-color": cor.discipline,
+        ...acabamento(cor.discipline),
         "underlay-color": cor.discipline,
         shape: "round-rectangle",
         "font-size": fonteRotulo(ROTULO_DISCIPLINA),
@@ -245,6 +347,9 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
       // "data(shape)" é válido no Cytoscape, mas os tipos só aceitam formas literais.
       style: {
         "background-color": "data(color)",
+        // Tons claro/base/escuro e anel vêm de `data`, calculados com a cor da comunidade.
+        ...(dinamico ? { "background-gradient-stop-colors": "data(grad)" } : {}),
+        "border-color": "data(anel)",
         "underlay-color": "data(color)",
         shape: "data(shape)",
       } as unknown as cytoscape.Css.Node,
@@ -281,7 +386,8 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         "text-outline-width": 2.5,
         "text-outline-opacity": 0.7,
         "border-width": px(1.8),
-        "border-opacity": 0.85,
+        "border-color": cor.text,
+        "border-opacity": 0.9,
         "underlay-opacity": 0.22,
         "z-index": 20,
       } as unknown as cytoscape.Css.Node,
@@ -311,6 +417,12 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         "text-outline-width": 2.5,
         "text-outline-opacity": 0.7,
       } as unknown as cytoscape.Css.Node,
+    },
+    {
+      // O halo do selecionado é um círculo: atrás de triângulo, losango ou
+      // quadrado ele vira um disco solto. Nessas formas fica só o anel.
+      selector: 'node:selected[shape][shape != "ellipse"], node[kind = "discipline"]:selected',
+      style: { "underlay-opacity": 0, "border-width": px(2.6) } as unknown as cytoscape.Css.Node,
     },
   ];
 }
@@ -379,7 +491,7 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
     const cy = cytoscape({
       container: containerRef.current,
       elements: toElements(graph),
-      style: estilo(graph, () => cyRef.current?.zoom() ?? 1),
+      style: estilo(graph, () => zoomDaFaixa(faixaDeZoom(cyRef.current?.zoom() ?? 1))),
       layout: { name: "preset" },
       wheelSensitivity: 0.2,
       minZoom: 0.05,
@@ -397,21 +509,23 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
     });
     rodarLayout(cy, { continuar, pesado });
 
-    // O tamanho do rótulo depende do zoom: reavalia o estilo dos nós quando
-    // ele muda (no máximo uma vez por quadro, e só se o tamanho mudou).
+    // Rótulo, anel e reflexo dependem do zoom. O estilo só é reavaliado ao
+    // cruzar uma faixa de zoom (~12%), no máximo uma vez por quadro — e nunca
+    // em grafo grande, onde o estilo é fixo.
     let quadro = 0;
-    let ultimoZoom = -1;
-    cy.on("zoom", () => {
+    let ultimaFaixa = Number.NaN;
+    const aoMudarZoom = () => {
       if (quadro) return;
       quadro = requestAnimationFrame(() => {
         quadro = 0;
         if (cy.destroyed()) return;
-        const z = cy.zoom();
-        if (Math.abs(z - ultimoZoom) < 0.01) return;
-        ultimoZoom = z;
+        const faixa = faixaDeZoom(cy.zoom());
+        if (faixa === ultimaFaixa) return;
+        ultimaFaixa = faixa;
         cy.style().update();
       });
-    });
+    };
+    if (ehDinamico(graph)) cy.on("zoom", aoMudarZoom);
 
     cy.on("mouseover", "node", (event) => {
       event.target.addClass("realce");
@@ -428,6 +542,8 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
 
     cyRef.current = cy;
     return () => {
+      cy.off("zoom", aoMudarZoom);
+      if (quadro) cancelAnimationFrame(quadro);
       cy.nodes().forEach((node) => {
         posicoes.set(node.id(), { ...node.position() });
       });
@@ -446,7 +562,7 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
         const comunidade = membership?.[node.id()];
         if (ordem && comunidade !== undefined) {
           const { color, shape } = communityStyle(ordem.get(comunidade) ?? 0);
-          node.data({ color, shape });
+          node.data({ color, shape: arredondar(shape), ...tons(color) });
           node.addClass("comunidade");
         } else {
           node.removeClass("comunidade");
