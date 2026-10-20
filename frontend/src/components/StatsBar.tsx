@@ -17,7 +17,7 @@ function Contador({ valor, casas = 0 }: { valor: number; casas?: number }) {
 
   useEffect(() => {
     const controle = animate(anterior.current, valor, {
-      duration: reduzir ? 0 : 0.6,
+      duration: reduzir ? 0 : 0.8,
       ease: "easeOut",
       onUpdate: (v) => setMostrado(v),
     });
@@ -61,9 +61,9 @@ export function StatsBar({ graph, partition }: StatsBarProps) {
   return (
     <motion.dl
       className="stats"
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: [0.23, 1, 0.32, 1] }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
     >
       {itens.map((item) => (
         <div key={item.rotulo} className="stat" title={item.dica}>

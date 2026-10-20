@@ -190,6 +190,7 @@ export default function App() {
           {datasets.status === "pronto" && (
             <select
               value={datasetAtivo ?? ""}
+              title={datasetAtivo ?? undefined}
               onChange={(event) => {
                 const escolhido = event.target.value;
                 setDatasetAtivo(escolhido);
@@ -215,6 +216,7 @@ export default function App() {
               ) : (
                 <select
                   value={projecaoAtiva ?? ""}
+                  title={projecaoAtiva ?? undefined}
                   onChange={(event) => setProjecaoAtiva(event.target.value)}
                 >
                   {resumoAtivo.projections.map((id) => (
@@ -359,7 +361,11 @@ function StatusApi({ estado }: { estado: Estado<HealthResponse> }) {
   return (
     <div className="status-api">
       <span className="pill pill-on">API v{estado.dados.version}</span>
-      <span className="status-raizes" title="Raízes de artefatos consultadas, em ordem">
+      <span
+        className="status-raizes"
+        tabIndex={0}
+        title={`Raízes de artefatos consultadas, em ordem: ${estado.dados.roots.join(" · ")}`}
+      >
         {estado.dados.roots.join(" · ")}
       </span>
     </div>

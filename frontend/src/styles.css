@@ -19,6 +19,8 @@
   --surface-3: #232b36;
   --border: #252d38;
   --border-strong: #354050;
+  /* Borda de controle: >= 3:1 contra --surface e --bg (WCAG 1.4.11). */
+  --border-control: #64707f;
 
   /* Texto. */
   --text: #e9edf2;
@@ -26,10 +28,11 @@
   --text-muted: #8e9aa8;
 
   --accent: #7db4ff;
+  --accent-strong: #c4dcff;
   --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
   --node-student: #6ea8fe;
   --node-discipline: #f0a868;
-  --edge: #3c4654;
+  --edge: #5d6d84;
   --erro: #ff8f92;
   --ok: #7fd6a2;
 
@@ -144,6 +147,7 @@ body { margin: 0; }
 
 .status-api { display: flex; align-items: center; gap: var(--s-3); font-size: 0.75rem; min-width: 0; }
 .status-raizes {
+  max-width: 24ch;
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 0.7rem;
@@ -216,7 +220,7 @@ body { margin: 0; }
   appearance: none;
   padding: 0.5rem 2rem 0.5rem 0.7rem;
   border-radius: var(--r-md);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-control);
   background-color: var(--surface-2);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%238e9aa8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -232,7 +236,7 @@ body { margin: 0; }
 }
 .painel select:focus-visible { outline-offset: 1px; border-radius: var(--r-md); }
 @media (hover: hover) and (pointer: fine) {
-  .painel select:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong)); background-color: var(--surface-3); }
+  .painel select:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--border-control)); background-color: var(--surface-3); }
 }
 
 /* ---------------------------------------------------------------------
@@ -254,9 +258,11 @@ body { margin: 0; }
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  /* Sem grade de pontos: um núcleo levemente mais claro e vinheta nas bordas
+   * dão profundidade sem competir com o grafo. */
   background:
-    radial-gradient(ellipse 70% 60% at 50% 42%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%),
-    radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.045) 1px, transparent 0) 0 0 / 24px 24px,
+    radial-gradient(ellipse 65% 60% at 50% 45%, color-mix(in srgb, var(--accent) 7%, #121822) 0%, transparent 100%),
+    radial-gradient(ellipse 120% 110% at 50% 50%, transparent 55%, rgb(0 0 0 / 0.38) 100%),
     var(--bg);
 }
 .palco-conteudo { grid-area: grafo; display: flex; min-width: 0; min-height: 0; }
@@ -377,7 +383,7 @@ code {
   padding: 3px;
   border-radius: var(--r-md);
   background: var(--bg);
-  box-shadow: inset 0 0 0 1px var(--border);
+  box-shadow: inset 0 0 0 1px var(--border-control);
 }
 .segmentado button {
   padding: 0.42rem 0.4rem;
@@ -689,7 +695,9 @@ code {
 }
 @media (max-width: 1100px) {
   .app { grid-template-columns: 252px minmax(0, 1fr); }
-  .status-raizes { display: none; }
+  /* Não some: encurta com reticências; o nome completo está no title e o
+   * elemento aceita foco para quem navega por teclado. */
+  .status-raizes { max-width: 12ch; }
 }
 
 /* ---------------------------------------------------------------------
@@ -702,7 +710,7 @@ code {
     min-height: 100dvh;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto auto;
-    grid-template-areas: "topo" "palco" "painel" "rodape";
+    grid-template-areas: "topo" "painel" "palco" "rodape";
   }
   .topo { padding: var(--s-2) var(--s-4); }
   .marca-glifo { width: 30px; height: 30px; }
@@ -722,14 +730,15 @@ code {
   .stat dt { font-size: 0.56rem; letter-spacing: 0.05em; white-space: normal; line-height: 1.25; }
   .stat dd { font-size: 1rem; }
 
-  /* Folha inferior: cabeçalho + métricas em uma linha; vizinhos rolam dentro. */
+  /* Folha inferior: ocupa o fim da área do grafo (acima da faixa de números,
+   * que continua visível); cabeçalho + métricas numa linha, vizinhos rolam. */
   .node-panel {
-    position: absolute;
-    left: var(--s-2);
-    right: var(--s-2);
-    bottom: var(--s-2);
+    grid-area: grafo;
+    align-self: end;
+    position: relative;
+    margin: 0 var(--s-2) var(--s-2);
     z-index: 6;
-    max-height: 42%;
+    max-height: 44%;
     gap: var(--s-2);
     padding: var(--s-3);
     overflow: hidden;
@@ -748,7 +757,16 @@ code {
   .vizinhos-bloco { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
   .vizinhos-bloco h3 { position: sticky; top: 0; background: var(--surface); margin: 0; padding-bottom: var(--s-1); }
 
-  .painel { overflow: visible; border-right: none; border-top: 1px solid var(--border); padding: var(--s-3); gap: var(--s-2); }
+  .painel {
+    overflow: visible;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: var(--s-3);
+    gap: var(--s-2);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .painel > .cartao:nth-child(n + 3) { grid-column: 1 / -1; }
   .cartao { padding: var(--s-2) var(--s-3) var(--s-3); }
   .painel h2 { margin-bottom: var(--s-2); }
   .painel select { padding-top: 0.42rem; padding-bottom: 0.42rem; }
