@@ -63,87 +63,64 @@ As capturas da interface são material complementar do capítulo 3.
 
 ## Aparência, tema e acessibilidade
 
-- **Cabeçalho.** Sobrelinha do trabalho (TCC · Grupo 16 · UniAnchieta), o
-  título "Análise Topológica e Detecção de Comunidades em Redes Complexas"
-  em fonte serifada do sistema, os autores (os mesmos de `pyproject.toml`,
-  em `AUTORES` no `App.tsx`), o wordmark *edugraph* com um monograma SVG e,
-  ao lado, uma pílula de status (API, versão e raízes consultadas) e o botão de
-  tema, na mesma altura. No celular ficam o wordmark, o tema e o título; o
-  status só aparece se a API estiver offline.
-- **Modo claro e escuro.** O botão sol/lua (`aria-pressed`) troca o atributo
-  `data-theme` do `<html>`. O tema inicial vem de `prefers-color-scheme` e
-  é definido por um script em `index.html` **antes da primeira pintura**
-  (sem piscar); a escolha fica em `localStorage` (`edugraph-tema`), com
-  `try/catch`. Os tokens dos dois temas estão em `styles.css`
-  (`:root` e `:root[data-theme="light"]`). O canvas do Cytoscape não entende
-  `var(--x)`: ao trocar o tema, o `GraphView` refaz a folha de estilo
-  relendo os tokens, sem tocar em dados, posições nem seleção. A paleta das
-  comunidades é a mesma nos dois temas; só o anel dos nós se ajusta. A
-  transição é curta e não existe com `prefers-reduced-motion`.
-- **Paleta: o preto é a base, o verde é acento.** No escuro, fundo e
-  superfícies são pretos neutros levemente esverdeados em camadas (`#050B0A`,
-  `#0A1211`, `#0F1917`, `#16231F`), com bordas finas e translúcidas; texto
-  Anti-Flash White e Pistachio; o verde da referência (Caribbean Green,
-  Mountain Meadow) só aparece em estado ativo, foco, medidores, ponto de
-  status e no Q; no claro,
-  fundo Anti-Flash White, superfícies brancas, texto Rich Black e acento
-  Bangladesh Green. Os pares de contraste (WCAG) estão calculados no comentário
-  do topo de `styles.css`. A fonte da referência (Axiforma) é comercial e não
-  é usada: vale a pilha do sistema. **As cores das comunidades não mudam**
-  (Okabe & Ito, `palette.ts`); como uma delas é verde, o anel e o halo do nó
-  selecionado, e as arestas destacadas, são neutros (cor do texto), não o
-  verde de acento.
-- **Controles do grafo.** Uma barra no canto superior direito do palco
-  aproxima, afasta (passo 1,25 em torno do centro, respeitando `minZoom` e
-  `maxZoom`) e centraliza (o mesmo enquadramento do fim do layout, com o
-  limite de 2,4 em grafo pequeno). Os atalhos `+`, `−` e `0` valem com o foco
-  dentro do palco; o canvas aceita foco. A animação é de 200 ms e não existe
-  com `prefers-reduced-motion`.
-- **Barra lateral em quatro passos** (Dados, Projeção, Comunidades,
-  Centralidade), com ajuda curta. Projeções e algoritmos aparecem com
-  rótulo em português (`ROTULO_PROJECAO` e `ROTULO_ALGORITMO` em `App.tsx`);
-  o id técnico, que é o que vai para a API, aparece em fonte monoespaçada.
-  O cartão "Como ler o grafo" explica forma, cor, tamanho e espessura e fica
-  oculto no celular.
-- **Seletor próprio** (`components/Seletor.tsx`). O menu de um `<select>` é o
-  popup do sistema, que destoa do tema. O componente segue o padrão WAI-ARIA
-  *select-only combobox*: gatilho `role="combobox"` com `aria-expanded` e
-  `aria-activedescendant`, painel `role="listbox"`. Teclado: setas,
-  Home/End, PageUp/PageDown, Enter ou Espaço, Esc (devolve o foco), digitar
-  para buscar (repetir a mesma tecla cicla entre opções com a mesma inicial)
-  e clique fora. O painel é desenhado no `<body>` com posição fixa, abre
-  para cima quando não cabe embaixo e fecha ao rolar ou redimensionar.
-  Escolher de novo a opção **já selecionada** só fecha o menu: o `onChange`
-  é o mesmo de um `<select>` e não dispara. Um `<select>` nativo oculto e
-  sincronizado continua no DOM — é por ele que `scripts/capture.mjs` escolhe
-  as cenas.
-- **Painel do nó**: silhueta com o mesmo acabamento dos nós, métricas em um
-  bloco ("1º de 7" e barra), vizinhos com a forma da comunidade e barra de
-  peso. **Faixa de números** sob o grafo, com Q em destaque e medidor de
-  0 a 1; o contador anima até o valor (sem animação com movimento reduzido).
-- **Vidro.** Cartões, seletores e menu aberto, segmentado, faixa de números,
-  controles de zoom, painel do nó, pílula e botão de tema e rodapé usam o mesmo
-  idioma: superfície translúcida com `backdrop-filter` (blur + saturate), anel
-  de 1 px, realce interno no topo e sombra funda; o estado ativo acende com um
-  brilho fino, não com bloco chapado. Controles dentro de um cartão são
-  "afundados" (mais escuros), nunca outra camada clara por cima.
-- **Nós em liquid glass**: forma arredondada, preenchimento translúcido da cor
-  da comunidade com gradiente, reflexo especular no topo, refração escura na
-  base e brilho de borda. Os detalhes só aparecem acima de 14 px na tela; no
-  modo fixo (grafo grande) fica o preenchimento simples. A forma continua
-  separando os grupos em escala de cinza. O tamanho do rótulo e a largura do anel
-  e das arestas acompanham o zoom, em faixas discretas; acima de 400 nós ou
-  1.600 arestas o desenho é fixo, sem gradiente nem funções de zoom.
-- **Rodapé** fino com o link do repositório do TCC no GitHub
-  (`target="_blank"`, `rel="noopener noreferrer"`).
-- **Movimento.** `framer-motion` anima a entrada do painel do nó, da faixa
-  de números e a troca de projeção; `MotionConfig reducedMotion="user"` e a
-  regra global de `prefers-reduced-motion` em `styles.css` tiram o
-  deslocamento e deixam só o que ajuda a entender.
-- **Limites conhecidos.** O ESLint chega pelo branch
-  `c/pendencias-frente-c`. O reflexo e os gradientes dos nós não foram
-  medidos em grafos acima de 400 nós (nesse caso o desenho fixo os
-  desliga).
+**Direção A · Editorial científico** (REBRAND-02, 20/10/2026): implementação
+do protótipo `TCC-design-direcoes/direcao-a-editorial-cientifico.html`
+escolhido pelo usuário. A tela funciona como uma página de periódico:
+coluna de métodos, figura numerada e nota lateral do nó, separadas por
+filetes. O título curto da aplicação e os três autores foram preservados.
+
+- **Claro padrão:** papel `#FBFAF7`, tinta `#1A1915`, folha branca.
+  **Escuro:** grafite quente `#161512`, folha `#1C1B18`, tinta `#ECE8DF`.
+  O script inline define o tema antes da primeira pintura, usando a escolha
+  salva em `localStorage` (`edugraph-tema`) ou o claro padrão. O botão
+  continua alternando os temas sem recriar o grafo nem perder a seleção.
+- **Fontes locais, aprovadas sob SIL OFL 1.1:** Source Serif 4 (normal e
+  itálico variáveis, com tamanho óptico) nos títulos, números e legenda;
+  Source Sans 3 variável na interface e nos rótulos do canvas; Source Code
+  Pro Regular nos ids. Obtidas dos repositórios oficiais da Adobe:
+  [source-serif](https://github.com/adobe-fonts/source-serif),
+  [source-sans](https://github.com/adobe-fonts/source-sans) e
+  [source-code-pro](https://github.com/adobe-fonts/source-code-pro).
+  Os WOFF2 originais, as três licenças OFL e os URLs imutáveis com os commits
+  de origem estão em [public/fonts/README.md](public/fonts/README.md).
+  São distribuições completas (cerca de 1 MB); não foi criado subset latino
+  porque o suporte Brotli de subsetting não está instalado no ambiente.
+  Não há CDN nem requisição externa de fonte em runtime.
+- **Métodos em quatro passos:** Dados, Projeção, Comunidades e Centralidade.
+  Ids e callbacks continuam iguais; opções de tamanho têm aparência de
+  rádios 2×2 e explicação da métrica ativa. A modularidade usa notação
+  matemática (*Q* = 0,3715); a legenda das comunidades usa linhas de tabela.
+- **Figura 1:** faixa de números no topo do palco; legenda editorial sob
+  o grafo ensina forma/cor, tamanho e peso. Nós chapados e rótulos com halo;
+  contorno de tinta no claro, recorte de papel no escuro e seleção por
+  anel na própria forma. Arestas neutras, sólidas, com largura de 0,75 a
+  4,75 px conforme o peso em grafos pequenos. A direção A original usa
+  linhas sólidas; não foi adotado o tracejado da direção C. Nenhum vidro,
+  gradiente, reflexo SVG ou acento verde da moldura anterior permanece.
+  Okabe & Ito e as formas de `palette.ts` continuam intactos.
+- **Painel do nó:** nome em serifa, comunidade, scores com quatro casas,
+  pontos de posição e texto exato como "3º de 7". Até 15 pontos por métrica;
+  em redes maiores as marcas são proporcionais, com a posição exata em
+  texto e nome acessível. Vizinhos mantêm ordem por peso, limite de 12,
+  clique para selecionar e aviso de truncamento, com barras finas neutras.
+- **Seletor:** mantém ARIA, teclado/type-ahead, portal com abertura para cima,
+  reconfirmação sem `onChange` e `<select>` nativo oculto do `capture.mjs`.
+  O menu usa o mesmo papel e os mesmos filetes dos campos.
+- **Responsividade:** três colunas em 1440; métodos e inspetor mais estreitos
+  em 1024; em 390, cabeçalho, figura, painel, controles e rodapé nessa ordem.
+  O status da API fica visível também no celular (as raízes ficam no desktop).
+  Zoom permanece por ref (`aproximar`, `afastar`, `centralizar`) e atalhos
+  `+`, `−`, `0`; o desenho grande mantém estilo fixo, zoom quantizado e
+  cleanup. Ao redimensionar uma figura já aberta, Centralizar refaz o fit.
+- **Estados e acessibilidade:** vazio com filete tracejado, carregamento com
+  fio de progresso e erro textual legível; foco visível azul, contraste de
+  tinta e papel e cor/forma redundantes. `MotionConfig reducedMotion="user"`
+  e CSS de `prefers-reduced-motion` preservados; entradas por opacidade,
+  sem deslocamento decorativo. Rodapé em texto com link do repositório.
+
+As capturas da figura 9 anteriores ao REBRAND-02 estão desatualizadas.
+Refazê-las com `npm run capture` e regenerar o índice de figuras depois
+da integração; as telas OULAD exigem seus artefatos reais.
 
 ## Roteiro de verificação manual
 

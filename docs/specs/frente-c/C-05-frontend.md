@@ -79,7 +79,7 @@ pelo ESLint 10, adicionado pelo branch `c/pendencias-frente-c`).
 
 ## Arquivos criados ou alterados
 
-- `frontend/src/components/GraphView.tsx` — os `TODO C-05`.
+- `frontend/src/components/GraphView.tsx` — apresentação do grafo, layout e zoom.
 - `frontend/src/App.tsx` — seletores de partição e métrica.
 - `frontend/src/components/NodePanel.tsx` (novo).
 - `frontend/README.md` — roteiro de verificação.
@@ -102,28 +102,30 @@ Acrescentados durante a implementação:
   usado por `scripts/capture.mjs`; reconfirmar a opção já escolhida não
   chama `onChange` (como no `<select>`); o painel é renderizado no `<body>`
   com posição fixa e abre para cima quando não cabe.
-- `frontend/src/components/NodePanel.tsx`, `StatsBar.tsx` — painel do nó com
-  silhueta, métricas em bloco único e vizinhos com a forma da comunidade; faixa
-  de números com ícones e medidor do Q. `GraphView.tsx` — nós com forma
-  arredondada, gradiente e reflexo, rótulos e larguras proporcionais ao zoom
-  por faixas e desenho fixo em grafos grandes.
-- `frontend/src/App.tsx` — cabeçalho com o título do trabalho e os autores,
-  barra lateral em quatro passos (rótulos amigáveis para projeções e
-  algoritmos, ids intactos), cartão "Como ler o grafo", botão de tema e
-  rodapé com o link do repositório. O botão de tema (`tema`) é o único estado
-  novo do `App`: apresentação pura, guardada em `localStorage`.
-- Controles de zoom (`ControlesZoom` em `App.tsx`; `GraphViewHandle` em
-  `GraphView.tsx`) — aproximar, afastar e centralizar, com os atalhos `+`,
-  `−` e `0` quando o foco está no palco. O `GraphView` os expõe por `ref`, sem
-  mudar o fluxo de dados do `App`.
-- Paleta e vidro dos dois temas (`styles.css`): preto como base e verde só como
-  acento; componentes em vidro escuro (translúcido, blur, realce e sombra); nós
-  em liquid glass no `GraphView.tsx` — as cores das comunidades
-  (`palette.ts`) não mudam; o anel e o halo do nó selecionado são neutros para
-  não se confundirem com a comunidade verde (#009E73).
-- `frontend/index.html` — script que define `data-theme` antes da primeira
-  pintura (escolha salva ou `prefers-color-scheme`).
-- `frontend/README.md` — seção "Aparência, tema e acessibilidade".
+- **REBRAND-02 · Direção A, editorial científico (20/10/2026).**
+  `styles.css` reescrito a partir do protótipo escolhido pelo usuário:
+  papel claro padrão `#FBFAF7`, grafite quente `#161512` no escuro,
+  filetes, métodos à esquerda, Figura 1 ao centro e detalhe do nó à direita.
+  Em 390 px, figura e painel precedem os controles; status da API visível.
+- `frontend/public/fonts/` — WOFF2 oficiais Source Serif 4, Source Sans 3 e
+  Source Code Pro, com licenças OFL e registro dos URLs/commits da Adobe em
+  `README.md`. Fontes embutidas aprovadas pelo usuário, sem dependência npm.
+- `frontend/src/components/NodePanel.tsx`, `StatsBar.tsx` — nome e números em
+  serifa, métricas com pontos de posição e texto "3º de 7", vizinhos com
+  barras finas; faixa numérica no topo da figura, sem ícones ou medidor do Q.
+- `GraphView.tsx` — nós chapados na paleta original, contorno contrastante,
+  anel de seleção na própria forma e arestas neutras sólidas por peso.
+  Vidro, gradientes e SVG de reflexo removidos. Estilo de zoom quantizado,
+  modo fixo grande, layout e cleanup preservados; nenhuma alteração em
+  `palette.ts`, `api.ts` ou `types.ts`.
+- `frontend/src/App.tsx` — legenda "Figura 1" sob o grafo, rádio 2×2 com
+  explicação, notação matemática de Q e rodapé em texto. Estado, efeitos,
+  requisições, números e callbacks preservados. `GraphViewHandle` mantém
+  aproximar, afastar e centralizar e os atalhos de teclado.
+- `frontend/index.html` — título curto e script de tema antes da primeira
+  pintura, usando escolha salva ou claro padrão; `frontend/README.md`
+  descreve a direção A, as fontes e a verificação. As capturas da figura 9
+  devem ser refeitas após a integração; as cenas OULAD dependem dos dados.
 
 ## Impacto no artigo
 
