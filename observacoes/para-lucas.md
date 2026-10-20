@@ -95,6 +95,22 @@ Ver as regras em [`README.md`](README.md).
   `docs/specs/frente-c/C-05-frontend.md:81`, reservada ao branch do redesign;
   `frontend/README.md` também não foi alterado.
 
+### C-OBS-12 · Auditoria npm aponta vulnerabilidades no Vite e esbuild existentes
+
+- **De:** correção FIX-C, sessão do Lucas · **Data:** 20/10/2026
+- **Onde:** `frontend/package.json:31` e `frontend/package-lock.json:1`.
+- **O quê:** após instalar as dependências no worktree, `npm audit --json`
+  retornou exit 1 e `total: 2`, com `moderate: 1` (`esbuild`, transitivo)
+  e `high: 1` (`vite`, direto). A árvore instalada mantém Vite 5.4.21 e
+  esbuild 0.21.5, anteriores à adição do lint. Entre os avisos constam
+  GHSA-67mh-4wv8-2f99 (esbuild) e GHSA-fx2h-pf6j-xcff (Vite).
+  O npm propõe Vite 8.3.4 com `isSemVerMajor: true`; typecheck, lint e
+  build passaram, mas não corrigem esses avisos das ferramentas de desenvolvimento.
+- **Como resolver:** planejar atualização do Vite, do plugin React e da
+  dependência transitiva em tarefa própria, verificando compatibilidade
+  com o redesign e repetindo captura, typecheck, lint e build. Não aplicar
+  `npm audit fix --force` sem revisar a migração de versão principal.
+
 ## Resolvidas
 
 ### C-OBS-06 · Documentação ainda anuncia 275 testes e 11 xfail da Frente C
