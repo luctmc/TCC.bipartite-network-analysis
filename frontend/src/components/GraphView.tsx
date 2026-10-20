@@ -58,11 +58,11 @@ const ROTULO_TELA = 13;
 const MAX_EDGES_CURVAS = 400;
 
 /**
- * Zoom máximo do enquadramento automático. Grafo pequeno (7 nós) chegava a
- * zoom ~3 e os nós ficavam enormes perto de rótulos de 13px; o usuário
- * ainda pode aproximar à mão (`maxZoom` do Cytoscape continua 4).
+ * Limite do enquadramento editorial: grafos pequenos aproveitam a figura.
+ * A folga considera o bounding box com rótulos; o usuário ainda pode
+ * aproximar à mão (`maxZoom` do Cytoscape continua 4).
  */
-const ZOOM_MAX_ENQUADRAMENTO = 2.4;
+const ZOOM_MAX_ENQUADRAMENTO = 3.6;
 
 /**
  * Acima disto o desenho é "fixo": sem funções de
@@ -80,7 +80,7 @@ const FAIXAS_POR_OITAVA = 6;
 const PASSO_ZOOM = 1.25;
 const DURACAO_ZOOM_MS = 200;
 
-const PADDING_FIT = 72;
+const PADDING_FIT = 36;
 const PADDING_FIT_ESTREITO = 28;
 const TAMANHO_MIN = 8;
 const TAMANHO_MAX = 22;
@@ -379,10 +379,8 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
     });
 
     cy.on("layoutstop", () => {
-      if (cy.zoom() > ZOOM_MAX_ENQUADRAMENTO) {
-        cy.zoom(ZOOM_MAX_ENQUADRAMENTO);
-        cy.center();
-      }
+      // Mesma câmera do botão Centralizar, sem alterar as posições do fcose.
+      enquadrar(cy);
       cy.nodes().forEach((node) => {
         posicoes.set(node.id(), { ...node.position() });
       });

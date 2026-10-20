@@ -160,9 +160,9 @@ code { font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
 .seletor-painel { position: fixed; z-index: 100; padding: 4px; list-style: none; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--rule-2); border-radius: 4px; background: var(--sheet); color: var(--text); box-shadow: 0 6px 18px #00000012; }
 .seletor-opcao { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 8px; border-radius: 2px; cursor: pointer; }
 .seletor-opcao[data-ativo="true"] { background: var(--hover); outline: 1px solid var(--rule-2); outline-offset: -1px; }
-.seletor-textos { min-width: 0; }
-.seletor-rotulo { display: block; overflow-wrap: anywhere; }
-.seletor-id { display: block; margin-top: 2px; color: var(--text-muted); }
+.seletor-textos { flex: 1; min-width: 0; }
+.seletor-rotulo { display: block; overflow-wrap: break-word; word-break: normal; }
+.seletor-id { display: block; margin-top: 2px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seletor-check { visibility: hidden; flex: 0 0 auto; }
 .seletor-opcao[aria-selected="true"] .seletor-check { visibility: visible; }
 .q-metrica { margin: 14px 0 2px 20px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
@@ -284,3 +284,22 @@ code { font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
   .segmentado button { font-size: 13px; gap: 6px; }
 }
 @media (max-width: 760px) { .segmentado button { font-size: 15px; } }
+
+/* No celular, o zoom ocupa uma linha própria fora da área desenhada. */
+@media (max-width: 760px) {
+  .figura:has(.zoom-controles) {
+    height: 408px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 44px;
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+  .figura:has(.zoom-controles) > .palco-conteudo {
+    position: relative;
+    inset: auto;
+    min-height: 0;
+    min-width: 0;
+  }
+  .zoom-controles { position: static; grid-row: 2; justify-self: end; align-self: start; }
+}

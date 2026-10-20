@@ -50,8 +50,8 @@ const BUSCA_MS = 700;
 /** Altura máxima do painel e folga até a borda da janela. */
 const ALTURA_MAX_PX = 256;
 const FOLGA_PX = 8;
-/** Largura mínima do painel em telas estreitas, onde o gatilho divide a linha. */
-const LARGURA_MIN_ESTREITA_PX = 256;
+/** Cerca de 20rem: ids legíveis mesmo quando o gatilho é estreito. */
+const LARGURA_MIN_PAINEL_PX = 320;
 
 /** Onde o painel fica, em px da janela (posição fixa, fora de qualquer área com scroll). */
 interface Posicao {
@@ -136,9 +136,9 @@ export function Seletor({ nome, value, opcoes, onChange, titulo }: SeletorProps)
     const natural = Math.min(painel.scrollHeight, ALTURA_MAX_PX);
     const paraCima = natural > abaixo && acima > abaixo;
     const espaco = paraCima ? acima : abaixo;
-    const largura = Math.max(
-      gatilho.width,
-      window.innerWidth <= 760 ? Math.min(LARGURA_MIN_ESTREITA_PX, window.innerWidth - 2 * FOLGA_PX) : 0,
+    const largura = Math.min(
+      window.innerWidth - 2 * FOLGA_PX,
+      Math.max(gatilho.width, LARGURA_MIN_PAINEL_PX),
     );
     setPosicao({
       left: Math.max(FOLGA_PX, Math.min(gatilho.left, window.innerWidth - largura - FOLGA_PX)),
@@ -275,7 +275,7 @@ export function Seletor({ nome, value, opcoes, onChange, titulo }: SeletorProps)
               >
                 <span className="seletor-textos">
                   <span className="seletor-rotulo">{opcao.rotulo}</span>
-                  {opcao.id && <code className="seletor-id">{opcao.id}</code>}
+                  {opcao.id && <code className="seletor-id" title={opcao.id}>{opcao.id}</code>}
                 </span>
                 <svg className="seletor-check" viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M2.5 7.5 5.5 10.5 11.5 3.5" />

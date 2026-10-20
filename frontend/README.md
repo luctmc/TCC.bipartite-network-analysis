@@ -111,7 +111,13 @@ filetes. O título curto da aplicação e os três autores foram preservados.
   O status da API fica visível também no celular (as raízes ficam no desktop).
   Zoom permanece por ref (`aproximar`, `afastar`, `centralizar`) e atalhos
   `+`, `−`, `0`; o desenho grande mantém estilo fixo, zoom quantizado e
-  cleanup. Ao redimensionar uma figura já aberta, Centralizar refaz o fit.
+  cleanup. A câmera inicial e Centralizar usam a mesma folga: 36 px no
+  desktop e 28 px quando o canvas tem menos de 600 px, com zoom de
+  enquadramento até 3,6 e rótulos incluídos na caixa. Ao redimensionar uma
+  figura já aberta, Centralizar refaz o fit. No celular, os botões ocupam
+  uma linha própria abaixo do canvas. O menu tem largura mínima de cerca
+  de 20rem limitada à viewport; ids ficam em uma linha com reticências e
+  texto completo no `title`, enquanto rótulos podem quebrar entre palavras.
 - **Estados e acessibilidade:** vazio com filete tracejado, carregamento com
   fio de progresso e erro textual legível; foco visível azul, contraste de
   tinta e papel e cor/forma redundantes. `MotionConfig reducedMotion="user"`
