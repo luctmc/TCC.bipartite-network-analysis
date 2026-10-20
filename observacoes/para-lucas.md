@@ -68,21 +68,6 @@ Ver as regras em [`README.md`](README.md).
   `python -m edugraph figures --index`, usando uma máquina com os artefatos
   necessários para as telas OULAD.
 
-### C-OBS-06 · Documentação ainda anuncia 275 testes e 11 xfail da Frente C
-
-- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
-- **Onde:** `README.md:40`, `README.md:41` e
-  `docs/testes/estrategia.md:46`.
-- **O quê:** README e estratégia de testes anunciam 275 testes passando e
-  11 `xfail`, atribuídos a specs abertas da Frente C. Na auditoria,
-  `.venv/bin/python -m pytest -m 'not slow' -q -p no:cacheprovider`
-  (com `--basetemp` temporário) retornou
-  `343 passed, 1 skipped, 1 deselected, 1 warning in 15.72s`, sem `xfail`.
-  O skip é o dataset `oulad_module_presentation` ausente nas fixtures;
-  não é falha de implementação.
-- **Como resolver:** atualizar os números, a data e a descrição das specs
-  concluídas; distinguir os marcadores históricos do estado atual da suíte.
-
 ### C-OBS-11 · Baixa prioridade: referências históricas a xfail, TODO e handler 501
 
 - **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
@@ -111,6 +96,23 @@ Ver as regras em [`README.md`](README.md).
   `frontend/README.md` também não foi alterado.
 
 ## Resolvidas
+
+### C-OBS-06 · Documentação ainda anuncia 275 testes e 11 xfail da Frente C
+
+- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
+- **Onde:** `README.md:40`, `README.md:41` e
+  `docs/testes/estrategia.md:46`.
+- **O quê:** README e estratégia de testes anunciam 275 testes passando e
+  11 `xfail`, atribuídos a specs abertas da Frente C. Na auditoria,
+  `.venv/bin/python -m pytest -m 'not slow' -q -p no:cacheprovider`
+  (com `--basetemp` temporário) retornou
+  `343 passed, 1 skipped, 1 deselected, 1 warning in 15.72s`, sem `xfail`.
+  O skip é o dataset `oulad_module_presentation` ausente nas fixtures;
+  não é falha de implementação.
+- **Como resolver:** atualizar os números, a data e a descrição das specs
+  concluídas; distinguir os marcadores históricos do estado atual da suíte.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — README e estratégia atualizados com medição final no worktree: pytest -m "not slow" -q retornou 357 passed, 1 skipped (OULAD ausente), 0 xfail, 1 deselected e 1 warning; specs da Frente C descritas como implementadas.
+
 
 ### C-OBS-10 · README não avisa que a coorte por avaliação está sem métricas
 
