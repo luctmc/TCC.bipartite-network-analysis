@@ -94,23 +94,6 @@ Ver as regras em [`README.md`](README.md).
 - **Como resolver:** versionar o lockfile e adotar instalação reproduzível,
   ou registrar explicitamente a decisão do grupo e suas limitações.
 
-### C-OBS-09 · Erro 422 da API pode aparecer como [object Object] no frontend
-
-- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
-- **Onde:** `frontend/src/api.ts:47`, `frontend/src/api.ts:52` e
-  `src/edugraph/api/routes.py:366`.
-- **O quê:** o cliente faz cast do corpo de erro para `{ detail?: string }`,
-  mas o FastAPI devolve um array em erros de validação. Na API temporária
-  da AUD-01b, `curl --fail-with-body` para
-  `/datasets/synthetic_dev/centrality/student_simple/absent` retornou
-  HTTP 422 (exit 22), com
-  `{"detail":[{"type":"literal_error","loc":["path","metric"],"msg":"Input should be 'degree', 'betweenness' or 'eigenvector'",...}]}`.
-  Passar esse array ao construtor de `Error` produz a mensagem
-  `[object Object]`. Os endpoints válidos retornaram 200.
-- **Como resolver:** tratar `detail` como `unknown`, preservar strings e
-  formatar arrays de validação pelos campos `loc` e `msg`, com fallback
-  para `statusText`; testar o corpo de erro 422.
-
 ### C-OBS-10 · README não avisa que a coorte por avaliação está sem métricas
 
 - **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
@@ -153,6 +136,25 @@ Ver as regras em [`README.md`](README.md).
   `frontend/README.md` também não foi alterado.
 
 ## Resolvidas
+
+### C-OBS-09 · Erro 422 da API pode aparecer como [object Object] no frontend
+
+- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
+- **Onde:** `frontend/src/api.ts:47`, `frontend/src/api.ts:52` e
+  `src/edugraph/api/routes.py:366`.
+- **O quê:** o cliente faz cast do corpo de erro para `{ detail?: string }`,
+  mas o FastAPI devolve um array em erros de validação. Na API temporária
+  da AUD-01b, `curl --fail-with-body` para
+  `/datasets/synthetic_dev/centrality/student_simple/absent` retornou
+  HTTP 422 (exit 22), com
+  `{"detail":[{"type":"literal_error","loc":["path","metric"],"msg":"Input should be 'degree', 'betweenness' or 'eigenvector'",...}]}`.
+  Passar esse array ao construtor de `Error` produz a mensagem
+  `[object Object]`. Os endpoints válidos retornaram 200.
+- **Como resolver:** tratar `detail` como `unknown`, preservar strings e
+  formatar arrays de validação pelos campos `loc` e `msg`, com fallback
+  para `statusText`; testar o corpo de erro 422.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — detail tratado como unknown; strings preservadas, arrays FastAPI formatados por loc/msg e fallback statusText para corpos malformados; seis testes Node passaram após reproduzir quatro falhas antes da correção.
+
 
 ### C-OBS-04 · Estágio e handlers de CLI da Frente C sem testes automatizados
 

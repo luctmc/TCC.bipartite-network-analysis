@@ -38,14 +38,28 @@ export class ApiError extends Error {
   }
 }
 
+function errorDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (!Array.isArray(detail)) return fallback;
+  const messages = detail.flatMap((entry: unknown) => {
+    if (typeof entry !== "object" || entry === null || !("msg" in entry)) return [];
+    if (typeof entry.msg !== "string" || !entry.msg.trim()) return [];
+    const loc = "loc" in entry && Array.isArray(entry.loc)
+      ? entry.loc.filter((part: unknown) => typeof part === "string" || typeof part === "number").join(".")
+      : "";
+    return [loc ? `${loc}: ${entry.msg}` : entry.msg];
+  });
+  return messages.join("; ") || fallback;
+}
+
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(path, { headers: { Accept: "application/json" } });
 
   if (!response.ok) {
     let detail = response.statusText;
     try {
-      const body = (await response.json()) as { detail?: string };
-      if (body.detail) detail = body.detail;
+      const body = (await response.json()) as { detail?: unknown };
+      detail = errorDetail(body.detail, response.statusText);
     } catch {
       // resposta sem corpo JSON: fica o statusText mesmo
     }
