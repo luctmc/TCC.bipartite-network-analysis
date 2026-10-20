@@ -155,31 +155,43 @@ export default function App() {
     <MotionConfig reducedMotion="user">
     <div className="app">
       <header className="topo">
-        <div className="marca">
-          <span className="marca-glifo" aria-hidden="true">
-            <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-              <path d="M5 5.5 15 4M5 5.5 15 10M5 14.5 15 10M5 14.5 15 16M5 5.5 15 16" opacity="0.55" />
-              <circle cx="5" cy="5.5" r="2.2" fill="currentColor" />
-              <circle cx="5" cy="14.5" r="2.2" fill="currentColor" />
-              <rect x="13" y="2.6" width="4.4" height="3.4" rx="1" fill="currentColor" />
-              <rect x="13" y="8.3" width="4.4" height="3.4" rx="1" fill="currentColor" />
-              <rect x="13" y="14.3" width="4.4" height="3.4" rx="1" fill="currentColor" />
-            </svg>
-          </span>
-          <div>
-            <h1>edugraph</h1>
-            <p className="subtitulo">
-              Análise topológica e detecção de comunidades em redes educacionais
-            </p>
-          </div>
+        <div className="hero">
+          <p className="sobrelinha">
+            Trabalho de Conclusão de Curso <span aria-hidden="true">·</span> Grupo 16{" "}
+            <span aria-hidden="true">·</span> UniAnchieta
+          </p>
+          <h1>Análise topológica de redes educacionais bipartidas</h1>
+          <p className="autores" title={AUTORES.join(", ")}>
+            {AUTORES.join(" · ")}
+          </p>
         </div>
-        <StatusApi estado={health} />
+        <div className="topo-lado">
+          <span className="wordmark">
+            <span className="marca-glifo" aria-hidden="true">
+              <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <path d="M5 5.5 15 4M5 5.5 15 10M5 14.5 15 10M5 14.5 15 16M5 5.5 15 16" opacity="0.55" />
+                <circle cx="5" cy="5.5" r="2.2" fill="currentColor" />
+                <circle cx="5" cy="14.5" r="2.2" fill="currentColor" />
+                <rect x="13" y="2.6" width="4.4" height="3.4" rx="1" fill="currentColor" />
+                <rect x="13" y="8.3" width="4.4" height="3.4" rx="1" fill="currentColor" />
+                <rect x="13" y="14.3" width="4.4" height="3.4" rx="1" fill="currentColor" />
+              </svg>
+            </span>
+            edugraph
+          </span>
+          <StatusApi estado={health} />
+        </div>
       </header>
 
-      <aside className="painel">
+      <aside className="painel" aria-label="Controles do grafo">
         <section className="cartao">
-          <h2>Dataset</h2>
-          {datasets.status === "carregando" && <p className="nota nota-carregando"><span className="giro giro-pequeno" />carregando datasets…</p>}
+          <Passo n={1} titulo="Dados" ajuda="Conjunto lido do disco." icone={ICONE_DADOS} />
+          {datasets.status === "carregando" && (
+            <p className="nota nota-carregando">
+              <span className="giro giro-pequeno" />
+              carregando datasets…
+            </p>
+          )}
           {datasets.status === "erro" && (
             <p className="nota nota-erro" role="alert">
               API fora do ar: {datasets.erro.message}
@@ -188,76 +200,113 @@ export default function App() {
             </p>
           )}
           {datasets.status === "pronto" && (
-            <select
-              value={datasetAtivo ?? ""}
-              title={datasetAtivo ?? undefined}
-              onChange={(event) => {
-                const escolhido = event.target.value;
-                setDatasetAtivo(escolhido);
-                const resumo = datasets.dados.find((d) => d.dataset === escolhido);
-                setProjecaoAtiva(resumo?.projections[0] ?? null);
-              }}
-            >
-              {datasets.dados.map((d) => (
-                <option key={d.dataset} value={d.dataset} title={d.dataset}>
-                  {d.dataset}
-                </option>
-              ))}
-            </select>
+            <Campo icone={ICONE_DADOS} id={null}>
+              <select
+                aria-label="Dataset"
+                value={datasetAtivo ?? ""}
+                title={datasetAtivo ?? undefined}
+                onChange={(event) => {
+                  const escolhido = event.target.value;
+                  setDatasetAtivo(escolhido);
+                  const resumo = datasets.dados.find((d) => d.dataset === escolhido);
+                  setProjecaoAtiva(resumo?.projections[0] ?? null);
+                }}
+              >
+                {datasets.dados.map((d) => (
+                  <option key={d.dataset} value={d.dataset} title={d.dataset}>
+                    {d.dataset}
+                  </option>
+                ))}
+              </select>
+            </Campo>
           )}
         </section>
 
         {resumoAtivo && (
           <>
             <section className="cartao">
-              <h2>Projeção</h2>
+              <Passo
+                n={2}
+                titulo="Projeção"
+                ajuda="Rede de um só tipo de nó."
+                icone={ICONE_PROJECAO}
+              />
               {resumoAtivo.projections.length === 0 ? (
                 <p className="nota">nenhuma projeção neste dataset</p>
               ) : (
-                <select
-                  value={projecaoAtiva ?? ""}
-                  title={projecaoAtiva ?? undefined}
-                  onChange={(event) => setProjecaoAtiva(event.target.value)}
-                >
-                  {resumoAtivo.projections.map((id) => (
-                    <option key={id} value={id}>
-                      {id}
-                    </option>
-                  ))}
-                </select>
+                <Campo icone={ICONE_PROJECAO} id={ROTULO_PROJECAO[projecaoAtiva ?? ""] ? projecaoAtiva : null}>
+                  <select
+                    aria-label="Projeção"
+                    value={projecaoAtiva ?? ""}
+                    title={projecaoAtiva ?? undefined}
+                    onChange={(event) => setProjecaoAtiva(event.target.value)}
+                  >
+                    {resumoAtivo.projections.map((id) => (
+                      <option key={id} value={id} title={id}>
+                        {ROTULO_PROJECAO[id] ?? id}
+                      </option>
+                    ))}
+                  </select>
+                </Campo>
               )}
             </section>
 
             <section className="cartao">
-              <h2>Cor: comunidades</h2>
+              <Passo
+                n={3}
+                titulo="Comunidades"
+                ajuda="Definem a cor e a forma."
+                icone={ICONE_COMUNIDADES}
+              />
               {particoes.length === 0 ? (
                 <p className="nota">nenhuma partição desta projeção em disco</p>
               ) : (
-                <select
-                  value={particaoAtiva ?? ""}
-                  onChange={(event) => setParticaoAtiva(event.target.value || null)}
-                >
-                  <option value="">sem cor por comunidade</option>
-                  {particoes.map((id) => (
-                    <option key={id} value={id}>
-                      {id.split("__")[0]}
-                    </option>
-                  ))}
-                </select>
+                <Campo icone={ICONE_COMUNIDADES} id={null}>
+                  <select
+                    aria-label="Partição de comunidades"
+                    value={particaoAtiva ?? ""}
+                    title={particaoAtiva ?? undefined}
+                    onChange={(event) => setParticaoAtiva(event.target.value || null)}
+                  >
+                    <option value="">sem cor por comunidade</option>
+                    {particoes.map((id) => {
+                      const algoritmo = id.split("__")[0];
+                      return (
+                        <option key={id} value={id}>
+                          {ROTULO_ALGORITMO[algoritmo] ?? algoritmo}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </Campo>
               )}
               {particao && membership && (
                 <>
-                  <p className="dim resumo-particao">
-                    Q = {particao.modularity.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} · {particao.n_communities} comunidades
-                    {particao.status !== "ok" && ` · ${particao.status}`}
-                  </p>
+                  <div className="q-metrica">
+                    <div>
+                      <span className="q-rotulo">Modularidade Q</span>
+                      <span className="q-valor">
+                        {particao.modularity.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 4,
+                          maximumFractionDigits: 4,
+                        })}
+                      </span>
+                    </div>
+                    <span className="q-chip">{particao.n_communities} comunidades</span>
+                    {particao.status !== "ok" && <span className="q-chip q-chip-aviso">{particao.status}</span>}
+                  </div>
                   <CommunityLegend membership={membership} />
                 </>
               )}
             </section>
 
             <section className="cartao">
-              <h2>Tamanho: centralidade</h2>
+              <Passo
+                n={4}
+                titulo="Centralidade"
+                ajuda="Define o tamanho dos nós."
+                icone={ICONE_CENTRALIDADE}
+              />
               {dadosGrafo && metricasDisponiveis.length === 0 ? (
                 <p className="nota">
                   sem centralidades desta projeção em disco
@@ -275,6 +324,9 @@ export default function App() {
                       className={metricaAtiva === m.id ? "ativo" : ""}
                       onClick={() => setMetricaAtiva(m.id as CentralityMetric | null)}
                     >
+                      <span className="segmentado-icone" aria-hidden="true">
+                        {ICONE_METRICA[m.id ?? "igual"]}
+                      </span>
                       {m.nome}
                     </button>
                   ))}
@@ -283,6 +335,8 @@ export default function App() {
             </section>
           </>
         )}
+
+        <GuiaDeLeitura />
       </aside>
 
       <main className="palco">
@@ -353,6 +407,179 @@ export default function App() {
     </MotionConfig>
   );
 }
+
+/** Autores do trabalho (os mesmos de `pyproject.toml`). */
+const AUTORES = [
+  "Gabriel Luís Lopes",
+  "Pedro Alexandre dos Santos Chaves",
+  "Lucas Timponi Mercadante Castro",
+];
+
+/**
+ * Rótulos de exibição. O `value` das opções e o id que vai para a API continuam
+ * sendo o id técnico; o id aparece abaixo do seletor, em fonte monoespaçada.
+ */
+const ROTULO_PROJECAO: Record<string, string> = {
+  discipline_resource_allocation: "Disciplinas · alocação de recursos",
+  discipline_simple: "Disciplinas · projeção simples",
+  student_resource_allocation: "Alunos · alocação de recursos",
+  student_simple: "Alunos · projeção simples",
+};
+const ROTULO_ALGORITMO: Record<string, string> = {
+  louvain: "Louvain",
+  girvan_newman: "Girvan–Newman",
+};
+
+function Passo(props: { n: number; titulo: string; ajuda: string; icone: React.ReactNode }) {
+  return (
+    <header className="passo">
+      <span className="passo-num" aria-hidden="true">
+        {props.n}
+      </span>
+      <div className="passo-texto">
+        <h2>{props.titulo}</h2>
+        <p>{props.ajuda}</p>
+      </div>
+      <span className="passo-icone" aria-hidden="true">
+        {props.icone}
+      </span>
+    </header>
+  );
+}
+
+/** Seletor com ícone à esquerda e o id técnico, secundário, logo abaixo. */
+function Campo(props: { icone: React.ReactNode; id: string | null; children: React.ReactNode }) {
+  return (
+    <div className="campo">
+      <div className="campo-caixa">
+        <span className="campo-icone" aria-hidden="true">
+          {props.icone}
+        </span>
+        {props.children}
+      </div>
+      {props.id && <code className="campo-id">{props.id}</code>}
+    </div>
+  );
+}
+
+function GuiaDeLeitura() {
+  return (
+    <section className="guia" aria-labelledby="guia-titulo">
+      <h2 id="guia-titulo">Como ler o grafo</h2>
+      <ul>
+        <li>
+          <span className="guia-glifos" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.5" fill="#56B4E9" /></svg>
+            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1 15 14H1Z" fill="#E69F00" /></svg>
+            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="#009E73" /></svg>
+          </span>
+          <span>
+            <strong>Forma e cor</strong> são a comunidade (a forma separa em cinza).
+          </span>
+        </li>
+        <li>
+          <span className="guia-glifos" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="4" cy="8" r="2.4" fill="currentColor" /></svg>
+            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.5" fill="currentColor" /></svg>
+          </span>
+          <span>
+            <strong>Tamanho</strong> é a centralidade do passo 4.
+          </span>
+        </li>
+        <li>
+          <span className="guia-glifos" aria-hidden="true">
+            <svg viewBox="0 0 24 16" width="22" height="14"><path d="M1 4h22" stroke="currentColor" strokeWidth="1" /><path d="M1 11h22" stroke="currentColor" strokeWidth="3" /></svg>
+          </span>
+          <span>
+            <strong>Espessura</strong> da aresta é o peso.
+          </span>
+        </li>
+        <li>
+          <span className="guia-glifos" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"><path d="M3 2l9 5-4 1.2L6.5 12 3 2Z" /></svg>
+          </span>
+          <span>
+            <strong>Clique</strong> no nó abre os detalhes.
+          </span>
+        </li>
+      </ul>
+    </section>
+  );
+}
+
+const icone = (children: React.ReactNode, tamanho = 18) => (
+  <svg viewBox="0 0 24 24" width={tamanho} height={tamanho} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const ICONE_DADOS = icone(
+  <>
+    <ellipse cx="12" cy="6" rx="7" ry="3" />
+    <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+  </>,
+);
+const ICONE_PROJECAO = icone(
+  <>
+    <circle cx="6" cy="7" r="2.3" />
+    <circle cx="6" cy="17" r="2.3" />
+    <rect x="14" y="9.5" width="6.5" height="5" rx="1.4" />
+    <path d="M8 8l6 3M8 16l6-3" />
+  </>,
+);
+const ICONE_COMUNIDADES = icone(
+  <>
+    <circle cx="8" cy="9" r="3" />
+    <circle cx="16" cy="9" r="3" />
+    <circle cx="12" cy="16" r="3" />
+  </>,
+);
+const ICONE_CENTRALIDADE = icone(
+  <>
+    <circle cx="12" cy="12" r="2.4" fill="currentColor" />
+    <circle cx="12" cy="12" r="6.5" />
+    <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21" />
+  </>,
+);
+
+const ICONE_METRICA: Record<string, React.ReactNode> = {
+  igual: icone(
+    <>
+      <circle cx="5" cy="12" r="2.6" />
+      <circle cx="12" cy="12" r="2.6" />
+      <circle cx="19" cy="12" r="2.6" />
+    </>,
+    15,
+  ),
+  degree: icone(
+    <>
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+      <path d="M12 9V4.5M12 15v4.5M9 12H4.5M15 12h4.5" />
+      <circle cx="12" cy="3.5" r="1.4" />
+      <circle cx="12" cy="20.5" r="1.4" />
+      <circle cx="3.5" cy="12" r="1.4" />
+      <circle cx="20.5" cy="12" r="1.4" />
+    </>,
+    15,
+  ),
+  betweenness: icone(
+    <>
+      <circle cx="4.5" cy="12" r="2.2" />
+      <circle cx="19.5" cy="12" r="2.2" />
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+      <path d="M6.8 12H9M15 12h2.2" />
+    </>,
+    15,
+  ),
+  eigenvector: icone(
+    <>
+      <circle cx="12" cy="12" r="2.4" fill="currentColor" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="9.5" opacity="0.5" />
+    </>,
+    15,
+  ),
+};
 
 function StatusApi({ estado }: { estado: Estado<HealthResponse> }) {
   if (estado.status !== "pronto") {
