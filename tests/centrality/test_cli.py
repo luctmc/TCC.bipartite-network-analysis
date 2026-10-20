@@ -16,6 +16,8 @@ from edugraph.contracts import io
 from edugraph.contracts.paths import as_roots
 from edugraph.contracts.registry import load_builtin_implementations
 
+pytestmark = [pytest.mark.dataset("tiny_v1"), pytest.mark.dataset("synthetic_v1")]
+
 
 @pytest.fixture
 def copia_fixtures(tmp_path: Path, repo_root: Path) -> Path:
@@ -252,3 +254,111 @@ def test_comando_serve_configura_raizes_sem_deixar_servidor_ativo(
         assert os.environ["EDUGRAPH_ROOTS"] == str(copia_fixtures)
     else:
         assert list(app.state.roots) == [copia_fixtures]
+
+
+def test_tabelas_finais_identificam_intermediacao_amostrada(
+    copia_fixtures: Path, tmp_path: Path
+) -> None:
+    assert (
+        main(
+            [
+                "centrality",
+                "all",
+                "--root",
+                str(copia_fixtures),
+                "--dataset",
+                "tiny_v1",
+                "--k",
+                "2",
+                "--seed",
+                "7",
+                "--weight-mode",
+                "inverse",
+                "--out",
+                str(copia_fixtures),
+            ]
+        )
+        == 0
+    )
+    tables = tmp_path / "tables"
+    assert (
+        main(
+            [
+                "centrality",
+                "critical",
+                "--root",
+                str(copia_fixtures),
+                "--dataset",
+                "tiny_v1",
+                "--out",
+                str(tmp_path / "out"),
+                "--tables",
+                str(tables),
+            ]
+        )
+        == 0
+    )
+    for table in tables.glob("*.csv"):
+        rows = linhas(table)
+        assert {"weight_mode", "k", "estimate", "seed"} <= set(rows[0])
+        selected = (
+            rows
+            if table.name.startswith("tab7")
+            else [r for r in rows if r["metric"] == "betweenness"]
+        )
+        assert all(
+            (r["weight_mode"], r["k"], r["estimate"], r["seed"]) == ("inverse", "2", "True", "7")
+            for r in selected
+        )
+        assert "weight_mode" in table.with_suffix(".caption.txt").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("dataset", ["tiny_v1", "synthetic_v1"])
+def test_sensibilidade_compara_modos_sem_sobrescrever_artefatos(
+    dataset: str, copia_fixtures: Path, tmp_path: Path
+) -> None:
+    if dataset == "tiny_v1":
+        assert (
+            main(
+                [
+                    "centrality",
+                    "all",
+                    "--root",
+                    str(copia_fixtures),
+                    "--dataset",
+                    dataset,
+                    "--out",
+                    str(copia_fixtures),
+                ]
+            )
+            == 0
+        )
+    before = {p: p.read_bytes() for p in copia_fixtures.rglob("*") if p.is_file()}
+    tables = tmp_path / "tables"
+    args = [
+        "centrality",
+        "sensitivity",
+        "--root",
+        str(copia_fixtures),
+        "--dataset",
+        dataset,
+        "--tables",
+        str(tables),
+    ]
+    assert main(args) == 0
+    files = list(tables.glob("*.csv"))
+    assert len(files) == 2
+    for path in files:
+        rows = linhas(path)
+        assert {r["weight_mode"] for r in rows} == {"none", "inverse"}
+        assert all(r["metric"] == "betweenness" for r in rows)
+        assert {r["estimate"] for r in rows} == {"False"}
+        assert len(rows) == (6 if dataset == "tiny_v1" else 14)
+        for mode in ("none", "inverse"):
+            selected = [r for r in rows if r["weight_mode"] == mode]
+            assert [int(r["rank"]) for r in selected] == list(range(1, len(selected) + 1))
+            assert len({r["node_id"] for r in selected}) == len(selected)
+    exported = {p: p.read_bytes() for p in tables.iterdir()}
+    assert main(args) == 0
+    assert exported == {p: p.read_bytes() for p in tables.iterdir()}
+    assert before == {p: p.read_bytes() for p in copia_fixtures.rglob("*") if p.is_file()}

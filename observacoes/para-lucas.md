@@ -35,6 +35,19 @@ Ver as regras em [`README.md`](README.md).
   o modo do peso nas tabelas finais ou nas respectivas legendas, com a origem
   dos números. Preservar o contrato congelado; se a solução exigir mudá-lo,
   seguir ADR e aprovação dos três.
+- **Atualização:** 20/10/2026 por Lucas, branch c/pendencias-frente-c —
+  geração de tab6/tab7 inclui `weight_mode`, `k`, `estimate` e `seed`,
+  com legendas; comando `centrality sensitivity` compara `none` e
+  `inverse` sem sobrescrever artefatos principais. Testado em cópias de
+  `tiny_v1` e `synthetic_v1`, incluindo idempotência, configuração amostrada
+  e preservação das entradas. Contratos e fixtures não foram alterados.
+  Permanece aberta a regeneração das tabelas OULAD: executar, para cada
+  dataset, os comandos abaixo em máquina com `data/processed`:
+  `python -m edugraph centrality critical --root data/processed --dataset oulad_module_presentation --out data/processed --tables results/tables`;
+  `python -m edugraph centrality sensitivity --root data/processed --dataset oulad_module_presentation --tables results/tables`;
+  `python -m edugraph centrality critical --root data/processed --dataset oulad_vle_bbb_2013j --out data/processed --tables results/tables`;
+  `python -m edugraph centrality sensitivity --root data/processed --dataset oulad_vle_bbb_2013j --tables results/tables`.
+  Não houve regeneração de `results/tables/` nesta máquina sem OULAD.
 
 ### C-OBS-05 · Figura 9 precisa acompanhar o redesign da interface
 
