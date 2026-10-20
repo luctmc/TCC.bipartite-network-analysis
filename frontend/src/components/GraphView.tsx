@@ -45,6 +45,17 @@ const MAX_VIZINHOS_ROTULADOS = 15;
 /** Mesma pilha de fontes do CSS: o rótulo do canvas combina com a interface. */
 const FONTE = 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
+/**
+ * Tamanho do rótulo **na tela**, em px. O fit amplia grafos pequenos (7 nós
+ * chegam a zoom 3), e um rótulo de 8–10px de modelo virava texto de 30px,
+ * maior que qualquer título da interface. O tamanho de modelo passa a ser
+ * `min(base, ROTULO_TELA / zoom)`: perto, o rótulo para em ~11px; longe, segue
+ * a regra antiga (`min-zoomed-font-size` o esconde quando ilegível).
+ */
+const ROTULO_TELA = 11.5;
+const ROTULO_ALUNO = 8;
+const ROTULO_DISCIPLINA = 10;
+
 const PADDING_FIT = 72;
 const PADDING_FIT_ESTREITO = 28;
 const TAMANHO_MIN = 10;
@@ -136,7 +147,9 @@ function toElements(graph: GraphResponse): ElementDefinition[] {
   return [...nodes, ...edges];
 }
 
-function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
+function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJson {
+  const fonteRotulo = (base: number) => () => Math.min(base, ROTULO_TELA / Math.max(zoom(), 0.01));
+  const fonteDestaque = () => ROTULO_TELA / Math.max(zoom(), 0.01);
   const pesos = graph.edges.map((edge) => edge.weight);
   const pesoMin = pesos.length ? Math.min(...pesos) : 0;
   const pesoMax = pesos.length ? Math.max(...pesos) : 1;
@@ -150,6 +163,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
     bg: themeColor("--bg", "#0c0f13"),
     text: themeColor("--text", "#e9edf2"),
     muted: themeColor("--text-muted", "#8e9aa8"),
+    text2: themeColor("--text-2", "#b4bdc8"),
     accent: themeColor("--accent", "#7db4ff"),
   };
 
@@ -160,34 +174,39 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
         "background-color": cor.student,
         label: rotularAlunos ? "data(label)" : "",
         "font-family": FONTE,
-        "font-size": 8,
+        "font-size": fonteRotulo(ROTULO_ALUNO),
+        "font-weight": 500,
         // Só desenha o rótulo quando ele fica legível na tela: longe, o
         // grafo é forma; perto, é nome.
-        "min-zoomed-font-size": 11,
-        color: cor.muted,
+        "min-zoomed-font-size": 10,
+        color: cor.text2,
         "text-valign": "bottom",
-        "text-margin-y": 3,
-        "text-outline-width": 2.5,
-        "text-outline-color": cor.bg,
-        "text-outline-opacity": 0.9,
+        "text-margin-y": 4,
+        // Fundo sutil no lugar do halo grosso: o nome fica legível sobre as
+        // arestas sem virar uma mancha escura em volta do texto.
+        "text-background-color": cor.bg,
+        "text-background-opacity": 0.72,
+        "text-background-padding": "2px",
+        "text-background-shape": "roundrectangle",
+        "text-outline-width": 0,
+        "overlay-opacity": 0,
         width: "data(size)",
         height: "data(size)",
-        "overlay-opacity": 0,
         "border-width": 1.5,
         "border-color": cor.bg,
         "transition-property": "width, height, background-color, opacity",
         "transition-duration": DURACAO_MS,
         "transition-timing-function": "ease-in-out-cubic",
-      },
+      } as unknown as cytoscape.Css.Node,
     },
     {
       selector: 'node[kind = "discipline"]',
       style: {
         "background-color": cor.discipline,
         shape: "round-rectangle",
-        "font-size": 10,
+        "font-size": fonteRotulo(ROTULO_DISCIPLINA),
         label: rotularDisciplinas ? "data(label)" : "",
-      },
+      } as unknown as cytoscape.Css.Node,
     },
     {
       // Por classe, não por "[color]": o Cytoscape não reavalia seletor de
@@ -219,15 +238,24 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
       style: {
         label: "data(label)",
         "min-zoomed-font-size": 0,
+        "font-size": fonteDestaque,
+        "font-weight": 600,
         color: cor.text,
+        "text-background-opacity": 0.9,
         "border-width": 2.5,
         "border-color": cor.text,
         "z-index": 20,
-      },
+      } as unknown as cytoscape.Css.Node,
     },
     {
       selector: "node.rotulo, node:selected",
-      style: { label: "data(label)", "min-zoomed-font-size": 0, color: cor.text, "z-index": 10 },
+      style: {
+        label: "data(label)",
+        "min-zoomed-font-size": 0,
+        "font-size": fonteDestaque,
+        color: cor.text,
+        "z-index": 10,
+      } as unknown as cytoscape.Css.Node,
     },
     { selector: "edge.vizinho", style: { opacity: 0.9, "line-color": cor.accent } },
     {
@@ -235,10 +263,10 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
       style: {
         "border-width": 3.5,
         "border-color": cor.accent,
-        "font-size": 11,
+        "font-size": fonteDestaque,
         "font-weight": 600,
-        "overlay-opacity": 0,
-      },
+        "text-background-opacity": 0.9,
+      } as unknown as cytoscape.Css.Node,
     },
   ];
 }
@@ -307,7 +335,7 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
     const cy = cytoscape({
       container: containerRef.current,
       elements: toElements(graph),
-      style: estilo(graph),
+      style: estilo(graph, () => cyRef.current?.zoom() ?? 1),
       layout: { name: "preset" },
       wheelSensitivity: 0.2,
       minZoom: 0.05,
@@ -320,6 +348,22 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
       });
     });
     rodarLayout(cy, { continuar, pesado });
+
+    // O tamanho do rótulo depende do zoom: reavalia o estilo dos nós quando
+    // ele muda (no máximo uma vez por quadro, e só se o tamanho mudou).
+    let quadro = 0;
+    let ultimoZoom = -1;
+    cy.on("zoom", () => {
+      if (quadro) return;
+      quadro = requestAnimationFrame(() => {
+        quadro = 0;
+        if (cy.destroyed()) return;
+        const z = cy.zoom();
+        if (Math.abs(z - ultimoZoom) < 0.01) return;
+        ultimoZoom = z;
+        cy.style().update();
+      });
+    });
 
     cy.on("mouseover", "node", (event) => {
       event.target.addClass("realce");
