@@ -116,7 +116,9 @@ Acrescentados durante a implementação:
   `GraphView.tsx`) — aproximar, afastar e centralizar, com os atalhos `+`,
   `−` e `0` quando o foco está no palco. O `GraphView` os expõe por `ref`, sem
   mudar o fluxo de dados do `App`.
-- Paleta verde dos dois temas (`styles.css`) — as cores das comunidades
+- Paleta e vidro dos dois temas (`styles.css`): preto como base e verde só como
+  acento; componentes em vidro escuro (translúcido, blur, realce e sombra); nós
+  em liquid glass no `GraphView.tsx` — as cores das comunidades
   (`palette.ts`) não mudam; o anel e o halo do nó selecionado são neutros para
   não se confundirem com a comunidade verde (#009E73).
 - `frontend/index.html` — script que define `data-theme` antes da primeira

@@ -80,9 +80,12 @@ As capturas da interface são material complementar do capítulo 3.
   relendo os tokens, sem tocar em dados, posições nem seleção. A paleta das
   comunidades é a mesma nos dois temas; só o anel dos nós se ajusta. A
   transição é curta e não existe com `prefers-reduced-motion`.
-- **Paleta verde.** Os dois temas usam os verdes da referência do trabalho:
-  no escuro, fundo Rich Black (`#021716`), superfícies Dark Green, Pine e
-  Basil, texto Anti-Flash White e Pistachio e acento Caribbean Green; no claro,
+- **Paleta: o preto é a base, o verde é acento.** No escuro, fundo e
+  superfícies são pretos neutros levemente esverdeados em camadas (`#050B0A`,
+  `#0A1211`, `#0F1917`, `#16231F`), com bordas finas e translúcidas; texto
+  Anti-Flash White e Pistachio; o verde da referência (Caribbean Green,
+  Mountain Meadow) só aparece em estado ativo, foco, medidores, ponto de
+  status e no Q; no claro,
   fundo Anti-Flash White, superfícies brancas, texto Rich Black e acento
   Bangladesh Green. Os pares de contraste (WCAG) estão calculados no comentário
   do topo de `styles.css`. A fonte da referência (Axiforma) é comercial e não
@@ -118,8 +121,17 @@ As capturas da interface são material complementar do capítulo 3.
   bloco ("1º de 7" e barra), vizinhos com a forma da comunidade e barra de
   peso. **Faixa de números** sob o grafo, com Q em destaque e medidor de
   0 a 1; o contador anima até o valor (sem animação com movimento reduzido).
-- **Nós** com forma arredondada, gradiente derivado da cor-base e reflexo
-  (este só acima de 14 px na tela). O tamanho do rótulo e a largura do anel
+- **Vidro.** Cartões, seletores e menu aberto, segmentado, faixa de números,
+  controles de zoom, painel do nó, pílula e botão de tema e rodapé usam o mesmo
+  idioma: superfície translúcida com `backdrop-filter` (blur + saturate), anel
+  de 1 px, realce interno no topo e sombra funda; o estado ativo acende com um
+  brilho fino, não com bloco chapado. Controles dentro de um cartão são
+  "afundados" (mais escuros), nunca outra camada clara por cima.
+- **Nós em liquid glass**: forma arredondada, preenchimento translúcido da cor
+  da comunidade com gradiente, reflexo especular no topo, refração escura na
+  base e brilho de borda. Os detalhes só aparecem acima de 14 px na tela; no
+  modo fixo (grafo grande) fica o preenchimento simples. A forma continua
+  separando os grupos em escala de cinza. O tamanho do rótulo e a largura do anel
   e das arestas acompanham o zoom, em faixas discretas; acima de 400 nós ou
   1.600 arestas o desenho é fixo, sem gradiente nem funções de zoom.
 - **Rodapé** fino com o link do repositório do TCC no GitHub
