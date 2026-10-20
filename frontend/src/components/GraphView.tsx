@@ -232,31 +232,83 @@ function arredondar(forma: string): string {
 }
 
 /**
- * Camada de vidro do nó (o Cytoscape a recorta pela forma): refração escura
- * na base, reflexo especular nítido no topo (crescente de borda inferior
- * curva e bem marcada) e um brilho fino de borda por dentro.
+ * Camada de vidro do nó, **desenhada por forma** (o Cytoscape a recorta pelo
+ * contorno do nó): refração escura na base, reflexo especular nítido na parte
+ * de cima, que acompanha as arestas da própria forma, e um fio de brilho
+ * (rim light) rente ao contorno. Sem uma camada para a forma (estrela, "vee"),
+ * ficam só o gradiente e o rim light da borda.
  */
-const BRILHO_URI =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" preserveAspectRatio="none">' +
-      "<defs>" +
-      '<linearGradient id="e" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#fff" stop-opacity="0.95"/>' +
-      '<stop offset="0.6" stop-color="#fff" stop-opacity="0.3"/>' +
-      '<stop offset="1" stop-color="#fff" stop-opacity="0.04"/></linearGradient>' +
-      '<linearGradient id="b" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#000" stop-opacity="0"/>' +
-      '<stop offset="1" stop-color="#000" stop-opacity="0.24"/></linearGradient>' +
-      '<radialGradient id="r" cx="0.5" cy="0.5" r="0.5">' +
-      '<stop offset="0.8" stop-color="#fff" stop-opacity="0"/>' +
-      '<stop offset="1" stop-color="#fff" stop-opacity="0.3"/></radialGradient>' +
-      "</defs>" +
-      '<rect y="50" width="100" height="50" fill="url(#b)"/>' +
-      '<ellipse cx="50" cy="50" rx="50" ry="50" fill="url(#r)"/>' +
-      '<path d="M10 41C12 17 34 6 50 6s38 11 40 35C72 31 28 31 10 41Z" fill="url(#e)"/>' +
-      "</svg>",
-  );
+interface VidroForma {
+  /** Contorno (fio de brilho) no quadro 0–100. */
+  contorno: string;
+  /** Reflexo especular, de borda inferior curva, que segue a parte de cima da forma. */
+  reflexo: string;
+}
+const VIDRO_POR_FORMA: Record<string, VidroForma> = {
+  ellipse: {
+    contorno: '<ellipse cx="50" cy="50" rx="48.5" ry="48.5"/>',
+    reflexo: '<path d="M10 41C12 17 34 6 50 6s38 11 40 35C72 31 28 31 10 41Z"/>',
+  },
+  "round-rectangle": {
+    contorno: '<rect x="1.5" y="1.5" width="97" height="97" rx="22"/>',
+    // Topo reto e cantos arredondados como os do nó; a borda de baixo é a única curva.
+    reflexo: '<path d="M7 40V28Q7 7 28 7H72Q93 7 93 28V40Q50 28 7 40Z"/>',
+  },
+  "round-triangle": {
+    contorno: '<path d="M50 3 97 97H3Z" stroke-linejoin="round"/>',
+    reflexo: '<path d="M50 9 71 52Q50 42 29 52Z"/>',
+  },
+  "round-diamond": {
+    contorno: '<path d="M50 2 98 50 50 98 2 50Z" stroke-linejoin="round"/>',
+    reflexo: '<path d="M50 8 86 44Q50 34 14 44Z"/>',
+  },
+  "round-hexagon": {
+    contorno: '<path d="M26 3H74L97 50 74 97H26L3 50Z" stroke-linejoin="round"/>',
+    reflexo: '<path d="M27 8H73L89 36Q50 26 11 36Z"/>',
+  },
+  "round-pentagon": {
+    contorno: '<path d="M50 3 97 38 79 97H21L3 38Z" stroke-linejoin="round"/>',
+    reflexo: '<path d="M50 9 88 36Q50 27 12 36Z"/>',
+  },
+};
+
+const URI_VIDRO = new Map<string, string>();
+
+/** URI do SVG de vidro da forma, ou `none` se a forma não tem camada própria. */
+function vidroDaForma(forma: string): string {
+  const v = VIDRO_POR_FORMA[forma];
+  if (!v) return "none";
+  let uri = URI_VIDRO.get(forma);
+  if (!uri) {
+    uri =
+      "data:image/svg+xml;utf8," +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" preserveAspectRatio="none">' +
+          "<defs>" +
+          '<linearGradient id="e" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0" stop-color="#fff" stop-opacity="0.95"/>' +
+          '<stop offset="0.6" stop-color="#fff" stop-opacity="0.3"/>' +
+          '<stop offset="1" stop-color="#fff" stop-opacity="0.04"/></linearGradient>' +
+          '<linearGradient id="b" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0" stop-color="#000" stop-opacity="0"/>' +
+          '<stop offset="1" stop-color="#000" stop-opacity="0.24"/></linearGradient>' +
+          "</defs>" +
+          '<rect y="52" width="100" height="48" fill="url(#b)"/>' +
+          `<g fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="3">${v.contorno}</g>` +
+          `<g fill="url(#e)">${v.reflexo}</g>` +
+          "</svg>",
+      );
+    URI_VIDRO.set(forma, uri);
+  }
+  return uri;
+}
+
+/** Forma do nó: a da comunidade (já arredondada) ou, sem partição, a do tipo. */
+function formaDoNo(no: cytoscape.NodeSingular): string {
+  const forma = no.data("shape");
+  if (typeof forma === "string") return forma;
+  return no.data("kind") === "discipline" ? "round-rectangle" : "ellipse";
+}
 
 function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.StylesheetJson {
   const dinamico = ehDinamico(graph);
@@ -309,7 +361,7 @@ function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.Stylesh
       "background-gradient-stop-colors": t.grad,
       "background-gradient-stop-positions": "0% 55% 100%",
       "background-image": (no: cytoscape.NodeSingular) =>
-        Number(no.data("size")) * zoom() >= BRILHO_MIN_PX ? BRILHO_URI : "none",
+        Number(no.data("size")) * zoom() >= BRILHO_MIN_PX ? vidroDaForma(formaDoNo(no)) : "none",
       "background-fit": "cover",
       "background-width": "100%",
       "background-height": "100%",
