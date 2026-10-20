@@ -83,17 +83,6 @@ Ver as regras em [`README.md`](README.md).
 - **Como resolver:** atualizar os números, a data e a descrição das specs
   concluídas; distinguir os marcadores históricos do estado atual da suíte.
 
-### C-OBS-08 · Lockfile ignorado impede reproduzir as dependências do frontend
-
-- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
-- **Onde:** `.gitignore:41` e `frontend/package.json:15`.
-- **O quê:** `.gitignore` ignora `frontend/package-lock.json`, enquanto
-  as dependências e devDependencies usam faixas `^`, por exemplo
-  `react: ^18.3.1` e `vite: ^5.4.10`. O manifesto não fixa as versões
-  transitivas nem garante a mesma árvore em instalações futuras.
-- **Como resolver:** versionar o lockfile e adotar instalação reproduzível,
-  ou registrar explicitamente a decisão do grupo e suas limitações.
-
 ### C-OBS-10 · README não avisa que a coorte por avaliação está sem métricas
 
 - **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
@@ -136,6 +125,19 @@ Ver as regras em [`README.md`](README.md).
   `frontend/README.md` também não foi alterado.
 
 ## Resolvidas
+
+### C-OBS-08 · Lockfile ignorado impede reproduzir as dependências do frontend
+
+- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
+- **Onde:** `.gitignore:41` e `frontend/package.json:15`.
+- **O quê:** `.gitignore` ignora `frontend/package-lock.json`, enquanto
+  as dependências e devDependencies usam faixas `^`, por exemplo
+  `react: ^18.3.1` e `vite: ^5.4.10`. O manifesto não fixa as versões
+  transitivas nem garante a mesma árvore em instalações futuras.
+- **Como resolver:** versionar o lockfile e adotar instalação reproduzível,
+  ou registrar explicitamente a decisão do grupo e suas limitações.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — frontend/package-lock.json gerado por npm install no worktree e versionado; linha de exclusão removida do .gitignore. Lockfile v3 confere com dependências, devDependencies e engines do manifesto, permitindo npm ci.
+
 
 ### C-OBS-07 · Script lint chama ESLint ausente das dependências
 
