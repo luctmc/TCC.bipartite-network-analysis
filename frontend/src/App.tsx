@@ -160,7 +160,7 @@ export default function App() {
             Trabalho de Conclusão de Curso <span aria-hidden="true">·</span> Grupo 16{" "}
             <span aria-hidden="true">·</span> UniAnchieta
           </p>
-          <h1>Análise topológica de redes educacionais bipartidas</h1>
+          <h1>Análise Topológica e Detecção de Comunidades em Redes Complexas</h1>
           <p className="autores" title={AUTORES.join(", ")}>
             {AUTORES.join(" · ")}
           </p>

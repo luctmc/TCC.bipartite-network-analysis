@@ -160,9 +160,8 @@ body { margin: 0; }
 .sobrelinha span { opacity: 0.6; margin: 0 0.15em; }
 .topo h1 {
   margin: 0.3rem 0 0;
-  max-width: 44ch;
   font-family: var(--font-serif);
-  font-size: clamp(1.3rem, 1.05rem + 0.9vw, 1.85rem);
+  font-size: clamp(1.15rem, 0.9rem + 0.8vw, 1.7rem);
   font-weight: 600;
   letter-spacing: -0.018em;
   line-height: 1.12;
