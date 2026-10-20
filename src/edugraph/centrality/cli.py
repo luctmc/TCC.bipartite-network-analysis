@@ -263,6 +263,7 @@ def cmd_critical(args: argparse.Namespace) -> int:
                     [{**row, **configuration(results["betweenness"])} for row in discordancia],
                     out=args.tables,
                     columns=[*DISAGREEMENT_COLUMNS, *CONFIG_COLUMNS],
+                    kind="disagreement",
                 )
                 print(f"[centrality] gravado: {tabela}")
 
@@ -272,6 +273,7 @@ def cmd_critical(args: argparse.Namespace) -> int:
                 ranking_rows(results, dataset=args.dataset, labels=labels, top_n=args.top_n),
                 out=args.tables,
                 columns=list(TABLE_COLUMNS),
+                kind="critical",
             )
             print(f"[centrality] gravado: {tabela}")
 
@@ -415,6 +417,7 @@ def cmd_sensitivity(args: argparse.Namespace) -> int:
             rows,
             out=args.tables,
             columns=list(TABLE_COLUMNS),
+            kind="sensitivity",
         )
         print(f"[centrality] sensibilidade gravada: {path}")
     return 0

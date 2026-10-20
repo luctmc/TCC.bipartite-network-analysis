@@ -37,7 +37,10 @@ Lista planejada, com a spec que produz cada tabela.
 
 As exportações `tab6-criticas-*`, `tab7-discordancia-*` e
 `tab6-sensibilidade-*` carregam `weight_mode`, `k`, `estimate` e `seed`,
-com legenda em `<nome>.caption.txt`. `none` usa saltos e `inverse` usa
+com legenda própria em `<nome>.caption.txt`: a de disciplinas críticas
+explica o ranking por métrica, a de discordância explica conjuntos e
+Spearman, e a de sensibilidade explica a comparação dos modos. Nenhuma
+legenda depende da leitura de outra tabela. `none` usa saltos e `inverse` usa
 `1/w` como distância. `k` vazio com `estimate=False` indica cálculo
 exato; com estimativa, `k` e `seed` identificam a amostragem. Na tabela 6
 os campos são da métrica da linha (vazios para grau/autovetor); na 7

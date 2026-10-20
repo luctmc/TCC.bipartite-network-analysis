@@ -48,6 +48,14 @@ Ver as regras em [`README.md`](README.md).
   `python -m edugraph centrality critical --root data/processed --dataset oulad_vle_bbb_2013j --out data/processed --tables results/tables`;
   `python -m edugraph centrality sensitivity --root data/processed --dataset oulad_vle_bbb_2013j --tables results/tables`.
   Não houve regeneração de `results/tables/` nesta máquina sem OULAD.
+- **Atualização:** revisão FIX-C2 de 20/10/2026 por Lucas, branch
+  c/pendencias-frente-c — legendas próprias para ranking, discordância e
+  sensibilidade, sem referências cruzadas. Acrescentado teste com ponte
+  ponderada em `tmp_path`: DC passa de score 0 para 2/3 e do rank 3 para 2
+  ao trocar `none` por `inverse`; valores derivados à mão no comentário.
+  Mutação temporária fazendo ambos os cálculos por `none`, com os rótulos
+  preservados, fez o teste falhar: DC obtido 0, esperado 2/3; fonte
+  restaurada e teste passando. A pendência OULAD acima continua aberta.
 
 ### C-OBS-05 · Figura 9 precisa acompanhar o redesign da interface
 
@@ -215,7 +223,7 @@ Ver as regras em [`README.md`](README.md).
   com artefatos em `tmp_path`, cobrindo parâmetros, saída e erros. Para
   `serve`, testar a configuração do servidor sem deixar processo ativo;
   incluir o teste de colisão de raízes descrito em T-OBS-02.
-- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — 14 casos em test_cli.py cobrem estágio, all/compute/critical/evaluate/report, api openapi e serve (incluindo reload), configuração e sensibilidade, com cópias das fixtures e saídas em tmp_path; verificam cobertura, parâmetros, colunas e idempotência. O teste de colisão de raízes ficou com T-OBS-02, pois pertence ao runner compartilhado.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — 14 casos originais em test_cli.py cobrem estágio, all/compute/critical/evaluate/report, api openapi e serve (incluindo reload), configuração e sensibilidade, com cópias das fixtures e saídas em tmp_path; verificam cobertura, parâmetros, colunas e idempotência. O teste de colisão de raízes ficou com T-OBS-02, pois pertence ao runner compartilhado. A FIX-C2 acrescentou o 15º caso, com ponte ponderada e prova de mutação para distinguir numericamente os modos de sensibilidade.
 
 
 ### C-OBS-02 · Figura 9: capturas da interface

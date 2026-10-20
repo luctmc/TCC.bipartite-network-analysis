@@ -310,7 +310,17 @@ def test_tabelas_finais_identificam_intermediacao_amostrada(
             (r["weight_mode"], r["k"], r["estimate"], r["seed"]) == ("inverse", "2", "True", "7")
             for r in selected
         )
-        assert "weight_mode" in table.with_suffix(".caption.txt").read_text(encoding="utf-8")
+        caption = table.with_suffix(".caption.txt").read_text(encoding="utf-8")
+        assert "weight_mode" in caption
+        if table.name.startswith("tab7"):
+            assert "Discordância entre métricas" in caption
+            assert "Spearman" in caption
+            assert "linhas de outras métricas" not in caption
+        else:
+            assert "Disciplinas críticas por métrica" in caption
+            assert "Spearman" not in caption
+        assert "tab7" not in caption
+        assert "sensibilidade" not in caption.lower()
 
 
 @pytest.mark.parametrize("dataset", ["tiny_v1", "synthetic_v1"])
@@ -349,6 +359,11 @@ def test_sensibilidade_compara_modos_sem_sobrescrever_artefatos(
     files = list(tables.glob("*.csv"))
     assert len(files) == 2
     for path in files:
+        caption = path.with_suffix(".caption.txt").read_text(encoding="utf-8")
+        assert "Sensibilidade da intermediação" in caption
+        assert "Spearman" not in caption
+        assert "outras métricas" not in caption
+        assert "tab7" not in caption
         rows = linhas(path)
         assert {r["weight_mode"] for r in rows} == {"none", "inverse"}
         assert all(r["metric"] == "betweenness" for r in rows)
@@ -362,3 +377,66 @@ def test_sensibilidade_compara_modos_sem_sobrescrever_artefatos(
     assert main(args) == 0
     assert exported == {p: p.read_bytes() for p in tables.iterdir()}
     assert before == {p: p.read_bytes() for p in copia_fixtures.rglob("*") if p.is_file()}
+
+
+def test_sensibilidade_distingue_ponte_ponderada_com_calculo_a_mao(tmp_path: Path) -> None:
+    import networkx as nx
+
+    from edugraph.centrality.stage import compute_metric
+    from edugraph.contracts.types import BipartiteSpec, ProjectionBundle, ProjectionSpec
+
+    graph = nx.Graph()
+    graph.add_weighted_edges_from(
+        [("DA", "DB", 1), ("DA", "DC", 4), ("DC", "DB", 4), ("DB", "DD", 4)]
+    )
+    for node in graph:
+        graph.nodes[node].update(kind="discipline", label=node)
+    projection = ProjectionBundle(
+        graph=graph,
+        spec=ProjectionSpec(side="discipline", weighting="simple"),
+        source=BipartiteSpec(dataset="ponte_ponderada"),
+    )
+    root = tmp_path / "artifacts"
+    io.save_projection(projection, root)
+    load_builtin_implementations()
+    io.save_centrality(
+        compute_metric(projection, "betweenness", {"weight_mode": "none"}), root, "ponte_ponderada"
+    )
+    tables = tmp_path / "tables"
+    assert (
+        main(
+            [
+                "centrality",
+                "sensitivity",
+                "--root",
+                str(root),
+                "--dataset",
+                "ponte_ponderada",
+                "--tables",
+                str(tables),
+            ]
+        )
+        == 0
+    )
+    rows = linhas(tables / "tab6-sensibilidade-ponte_ponderada-discipline_simple.csv")
+    scores = {
+        mode: {r["node_id"]: float(r["score"]) for r in rows if r["weight_mode"] == mode}
+        for mode in ("none", "inverse")
+    }
+    # Cálculo à mão: triângulo A-B-C com folha D ligada a B.
+    # Sem peso, B é interno somente nos pares {A,D} e {C,D}; C nunca
+    # é interno. Com 4 nós, a normalização divide por C(3,2)=3: B=2/3.
+    # Em inverse, d(A,B)=1 e d(A,C)+d(C,B)=1/4+1/4=1/2.
+    # Logo C passa a ser interno em {A,B} e {A,D}: C=2/3.
+    # B continua interno nos mesmos dois pares. Não há empates de caminhos;
+    # A e D não são internos em nenhum par, em ambos os modos.
+    assert scores["none"] == pytest.approx({"DA": 0, "DB": 2 / 3, "DC": 0, "DD": 0})
+    assert scores["inverse"] == pytest.approx({"DA": 0, "DB": 2 / 3, "DC": 2 / 3, "DD": 0})
+    ranks = {
+        mode: {r["node_id"]: int(r["rank"]) for r in rows if r["weight_mode"] == mode}
+        for mode in ("none", "inverse")
+    }
+    # Empates por id: sem peso, A antecede C entre os zeros; com peso,
+    # C empata no topo com B e vem logo depois dele.
+    assert ranks["none"]["DC"] == 3
+    assert ranks["inverse"]["DC"] == 2

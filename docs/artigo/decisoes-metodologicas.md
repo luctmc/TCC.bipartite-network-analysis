@@ -506,7 +506,9 @@ sensibilidade compara os dois. A geração é feita por
 que recalcula `none` e `inverse` mantendo a configuração de amostragem e
 normalização da centralidade principal, sem substituir esse artefato.
 As tabelas finais e suas legendas identificam `weight_mode`, `k`,
-`estimate` e `seed` (ver o índice de tabelas). A regeneração dos CSVs OULAD
+`estimate` e `seed` (ver o índice de tabelas). Cada legenda descreve
+apenas o objetivo e os campos da própria tabela: ranking, discordância
+ou sensibilidade. A regeneração dos CSVs OULAD
 permanece pendente de execução com os dados reais, conforme C-OBS-03.
 
 **Pergunta de banca provável.** *"Por que jogar fora o peso?"* O peso não

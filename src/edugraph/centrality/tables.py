@@ -7,7 +7,7 @@ A sensibilidade recalcula em memória, sem substituir a rodada principal.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from edugraph.centrality.critical_disciplines import METRICS_COLUMNS, rank_disciplines
 from edugraph.contracts.types import CentralityResult
@@ -34,18 +34,47 @@ def ranking_rows(
     ]
 
 
-def export_table(name: str, rows: list[dict[str, Any]], *, out: Path, columns: list[str]) -> Path:
-    """CSV acompanhado de legenda que explica como reproduzir o ranking."""
+TableKind = Literal["critical", "disagreement", "sensitivity"]
+
+#: Cada legenda descreve somente o conteúdo da sua tabela.
+CAPTIONS: dict[TableKind, str] = {
+    "critical": (
+        "Disciplinas críticas por métrica: rank ordena scores em ordem decrescente, "
+        "com desempate por node_id. Nas linhas de intermediação, weight_mode=none "
+        "usa saltos e inverse usa 1/w como distância; k registra os pivôs, estimate "
+        "indica amostragem e seed sua semente. k vazio com estimate=False indica "
+        "cálculo exato. Nas linhas de grau e autovetor esses campos ficam vazios."
+    ),
+    "disagreement": (
+        "Discordância entre métricas: comparison identifica os conjuntos do top_n "
+        "e as correlações de Spearman; value contém os rótulos ou o coeficiente. "
+        "Spearman nan significa ranking constante. weight_mode, k, estimate e seed "
+        "identificam a intermediação usada nas comparações: none usa saltos e "
+        "inverse usa 1/w como distância. k registra os pivôs e seed sua semente; "
+        "k vazio com estimate=False indica cálculo exato."
+    ),
+    "sensitivity": (
+        "Sensibilidade da intermediação: weight_mode identifica o cálculo em saltos "
+        "(none) ou com 1/w como distância (inverse), mantendo a normalização e a "
+        "amostragem da rodada principal. k registra os pivôs, estimate indica "
+        "amostragem e seed sua semente; k vazio com estimate=False indica cálculo "
+        "exato. rank ordena os scores dentro de cada modo, com desempate por "
+        "node_id. O artefato principal não é sobrescrito."
+    ),
+}
+
+
+def export_table(
+    name: str,
+    rows: list[dict[str, Any]],
+    *,
+    out: Path,
+    columns: list[str],
+    kind: TableKind,
+) -> Path:
+    """CSV acompanhado de legenda específica para o objetivo da tabela."""
     path = write_table(name, rows, out_dir=out, columns=columns)
-    caption = (
-        "Configuração da intermediação: weight_mode=none usa saltos; inverse usa 1/w "
-        "como distância. k registra os pivôs, estimate indica amostragem e seed sua "
-        "semente; k vazio com estimate=False indica cálculo exato. Nas linhas de "
-        "outras métricas essas colunas ficam vazias. Na tab7, identificam a "
-        "intermediação usada nas comparações. A tabela de sensibilidade compara "
-        "none e inverse mantendo os demais parâmetros da rodada principal. "
-        "Empates no ranking são desfeitos por node_id; correlação nan significa "
-        "ranking constante. Os modos calculados constam na coluna weight_mode."
+    path.with_suffix(".caption.txt").write_text(
+        CAPTIONS[kind] + "\n", encoding="utf-8", newline="\n"
     )
-    path.with_suffix(".caption.txt").write_text(caption + "\n", encoding="utf-8", newline="\n")
     return path
