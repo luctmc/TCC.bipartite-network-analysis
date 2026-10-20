@@ -62,7 +62,7 @@ está ligado a nós centrais: `x = (1/λ) A x`, resolvido iterando
 
 ## Testes exigidos
 
-- **Unitários** (já escritos como `xfail`): forma fechada em `tiny_v1`;
+- **Unitários** (implementados e passando): forma fechada em `tiny_v1`;
   igualdade com o NetworkX; não-convergência vira fallback.
 - Acrescentar: `power_iteration` sobre uma matriz de autovetor conhecido.
 

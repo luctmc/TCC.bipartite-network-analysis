@@ -145,6 +145,12 @@ Ver as regras em [`README.md`](README.md).
 - **Como resolver:** atualizar os textos para o estado concluído e revisar
   a necessidade do handler 501 sem alterar o tratamento dos erros de
   contrato. Prioridade baixa; preservar o histórico relevante.
+- **Atualização:** 20/10/2026 por Lucas, branch c/pendencias-frente-c —
+  handler 501 removido após confirmar que nenhuma rota levanta
+  `NotImplementedError`; textos de C-01, C-02 e C-04 atualizados.
+  Permanece aberta somente a referência `TODO C-05` em
+  `docs/specs/frente-c/C-05-frontend.md:81`, reservada ao branch do redesign;
+  `frontend/README.md` também não foi alterado.
 
 ## Resolvidas
 
