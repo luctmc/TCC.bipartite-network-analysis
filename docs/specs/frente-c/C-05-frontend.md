@@ -92,7 +92,28 @@ Acrescentados durante a implementação:
   grafo.
 - `frontend/src/api.ts`, `types.ts` — `availableMetrics` e o bloco
   `truncation` da API.
-- `frontend/src/styles.css` — painel, legenda e acabamento.
+- `frontend/src/styles.css` — painel, legenda e acabamento; tokens dos temas
+  claro e escuro, layout em grade (cabeçalho, lateral, palco, inspetor,
+  rodapé) e as regras de `prefers-reduced-motion`.
+- `frontend/src/components/Seletor.tsx` (novo) — seletor próprio no padrão
+  WAI-ARIA *select-only combobox*, no lugar do menu nativo do `<select>`
+  (que destoa do tema). Mantém um `<select>` nativo oculto e sincronizado,
+  usado por `scripts/capture.mjs`; reconfirmar a opção já escolhida não
+  chama `onChange` (como no `<select>`); o painel é renderizado no `<body>`
+  com posição fixa e abre para cima quando não cabe.
+- `frontend/src/components/NodePanel.tsx`, `StatsBar.tsx` — painel do nó com
+  silhueta, métricas em bloco único e vizinhos com a forma da comunidade; faixa
+  de números com ícones e medidor do Q. `GraphView.tsx` — nós com forma
+  arredondada, gradiente e reflexo, rótulos e larguras proporcionais ao zoom
+  por faixas e desenho fixo em grafos grandes.
+- `frontend/src/App.tsx` — cabeçalho com o título do trabalho e os autores,
+  barra lateral em quatro passos (rótulos amigáveis para projeções e
+  algoritmos, ids intactos), cartão "Como ler o grafo", botão de tema e
+  rodapé com o link do repositório. O botão de tema (`tema`) é o único estado
+  novo do `App`: apresentação pura, guardada em `localStorage`.
+- `frontend/index.html` — script que define `data-theme` antes da primeira
+  pintura (escolha salva ou `prefers-color-scheme`).
+- `frontend/README.md` — seção "Aparência, tema e acessibilidade".
 
 ## Impacto no artigo
 
