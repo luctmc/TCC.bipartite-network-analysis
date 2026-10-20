@@ -403,11 +403,9 @@ body { margin: 0; }
 .seletor-gatilho[aria-expanded="true"] .seletor-seta { transform: rotate(180deg); }
 
 .seletor-painel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 40;
+  /* Fixo e no <body> (portal): não é cortado pela lateral com scroll; a posição vem do Seletor. */
+  position: fixed;
+  z-index: 60;
   max-height: 16rem;
   overflow-y: auto;
   margin: 0;
@@ -424,6 +422,11 @@ body { margin: 0; }
   /* Nasce do gatilho: curta, com origem no canto de cima. */
   transform-origin: top left;
   animation: seletor-entra 140ms var(--ease-out);
+}
+.seletor-painel[data-acima="true"] { transform-origin: bottom left; }
+.seletor-painel[data-acima="true"] { animation-name: seletor-entra-acima; }
+@keyframes seletor-entra-acima {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
 }
 @keyframes seletor-entra {
   from { opacity: 0; transform: translateY(-4px) scale(0.97); }
@@ -1165,9 +1168,6 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .painel > .cartao:nth-child(n + 3) { grid-column: 1 / -1; }
-  /* Dataset e Projeção dividem a linha: o painel aberto precisa de mais largura que o gatilho. */
-  .seletor-painel { min-width: min(16rem, calc(100vw - 2rem)); }
-  .painel > .cartao:nth-child(2) .seletor-painel { left: auto; right: 0; transform-origin: top right; }
   .cartao { padding: var(--s-2) var(--s-3) var(--s-3); }
   .painel h2 { margin-bottom: var(--s-2); }
   .seletor-gatilho { padding-top: 0.45rem; padding-bottom: 0.45rem; }

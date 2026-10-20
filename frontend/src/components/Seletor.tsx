@@ -16,7 +16,17 @@
  * leem controles de formulário.
  */
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 
 export interface OpcaoSeletor {
   value: string;
@@ -39,6 +49,23 @@ interface SeletorProps {
 /** Tempo sem digitar até a busca por prefixo recomeçar. */
 const BUSCA_MS = 700;
 
+/** Altura máxima do painel e folga até a borda da janela. */
+const ALTURA_MAX_PX = 256;
+const FOLGA_PX = 8;
+/** Largura mínima do painel em telas estreitas, onde o gatilho divide a linha. */
+const LARGURA_MIN_ESTREITA_PX = 256;
+
+/** Onde o painel fica, em px da janela (posição fixa, fora de qualquer área com scroll). */
+interface Posicao {
+  left: number;
+  width: number;
+  maxHeight: number;
+  /** Abre para cima quando embaixo não cabe. */
+  acima: boolean;
+  /** Distância da borda: do topo (abre para baixo) ou da base (abre para cima). */
+  borda: number;
+}
+
 export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: SeletorProps) {
   const base = useId();
   const [aberto, setAberto] = useState(false);
@@ -46,6 +73,7 @@ export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: Seleto
   const raiz = useRef<HTMLDivElement>(null);
   const lista = useRef<HTMLUListElement>(null);
   const busca = useRef({ texto: "", timer: 0 });
+  const [posicao, setPosicao] = useState<Posicao | null>(null);
 
   const indiceSelecionado = Math.max(
     0,
@@ -61,19 +89,67 @@ export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: Seleto
   const fechar = () => setAberto(false);
   const escolher = (i: number) => {
     const opcao = opcoes[i];
-    if (opcao) onChange(opcao.value);
+    // Reconfirmar a opção já escolhida só fecha o menu: o <select> nativo não
+    // disparava onChange nesse caso, e o App reseta a projeção ao trocar de dataset.
+    if (opcao && opcao.value !== value) onChange(opcao.value);
     fechar();
   };
 
-  // Clique fora fecha.
+  // Clique fora fecha. O painel mora no <body> (portal), então conta como "dentro".
   useEffect(() => {
     if (!aberto) return;
     const fora = (event: PointerEvent) => {
-      if (!raiz.current?.contains(event.target as Node)) setAberto(false);
+      const alvo = event.target as Node;
+      if (!raiz.current?.contains(alvo) && !lista.current?.contains(alvo)) setAberto(false);
     };
     document.addEventListener("pointerdown", fora);
     return () => document.removeEventListener("pointerdown", fora);
   }, [aberto]);
+
+  // O painel tem posição fixa: rolar a página/lateral ou redimensionar o fecha,
+  // em vez de deixá-lo solto longe do gatilho. A rolagem da própria lista não conta.
+  useEffect(() => {
+    if (!aberto) return;
+    const aoRolar = (event: Event) => {
+      if (lista.current && event.target instanceof Node && lista.current.contains(event.target)) return;
+      setAberto(false);
+    };
+    const aoRedimensionar = () => setAberto(false);
+    document.addEventListener("scroll", aoRolar, true);
+    window.addEventListener("resize", aoRedimensionar);
+    return () => {
+      document.removeEventListener("scroll", aoRolar, true);
+      window.removeEventListener("resize", aoRedimensionar);
+    };
+  }, [aberto]);
+
+  // Posiciona o painel antes da pintura: embaixo do gatilho; se não couber e
+  // houver mais espaço em cima, abre para cima. A altura se limita ao espaço.
+  useLayoutEffect(() => {
+    if (!aberto) {
+      setPosicao(null);
+      return;
+    }
+    const gatilho = raiz.current?.getBoundingClientRect();
+    const painel = lista.current;
+    if (!gatilho || !painel) return;
+    const abaixo = window.innerHeight - gatilho.bottom - FOLGA_PX;
+    const acima = gatilho.top - FOLGA_PX;
+    const natural = Math.min(painel.scrollHeight, ALTURA_MAX_PX);
+    const paraCima = natural > abaixo && acima > abaixo;
+    const espaco = paraCima ? acima : abaixo;
+    const largura = Math.max(
+      gatilho.width,
+      window.innerWidth <= 760 ? Math.min(LARGURA_MIN_ESTREITA_PX, window.innerWidth - 2 * FOLGA_PX) : 0,
+    );
+    setPosicao({
+      left: Math.max(FOLGA_PX, Math.min(gatilho.left, window.innerWidth - largura - FOLGA_PX)),
+      width: largura,
+      maxHeight: Math.max(96, Math.min(ALTURA_MAX_PX, espaco - 6)),
+      acima: paraCima,
+      borda: paraCima ? window.innerHeight - gatilho.top + 6 : gatilho.bottom + 6,
+    });
+  }, [aberto, opcoes.length]);
 
   // A opção ativa sempre fica visível dentro do painel.
   useEffect(() => {
@@ -83,16 +159,23 @@ export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: Seleto
 
   useEffect(() => () => window.clearTimeout(busca.current.timer), []);
 
-  /** Digitar leva à primeira opção cujo texto começa pelo que foi digitado. */
+  /**
+   * Digitar leva à primeira opção cujo texto começa pelo que foi digitado
+   * (busca por prefixo, com várias letras). Repetir a MESMA tecla ("a", "a")
+   * cicla entre as opções que começam por ela.
+   */
   const buscar = (tecla: string) => {
     window.clearTimeout(busca.current.timer);
     busca.current.texto += tecla.toLowerCase();
     busca.current.timer = window.setTimeout(() => (busca.current.texto = ""), BUSCA_MS);
-    const texto = busca.current.texto;
+    const digitado = busca.current.texto;
+    const repetida = [...digitado].every((letra) => letra === digitado[0]);
+    const texto = repetida ? digitado[0] : digitado;
     const comeca = (o: OpcaoSeletor) =>
       o.rotulo.toLowerCase().startsWith(texto) || o.value.toLowerCase().startsWith(texto);
-    // Uma tecla só repetida avança entre as opções que começam por ela.
-    const partida = texto.length === 1 ? (aberto ? ativo : indiceSelecionado) + 1 : 0;
+    const atual = aberto ? ativo : indiceSelecionado;
+    // Tecla repetida avança a partir da opção atual; prefixo longo a mantém, se ainda casar.
+    const partida = repetida ? atual + 1 : atual;
     const ordem = Array.from({ length: opcoes.length }, (_, k) => (partida + k) % opcoes.length);
     const achado = ordem.find((i) => comeca(opcoes[i]));
     if (achado === undefined) return;
@@ -170,32 +253,42 @@ export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: Seleto
         </svg>
       </button>
 
-      {aberto && (
-        <ul className="seletor-painel" id={`${base}-lista`} role="listbox" aria-label={nome} ref={lista}>
-          {opcoes.map((opcao, i) => (
-            <li
-              key={opcao.value}
-              id={idOpcao(i)}
-              role="option"
-              aria-selected={opcao.value === value}
-              data-ativo={i === ativo}
-              className="seletor-opcao"
-              // O foco fica no gatilho: nem o mousedown pode roubá-lo.
-              onMouseDown={(event) => event.preventDefault()}
-              onMouseMove={() => i !== ativo && setAtivo(i)}
-              onClick={() => escolher(i)}
-            >
-              <span className="seletor-textos">
-                <span className="seletor-rotulo">{opcao.rotulo}</span>
-                {opcao.id && <code className="seletor-id">{opcao.id}</code>}
-              </span>
-              <svg className="seletor-check" viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M2.5 7.5 5.5 10.5 11.5 3.5" />
-              </svg>
-            </li>
-          ))}
-        </ul>
-      )}
+      {aberto &&
+        createPortal(
+          <ul
+            className="seletor-painel"
+            id={`${base}-lista`}
+            role="listbox"
+            aria-label={nome}
+            ref={lista}
+            data-acima={posicao?.acima ?? false}
+            style={estiloPainel(posicao)}
+          >
+            {opcoes.map((opcao, i) => (
+              <li
+                key={opcao.value}
+                id={idOpcao(i)}
+                role="option"
+                aria-selected={opcao.value === value}
+                data-ativo={i === ativo}
+                className="seletor-opcao"
+                // O foco fica no gatilho: nem o mousedown pode roubá-lo.
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseMove={() => i !== ativo && setAtivo(i)}
+                onClick={() => escolher(i)}
+              >
+                <span className="seletor-textos">
+                  <span className="seletor-rotulo">{opcao.rotulo}</span>
+                  {opcao.id && <code className="seletor-id">{opcao.id}</code>}
+                </span>
+                <svg className="seletor-check" viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2.5 7.5 5.5 10.5 11.5 3.5" />
+                </svg>
+              </li>
+            ))}
+          </ul>,
+          document.body,
+        )}
 
       {/* Mesmo valor e mesmo onChange de antes, fora da vista e do teclado. */}
       <select
@@ -213,4 +306,15 @@ export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: Seleto
       </select>
     </div>
   );
+}
+
+/** Estilo em px da janela; até medir, o painel fica invisível (sem piscar fora do lugar). */
+function estiloPainel(posicao: Posicao | null): CSSProperties {
+  if (!posicao) return { visibility: "hidden", top: 0, left: 0 };
+  return {
+    left: posicao.left,
+    width: posicao.width,
+    maxHeight: posicao.maxHeight,
+    ...(posicao.acima ? { bottom: posicao.borda } : { top: posicao.borda }),
+  };
 }
