@@ -56,6 +56,9 @@ const ROTULO_TELA = 11.5;
 const ROTULO_ALUNO = 8;
 const ROTULO_DISCIPLINA = 10;
 
+/** Até aqui as arestas são curvas (bézier); acima, retas curtas (haystack). */
+const MAX_EDGES_CURVAS = 400;
+
 const PADDING_FIT = 72;
 const PADDING_FIT_ESTREITO = 28;
 const TAMANHO_MIN = 10;
@@ -150,6 +153,13 @@ function toElements(graph: GraphResponse): ElementDefinition[] {
 function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJson {
   const fonteRotulo = (base: number) => () => Math.min(base, ROTULO_TELA / Math.max(zoom(), 0.01));
   const fonteDestaque = () => ROTULO_TELA / Math.max(zoom(), 0.01);
+  // Larguras em px **de tela**: em unidades do modelo elas escalam com o zoom
+  // (grafos pequenos chegam a zoom 3) e o anel/aresta viravam traço grosso.
+  const px = (n: number) => () => n / Math.max(zoom(), 0.01);
+  const larguraAresta = (aresta: cytoscape.EdgeSingular) => {
+    const t = pesoMax > pesoMin ? (Number(aresta.data("weight")) - pesoMin) / (pesoMax - pesoMin) : 0.5;
+    return (0.8 + t * 1.0) / Math.max(zoom(), 0.01);
+  };
   const pesos = graph.edges.map((edge) => edge.weight);
   const pesoMin = pesos.length ? Math.min(...pesos) : 0;
   const pesoMax = pesos.length ? Math.max(...pesos) : 1;
@@ -158,20 +168,26 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
   const cor = {
     student: themeColor("--node-student", "#6ea8fe"),
     discipline: themeColor("--node-discipline", "#f0a868"),
-    edge: themeColor("--edge", "#3c4654"),
+    edge: themeColor("--edge", "#5d6d84"),
     surface: themeColor("--surface", "#131820"),
     bg: themeColor("--bg", "#0c0f13"),
     text: themeColor("--text", "#e9edf2"),
     muted: themeColor("--text-muted", "#8e9aa8"),
     text2: themeColor("--text-2", "#b4bdc8"),
     accent: themeColor("--accent", "#7db4ff"),
+    accentStrong: themeColor("--accent-strong", "#c4dcff"),
   };
+
+  // Bézier fica elegante, mas custa caro com milhares de arestas: acima do
+  // limite o haystack (reta curta, sem controle) segura o desenho.
+  const estiloCurva = graph.edges.length <= MAX_EDGES_CURVAS ? "bezier" : "haystack";
 
   return [
     {
       selector: "node",
       style: {
         "background-color": cor.student,
+        "background-opacity": 0.95,
         label: rotularAlunos ? "data(label)" : "",
         "font-family": FONTE,
         "font-size": fonteRotulo(ROTULO_ALUNO),
@@ -179,22 +195,27 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         // Só desenha o rótulo quando ele fica legível na tela: longe, o
         // grafo é forma; perto, é nome.
         "min-zoomed-font-size": 10,
-        color: cor.text2,
+        color: cor.text,
+        "text-opacity": 0.82,
         "text-valign": "bottom",
-        "text-margin-y": 4,
-        // Fundo sutil no lugar do halo grosso: o nome fica legível sobre as
-        // arestas sem virar uma mancha escura em volta do texto.
-        "text-background-color": cor.bg,
-        "text-background-opacity": 0.72,
-        "text-background-padding": "2px",
-        "text-background-shape": "roundrectangle",
-        "text-outline-width": 0,
+        "text-margin-y": 5,
+        // Sem pílula: o contorno na cor do fundo separa o texto das arestas.
+        "text-outline-width": 2,
+        "text-outline-color": cor.bg,
+        "text-outline-opacity": 0.4,
+        // Halo suave na cor do próprio nó, no lugar de borda escura.
+        "underlay-color": cor.student,
+        "underlay-opacity": 0.16,
+        "underlay-padding": px(5),
+        "underlay-shape": "ellipse",
         "overlay-opacity": 0,
         width: "data(size)",
         height: "data(size)",
-        "border-width": 1.5,
-        "border-color": cor.bg,
-        "transition-property": "width, height, background-color, opacity",
+        // Anel fino e claro: dá borda ao nó sem desenhar um adesivo.
+        "border-width": px(1.2),
+        "border-color": "#ffffff",
+        "border-opacity": 0.32,
+        "transition-property": "width, height, background-color, underlay-color, opacity",
         "transition-duration": DURACAO_MS,
         "transition-timing-function": "ease-in-out-cubic",
       } as unknown as cytoscape.Css.Node,
@@ -203,6 +224,7 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
       selector: 'node[kind = "discipline"]',
       style: {
         "background-color": cor.discipline,
+        "underlay-color": cor.discipline,
         shape: "round-rectangle",
         "font-size": fonteRotulo(ROTULO_DISCIPLINA),
         label: rotularDisciplinas ? "data(label)" : "",
@@ -213,26 +235,32 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
       // dado quando o dado é removido, e a cor antiga ficava na tela.
       selector: "node.comunidade",
       // "data(shape)" é válido no Cytoscape, mas os tipos só aceitam formas literais.
-      style: { "background-color": "data(color)", shape: "data(shape)" } as unknown as cytoscape.Css.Node,
+      style: {
+        "background-color": "data(color)",
+        "underlay-color": "data(color)",
+        shape: "data(shape)",
+      } as unknown as cytoscape.Css.Node,
     },
     {
       selector: "edge",
       style: {
-        width: pesoMax > pesoMin ? `mapData(weight, ${pesoMin}, ${pesoMax}, 0.5, 4)` : 1,
+        // Com muitas arestas, largura fixa fina: reavaliar milhares a cada zoom pesa.
+        width: graph.edges.length <= MAX_EDGES_CURVAS * 4 ? larguraAresta : 0.5,
         "line-color": cor.edge,
-        "curve-style": "haystack",
-        opacity: 0.4,
+        "line-cap": "round",
+        "curve-style": estiloCurva,
+        opacity: 0.28,
         "transition-property": "opacity, line-color",
         "transition-duration": DURACAO_MS,
-      },
+      } as unknown as cytoscape.Css.Edge,
     },
     {
       // Aresta dentro de uma comunidade ganha a cor dela: os grupos
       // aparecem pela trama, não só pelos nós.
       selector: "edge.intra",
-      style: { "line-color": "data(color)", opacity: 0.35 },
+      style: { "line-color": "data(color)", opacity: 0.5 },
     },
-    { selector: ".apagado", style: { opacity: 0.07 } },
+    { selector: ".apagado", style: { opacity: 0.06 } },
     {
       selector: "node.realce",
       style: {
@@ -241,9 +269,12 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         "font-size": fonteDestaque,
         "font-weight": 600,
         color: cor.text,
-        "text-background-opacity": 0.9,
-        "border-width": 2.5,
-        "border-color": cor.text,
+        "text-opacity": 1,
+        "text-outline-width": 2.5,
+        "text-outline-opacity": 0.7,
+        "border-width": px(1.8),
+        "border-opacity": 0.85,
+        "underlay-opacity": 0.3,
         "z-index": 20,
       } as unknown as cytoscape.Css.Node,
     },
@@ -254,18 +285,23 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         "min-zoomed-font-size": 0,
         "font-size": fonteDestaque,
         color: cor.text,
+        "text-opacity": 1,
         "z-index": 10,
       } as unknown as cytoscape.Css.Node,
     },
-    { selector: "edge.vizinho", style: { opacity: 0.9, "line-color": cor.accent } },
+    { selector: "edge.vizinho", style: { opacity: 0.85, "line-color": cor.accentStrong } },
     {
       selector: "node:selected",
       style: {
-        "border-width": 3.5,
-        "border-color": cor.accent,
-        "font-size": fonteDestaque,
+        "border-width": px(2.2),
+        "border-color": cor.accentStrong,
+        "border-opacity": 1,
+        "underlay-color": cor.accent,
+        "underlay-opacity": 0.38,
+        "underlay-padding": px(9),
         "font-weight": 600,
-        "text-background-opacity": 0.9,
+        "text-outline-width": 2.5,
+        "text-outline-opacity": 0.7,
       } as unknown as cytoscape.Css.Node,
     },
   ];
