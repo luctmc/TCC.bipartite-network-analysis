@@ -38,4 +38,3 @@ Thumbs.db
 
 # Front-end: artefato de build incremental do TypeScript
 frontend/tsconfig.tsbuildinfo
-frontend/package-lock.json

@@ -66,7 +66,7 @@ Ver `docs/contratos/` e `src/edugraph/api/schemas.py`.
 ## Testes exigidos
 
 - **Contrato:** `test_import_boundaries` continua verde.
-- **API** (`tests/api/test_api.py`, já escritos como `xfail`): cada rota
+- **API** (`tests/api/test_api.py`, implementados e passando): cada rota
   200 sobre a fixture; 404 para inexistente.
 - Acrescentar: corte de arestas; embutir partição.
 
@@ -74,7 +74,7 @@ Ver `docs/contratos/` e `src/edugraph/api/schemas.py`.
 
 - `src/edugraph/api/routes.py` — as cinco rotas.
 - `src/edugraph/api/schemas.py` — ajustar se preciso (com o front junto).
-- `tests/api/test_api.py` — remover os `xfail`.
+- `tests/api/test_api.py` — testes das rotas, schemas e erros de contrato.
 
 ## Impacto no artigo
 

@@ -43,16 +43,16 @@ quando a raiz em uso não o contém.
 
 ## Estado atual da suíte
 
-**275 testes passando, 11 `xfail`, 1 `slow`, nenhuma falha**
-(20/09/2026, `pytest -m "not slow"`).
+**358 testes passando, 1 pulado, 0 `xfail`, 1 desmarcado e nenhuma falha**
+(20/10/2026, `pytest -m "not slow" -q`, sobre as fixtures). O teste
+pulado depende de `oulad_module_presentation`, ausente nas fixtures; o
+filtro exclui o único teste `slow`. A execução emitiu 1 aviso de
+depreciação do TestClient/HTTPX.
 
-Os `xfail` restantes são as specs abertas da **Frente C** (C-01 a C-04,
-C-06); as sete da Frente B fecharam e os marcadores saíram, como manda o
-procedimento. Todos trazem `raises=NotImplementedError, strict=True` e o
-id da spec no `reason`. `strict=True` importa: quando a spec fecha e o
-teste passa, **a CI quebra** — é o aviso de que o marcador pode sair. Um
-`xfail` que passa silenciosamente é um teste que ninguém vai lembrar de
-destravar.
+As specs da Frente C estão implementadas; não há marcadores `xfail`
+restantes. Para futuras specs abertas, o procedimento continua sendo
+`raises=NotImplementedError, strict=True`, com o id no `reason`:
+quando a implementação passa, a CI exige remover o marcador.
 
 O único teste `slow` é o Girvan-Newman completo sobre `synthetic_v1`
 (34 s): é ele que mede o custo relativo ao Louvain, o número que vai

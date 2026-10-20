@@ -68,6 +68,15 @@ def register(subparsers: argparse._SubParsersAction, parent: argparse.ArgumentPa
     )
     critical.set_defaults(func=cmd_critical)
 
+    sensitivity = actions.add_parser(
+        "sensitivity", parents=[parent], help="sensibilidade da intermediação: none × inverse"
+    )
+    sensitivity.add_argument("--dataset", required=True)
+    sensitivity.add_argument("--projection", default=None, help="restringe a discipline_*")
+    sensitivity.add_argument("--top-n", type=int, default=10, dest="top_n")
+    sensitivity.add_argument("--tables", type=Path, required=True)
+    sensitivity.set_defaults(func=cmd_sensitivity)
+
     evaluate = actions.add_parser(
         "evaluate", parents=[parent], help="validação a posteriori contra outcomes.csv"
     )
@@ -191,7 +200,6 @@ def cmd_critical(args: argparse.Namespace) -> int:
     import math
 
     from edugraph.centrality.critical_disciplines import (
-        METRICS_COLUMNS,
         is_discipline_projection,
         labels_of,
         load_results,
@@ -199,10 +207,16 @@ def cmd_critical(args: argparse.Namespace) -> int:
         write_metrics,
     )
     from edugraph.centrality.disagreement import DISAGREEMENT_COLUMNS, disagreement_rows
+    from edugraph.centrality.tables import (
+        CONFIG_COLUMNS,
+        TABLE_COLUMNS,
+        configuration,
+        export_table,
+        ranking_rows,
+    )
     from edugraph.contracts import io
     from edugraph.contracts.errors import ArtifactNotFoundError
     from edugraph.contracts.paths import as_roots
-    from edugraph.reporting.tables import write_table
 
     roots = as_roots(args.roots)
     candidates = [args.projection] if args.projection else roots.centralities(args.dataset)
@@ -244,20 +258,22 @@ def cmd_critical(args: argparse.Namespace) -> int:
                     )
                 print(f"  {linha['comparison']:<34} {valor or '—'}")
             if args.tables is not None:
-                tabela = write_table(
+                tabela = export_table(
                     f"tab7-discordancia-{args.dataset}-{projection_id}",
-                    discordancia,
-                    out_dir=args.tables,
-                    columns=list(DISAGREEMENT_COLUMNS),
+                    [{**row, **configuration(results["betweenness"])} for row in discordancia],
+                    out=args.tables,
+                    columns=[*DISAGREEMENT_COLUMNS, *CONFIG_COLUMNS],
+                    kind="disagreement",
                 )
                 print(f"[centrality] gravado: {tabela}")
 
         if args.tables is not None:
-            tabela = write_table(
+            tabela = export_table(
                 f"tab6-criticas-{args.dataset}-{projection_id}",
-                linhas,
-                out_dir=args.tables,
-                columns=list(METRICS_COLUMNS),
+                ranking_rows(results, dataset=args.dataset, labels=labels, top_n=args.top_n),
+                out=args.tables,
+                columns=list(TABLE_COLUMNS),
+                kind="critical",
             )
             print(f"[centrality] gravado: {tabela}")
 
@@ -358,4 +374,50 @@ def cmd_report(args: argparse.Namespace) -> int:
 
     path = build_internal_report(args.dataset, list(as_roots(args.roots)), args.out)
     print(f"[centrality] relatório interno gravado: {path}")
+    return 0
+
+
+def cmd_sensitivity(args: argparse.Namespace) -> int:
+    """Compara saltos e distância inversa sem gravar centralidades de fronteira."""
+    from edugraph.centrality.critical_disciplines import is_discipline_projection, labels_of
+    from edugraph.centrality.stage import compute_metric
+    from edugraph.centrality.tables import TABLE_COLUMNS, export_table, ranking_rows
+    from edugraph.contracts import io
+    from edugraph.contracts.errors import ArtifactNotFoundError, ContractError
+    from edugraph.contracts.paths import as_roots
+
+    roots = as_roots(args.roots)
+    candidates = [args.projection] if args.projection else roots.projections(args.dataset)
+    projection_ids = [p for p in candidates if is_discipline_projection(p)]
+    if not projection_ids:
+        raise ArtifactNotFoundError("sensibilidade: nenhuma projeção discipline_* encontrada")
+    if args.top_n < 1:
+        raise ContractError("top_n precisa ser >= 1")
+    for projection_id in projection_ids:
+        projection = io.load_projection(roots, args.dataset, projection_id)
+        primary = io.load_centrality(roots, args.dataset, projection_id, "betweenness")
+        params = {
+            key: value
+            for key, value in primary.params.items()
+            if key in {"normalized", "k", "seed"}
+        }
+        rows = []
+        for mode in ("none", "inverse"):
+            result = compute_metric(projection, "betweenness", {**params, "weight_mode": mode})
+            rows.extend(
+                ranking_rows(
+                    {"betweenness": result},
+                    dataset=args.dataset,
+                    labels=labels_of(projection),
+                    top_n=args.top_n,
+                )
+            )
+        path = export_table(
+            f"tab6-sensibilidade-{args.dataset}-{projection_id}",
+            rows,
+            out=args.tables,
+            columns=list(TABLE_COLUMNS),
+            kind="sensitivity",
+        )
+        print(f"[centrality] sensibilidade gravada: {path}")
     return 0

@@ -501,7 +501,15 @@ gargalo.
 entre os dois modos: 0,56. No topo em saltos: FFF_2014B, DDD_2014J,
 FFF_2014J. No topo com `1/w`: CCC_2014J, FFF_2014J, GGG_2013J. A tabela
 de disciplinas críticas precisa dizer na legenda qual modo usou, e a de
-sensibilidade mostra o outro.
+sensibilidade compara os dois. A geração é feita por
+`python -m edugraph centrality sensitivity --root data/processed --dataset oulad_module_presentation --tables results/tables`,
+que recalcula `none` e `inverse` mantendo a configuração de amostragem e
+normalização da centralidade principal, sem substituir esse artefato.
+As tabelas finais e suas legendas identificam `weight_mode`, `k`,
+`estimate` e `seed` (ver o índice de tabelas). Cada legenda descreve
+apenas o objetivo e os campos da própria tabela: ranking, discordância
+ou sensibilidade. A regeneração dos CSVs OULAD
+permanece pendente de execução com os dados reais, conforme C-OBS-03.
 
 **Pergunta de banca provável.** *"Por que jogar fora o peso?"* O peso não
 é jogado fora: ele entra no grau ponderado (força) e no autovetor, que
