@@ -11,7 +11,7 @@ import { communityOrder, communityStyle } from "../palette";
 const MAX_ITENS = 10;
 
 /** Silhueta em SVG da forma do Cytoscape, para a legenda. */
-const SILHUETAS: Record<string, string> = {
+export const SILHUETAS: Record<string, string> = {
   ellipse: "M8 1a7 7 0 1 0 0.01 0Z",
   triangle: "M8 1 15 15H1Z",
   "round-rectangle": "M3 2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z",

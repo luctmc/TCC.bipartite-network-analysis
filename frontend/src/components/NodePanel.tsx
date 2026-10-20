@@ -10,6 +10,7 @@
 import { motion } from "framer-motion";
 
 import { communityOrder, communityStyle } from "../palette";
+import { SILHUETAS } from "./CommunityLegend";
 import type { CentralityMetric, GraphResponse } from "../types";
 
 const METRICAS: { id: CentralityMetric; nome: string }[] = [
@@ -74,8 +75,10 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
           <h2>{no.kind === "discipline" ? "Disciplina" : "Aluno"}</h2>
           <p className="node-panel-nome">{no.label}</p>
         </div>
-        <button type="button" className="fechar" onClick={() => onSelect(null)} aria-label="Fechar">
-          ×
+        <button type="button" className="fechar" onClick={() => onSelect(null)} aria-label="Fechar painel do nó">
+          <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+            <path d="M3 3l8 8M11 3l-8 8" />
+          </svg>
         </button>
       </header>
 
@@ -84,7 +87,9 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
         <dd>
           {estiloComunidade ? (
             <span className="comunidade">
-              <span className="amostra" style={{ background: estiloComunidade.color }} />
+              <svg className="amostra" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                <path d={SILHUETAS[estiloComunidade.shape] ?? SILHUETAS.ellipse} fill={estiloComunidade.color} />
+              </svg>
               {comunidade}
             </span>
           ) : (

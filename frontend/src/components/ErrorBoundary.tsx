@@ -36,10 +36,18 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.erro) {
       return (
-        <div className="vazio">
-          Não foi possível desenhar este grafo.
-          <br />
-          <span className="dim">{this.state.erro.message}</span>
+        <div className="vazio vazio-erro" role="alert">
+          <span className="vazio-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 4 3 20h18L12 4Z" />
+              <path d="M12 10v4M12 17.2v.1" />
+            </svg>
+          </span>
+          <span className="vazio-texto">
+            Não foi possível desenhar este grafo.
+            <br />
+            <span className="dim">{this.state.erro.message}</span>
+          </span>
         </div>
       );
     }

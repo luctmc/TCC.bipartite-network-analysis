@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 
 import { ApiError, api } from "./api";
 import { CommunityLegend } from "./components/CommunityLegend";
@@ -152,13 +152,26 @@ export default function App() {
   }, [dadosGrafo, chaveMetricas]);
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="app">
       <header className="topo">
-        <div>
-          <h1>edugraph</h1>
-          <p className="subtitulo">
-            Análise topológica e detecção de comunidades em redes educacionais
-          </p>
+        <div className="marca">
+          <span className="marca-glifo" aria-hidden="true">
+            <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+              <path d="M5 5.5 15 4M5 5.5 15 10M5 14.5 15 10M5 14.5 15 16M5 5.5 15 16" opacity="0.55" />
+              <circle cx="5" cy="5.5" r="2.2" fill="currentColor" />
+              <circle cx="5" cy="14.5" r="2.2" fill="currentColor" />
+              <rect x="13" y="2.6" width="4.4" height="3.4" rx="1" fill="currentColor" />
+              <rect x="13" y="8.3" width="4.4" height="3.4" rx="1" fill="currentColor" />
+              <rect x="13" y="14.3" width="4.4" height="3.4" rx="1" fill="currentColor" />
+            </svg>
+          </span>
+          <div>
+            <h1>edugraph</h1>
+            <p className="subtitulo">
+              Análise topológica e detecção de comunidades em redes educacionais
+            </p>
+          </div>
         </div>
         <StatusApi estado={health} />
       </header>
@@ -166,7 +179,7 @@ export default function App() {
       <aside className="painel">
         <section>
           <h2>Dataset</h2>
-          {datasets.status === "carregando" && <p className="dim">carregando…</p>}
+          {datasets.status === "carregando" && <p className="dim">carregando datasets…</p>}
           {datasets.status === "erro" && (
             <p className="erro">
               API fora do ar: {datasets.erro.message}
@@ -281,9 +294,21 @@ export default function App() {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="palco-conteudo"
           >
-            {grafo === null && <Vazio>Escolha um dataset e uma projeção.</Vazio>}
-            {grafo?.status === "carregando" && <Vazio>carregando grafo…</Vazio>}
-            {grafo?.status === "erro" && <Vazio>{grafo.erro.message}</Vazio>}
+            {grafo === null && (
+              <Vazio tipo="vazio" icone={ICONE_GRAFO}>
+                Escolha um dataset e uma projeção para ver o grafo.
+              </Vazio>
+            )}
+            {grafo?.status === "carregando" && (
+              <Vazio tipo="carregando" icone={<span className="giro" />}>
+                carregando grafo…
+              </Vazio>
+            )}
+            {grafo?.status === "erro" && (
+              <Vazio tipo="erro" icone={ICONE_ALERTA}>
+                {grafo.erro.message}
+              </Vazio>
+            )}
             {dadosGrafo && (
               <ErrorBoundary resetKey={`${datasetAtivo}/${projecaoAtiva}`}>
                 <GraphView
@@ -311,9 +336,11 @@ export default function App() {
       </main>
 
       <footer className="rodape">
-        Uso interno da instituição · TCC Grupo 16 · UniAnchieta
+        <span>Uso interno da instituição</span>
+        <span>TCC Grupo 16 · UniAnchieta</span>
       </footer>
     </div>
+    </MotionConfig>
   );
 }
 
@@ -324,13 +351,46 @@ function StatusApi({ estado }: { estado: Estado<HealthResponse> }) {
   return (
     <div className="status-api">
       <span className="pill pill-on">API v{estado.dados.version}</span>
-      <span className="dim" title="Raízes de artefatos consultadas, em ordem">
+      <span className="status-raizes" title="Raízes de artefatos consultadas, em ordem">
         {estado.dados.roots.join(" · ")}
       </span>
     </div>
   );
 }
 
-function Vazio({ children }: { children: React.ReactNode }) {
-  return <div className="vazio">{children}</div>;
+const ICONE_GRAFO = (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+    <path d="M7 7l10 3M7 7l4 10M17 10l-6 7" />
+    <circle cx="7" cy="7" r="2.4" />
+    <circle cx="17" cy="10" r="2.4" />
+    <circle cx="11" cy="17" r="2.4" />
+  </svg>
+);
+
+const ICONE_ALERTA = (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 4 3 20h18L12 4Z" />
+    <path d="M12 10v4M12 17.2v.1" />
+  </svg>
+);
+
+function Vazio({
+  children,
+  tipo,
+  icone,
+}: {
+  children: React.ReactNode;
+  tipo: "vazio" | "carregando" | "erro";
+  icone: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`vazio vazio-${tipo}`}
+      role={tipo === "erro" ? "alert" : "status"}
+      aria-live={tipo === "erro" ? undefined : "polite"}
+    >
+      <span className="vazio-icone">{icone}</span>
+      <span className="vazio-texto">{children}</span>
+    </div>
+  );
 }
