@@ -216,45 +216,20 @@ export default function App() {
     <div className="app">
       <header className="topo">
         <div className="hero">
-          <p className="sobrelinha">
-            Trabalho de Conclusão de Curso <span aria-hidden="true">·</span> Grupo 16{" "}
-            <span aria-hidden="true">·</span> UniAnchieta
-          </p>
+          <p className="sobrelinha">Trabalho de Conclusão de Curso · Grupo 16 · UniAnchieta</p>
           <h1>Análise Topológica e Detecção de Comunidades em Redes Complexas</h1>
-          <p className="autores" title={AUTORES.join(", ")}>
-            {AUTORES.join(" · ")}
-          </p>
+          <p className="autores" title={AUTORES.join(", ")}>{AUTORES.join(", ")}</p>
         </div>
         <div className="topo-lado">
-          <span className="wordmark">
-            <svg className="marca-simbolo" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-              <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.65">
-                <path d="M6 5 18 12M6 12h12M6 19h12" />
-              </g>
-              <g fill="currentColor">
-                <circle cx="6" cy="5" r="2" />
-                <circle cx="6" cy="12" r="2" />
-                <circle cx="6" cy="19" r="2" />
-                <circle cx="18" cy="19" r="2" />
-                <circle cx="18" cy="5" r="2" opacity="0.6" />
-              </g>
-              <circle cx="18" cy="12" r="2.6" fill="var(--accent)" />
-            </svg>
-            edugraph
-          </span>
-          <div className="topo-status">
-            <StatusApi estado={health} />
-            <BotaoTema tema={tema} onAlternar={alternarTema} />
-          </div>
+          <span className="wordmark"><Marca /> edugraph</span>
+          <div className="topo-status"><StatusApi estado={health} /><BotaoTema tema={tema} onAlternar={alternarTema} /></div>
         </div>
       </header>
-
       <aside className="painel" aria-label="Controles do grafo">
         <section className="cartao">
-          <Passo n={1} titulo="Dados" ajuda="Conjunto lido do disco." icone={ICONE_DADOS} />
+          <Passo n={1} titulo="Dados" ajuda="Conjunto lido do disco." />
           {datasets.status === "carregando" && (
             <p className="nota nota-carregando">
-              <span className="giro giro-pequeno" />
               carregando datasets…
             </p>
           )}
@@ -269,7 +244,6 @@ export default function App() {
             <Campo id={null}>
               <Seletor
                 nome="Dataset"
-                icone={ICONE_DADOS}
                 value={datasetAtivo ?? ""}
                 titulo={datasetAtivo ?? undefined}
                 opcoes={datasets.dados.map((d) => ({ value: d.dataset, rotulo: d.dataset }))}
@@ -290,7 +264,6 @@ export default function App() {
                 n={2}
                 titulo="Projeção"
                 ajuda="Rede de um só tipo de nó."
-                icone={ICONE_PROJECAO}
               />
               {resumoAtivo.projections.length === 0 ? (
                 <p className="nota">nenhuma projeção neste dataset</p>
@@ -298,7 +271,6 @@ export default function App() {
                 <Campo id={ROTULO_PROJECAO[projecaoAtiva ?? ""] ? projecaoAtiva : null}>
                   <Seletor
                     nome="Projeção"
-                    icone={ICONE_PROJECAO}
                     value={projecaoAtiva ?? ""}
                     titulo={projecaoAtiva ?? undefined}
                     opcoes={resumoAtivo.projections.map((id) => ({
@@ -317,7 +289,6 @@ export default function App() {
                 n={3}
                 titulo="Comunidades"
                 ajuda="Definem a cor e a forma."
-                icone={ICONE_COMUNIDADES}
               />
               {particoes.length === 0 ? (
                 <p className="nota">nenhuma partição desta projeção em disco</p>
@@ -325,7 +296,6 @@ export default function App() {
                 <Campo id={null}>
                   <Seletor
                     nome="Algoritmo de comunidades"
-                    icone={ICONE_COMUNIDADES}
                     value={particaoAtiva ?? ""}
                     titulo={particaoAtiva ?? undefined}
                     opcoes={[
@@ -342,17 +312,9 @@ export default function App() {
               {particao && membership && (
                 <>
                   <div className="q-metrica">
-                    <div>
-                      <span className="q-rotulo">Modularidade Q</span>
-                      <span className="q-valor">
-                        {particao.modularity.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 4,
-                          maximumFractionDigits: 4,
-                        })}
-                      </span>
-                    </div>
-                    <span className="q-chip">{particao.n_communities} comunidades</span>
-                    {particao.status !== "ok" && <span className="q-chip q-chip-aviso">{particao.status}</span>}
+                    <b><i>Q</i> = {particao.modularity.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</b>
+                    <span>modularidade</span>
+                    {particao.status !== "ok" && <span>{particao.status}</span>}
                   </div>
                   <CommunityLegend membership={membership} />
                 </>
@@ -364,7 +326,6 @@ export default function App() {
                 n={4}
                 titulo="Centralidade"
                 ajuda="Define o tamanho dos nós."
-                icone={ICONE_CENTRALIDADE}
               />
               {dadosGrafo && metricasDisponiveis.length === 0 ? (
                 <p className="nota">
@@ -383,105 +344,64 @@ export default function App() {
                       className={metricaAtiva === m.id ? "ativo" : ""}
                       onClick={() => setMetricaAtiva(m.id as CentralityMetric | null)}
                     >
-                      <span className="segmentado-icone" aria-hidden="true">
-                        {ICONE_METRICA[m.id ?? "igual"]}
-                      </span>
+                      <span className="radio-marca" aria-hidden="true" />
                       {m.nome}
                     </button>
                   ))}
                 </div>
               )}
+              <p className="opcoes-desc">{DESCRICAO_METRICA[metricaAtiva ?? "igual"]}</p>
             </section>
           </>
         )}
 
-        <GuiaDeLeitura />
       </aside>
 
+
       <main className="palco" onKeyDown={atalhosDoPalco}>
-        {dadosGrafo && <StatsBar graph={dadosGrafo} partition={particao} />}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${datasetAtivo}/${projecaoAtiva}/${grafo?.status}`}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="palco-conteudo"
-          >
-            {grafo === null && (
-              <Vazio tipo="vazio" icone={ICONE_GRAFO}>
-                Escolha um dataset e uma projeção para ver o grafo.
-              </Vazio>
-            )}
-            {grafo?.status === "carregando" && (
-              <Vazio tipo="carregando" icone={<span className="giro" />}>
-                carregando grafo…
-              </Vazio>
-            )}
-            {grafo?.status === "erro" && (
-              <Vazio tipo="erro" icone={ICONE_ALERTA}>
-                {grafo.erro.message}
-              </Vazio>
-            )}
-            {dadosGrafo && (
-              <ErrorBoundary resetKey={`${datasetAtivo}/${projecaoAtiva}`}>
-                <GraphView
-                  ref={grafoRef}
-                  graph={dadosGrafo}
-                  membership={membership}
-                  sizeBy={metricaAtiva}
-                  tema={tema}
-                  selected={selecionado}
-                  onSelect={setSelecionado}
-                />
-              </ErrorBoundary>
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        {dadosGrafo && (
-          <ControlesZoom
-            aoAproximar={() => grafoRef.current?.aproximar()}
-            aoAfastar={() => grafoRef.current?.afastar()}
-            aoCentralizar={() => grafoRef.current?.centralizar()}
-          />
-        )}
-        {!(dadosGrafo && selecionado) && (
-          <aside className="inspetor-vazio">
-            <span className="vazio-icone" aria-hidden="true">
-              {ICONE_GRAFO}
-            </span>
-            <p>Selecione um nó no grafo para ver comunidade, centralidades e vizinhos.</p>
-          </aside>
-        )}
-        <AnimatePresence>
-          {dadosGrafo && selecionado && (
-            <NodePanel
-              graph={dadosGrafo}
-              membership={membership}
-              nodeId={selecionado}
-              onSelect={setSelecionado}
-            />
-          )}
-        </AnimatePresence>
+        <section className="figura-area" aria-label="Figura da rede">
+          {dadosGrafo && <StatsBar graph={dadosGrafo} partition={particao} />}
+          <div className="figura">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${datasetAtivo}/${projecaoAtiva}/${grafo?.status}`}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }} className="palco-conteudo"
+              >
+                {grafo === null && <Vazio tipo="vazio">Escolha um dataset e uma projeção para ver o grafo.</Vazio>}
+                {grafo?.status === "carregando" && <Vazio tipo="carregando">{datasetAtivo} · {projecaoAtiva}</Vazio>}
+                {grafo?.status === "erro" && <Vazio tipo="erro">{grafo.erro.message}</Vazio>}
+                {dadosGrafo && (
+                  <ErrorBoundary resetKey={`${datasetAtivo}/${projecaoAtiva}`}>
+                    <GraphView ref={grafoRef} graph={dadosGrafo} membership={membership}
+                      sizeBy={metricaAtiva} tema={tema} selected={selecionado} onSelect={setSelecionado} />
+                  </ErrorBoundary>
+                )}
+              </motion.div>
+            </AnimatePresence>
+            {dadosGrafo && <ControlesZoom aoAproximar={() => grafoRef.current?.aproximar()}
+              aoAfastar={() => grafoRef.current?.afastar()} aoCentralizar={() => grafoRef.current?.centralizar()} />}
+          </div>
+          <p className="legenda-fig">
+            <b>Figura 1.</b> {ROTULO_PROJECAO[projecaoAtiva ?? ""] ?? "Rede educacional"}
+            {datasetAtivo && <>, <i>{datasetAtivo}</i></>}. <b>Forma e cor</b>{" "}
+            <span className="glifos-legenda"><Marca /></span> indicam a comunidade
+            {particao && <> ({ROTULO_ALGORITMO[particao.algorithm] ?? particao.algorithm})</>}; a forma basta para ler em cinza.{" "}
+            <b>Tamanho</b> {metricaAtiva ? `é ${METRICAS.find(m => m.id === metricaAtiva)?.nome.toLowerCase()}` : "é igual para todos os nós"}.{" "}
+            <b>Espessura</b> da linha é o peso da ligação. Clique num nó para ver os detalhes.
+          </p>
+        </section>
+        <aside className="nota-lateral" aria-label="Detalhes do nó">
+          {!(dadosGrafo && selecionado) && <p className="inspetor-vazio">Selecione um nó no grafo para ver comunidade, centralidades e vizinhos.</p>}
+          <AnimatePresence>
+            {dadosGrafo && selecionado && <NodePanel graph={dadosGrafo} membership={membership} nodeId={selecionado} onSelect={setSelecionado} />}
+          </AnimatePresence>
+        </aside>
       </main>
-
       <footer className="rodape">
-        <a
-          className="rodape-link"
-          href={URL_REPOSITORIO}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Repositório do TCC no GitHub (abre em nova aba)"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-          </svg>
-          <span>Repositório do TCC</span>
-          <code className="rodape-slug">luctmc/TCC.bipartite-network-analysis</code>
-        </a>
-        <span className="rodape-autoria">TCC · Grupo 16 · UniAnchieta</span>
+        <span>Repositório do TCC: <a href={URL_REPOSITORIO} target="_blank" rel="noopener noreferrer"
+          aria-label="Repositório do TCC no GitHub (abre em nova aba)">luctmc/TCC.bipartite-network-analysis</a></span>
+        <span>TCC · Grupo 16 · UniAnchieta</span>
       </footer>
     </div>
     </MotionConfig>
@@ -512,7 +432,7 @@ const ROTULO_ALGORITMO: Record<string, string> = {
   girvan_newman: "Girvan–Newman",
 };
 
-function Passo(props: { n: number; titulo: string; ajuda: string; icone: React.ReactNode }) {
+function Passo(props: { n: number; titulo: string; ajuda: string }) {
   return (
     <header className="passo">
       <span className="passo-num" aria-hidden="true">
@@ -522,9 +442,6 @@ function Passo(props: { n: number; titulo: string; ajuda: string; icone: React.R
         <h2>{props.titulo}</h2>
         <p>{props.ajuda}</p>
       </div>
-      <span className="passo-icone" aria-hidden="true">
-        {props.icone}
-      </span>
     </header>
   );
 }
@@ -539,123 +456,19 @@ function Campo(props: { id: string | null; children: React.ReactNode }) {
   );
 }
 
-function GuiaDeLeitura() {
-  return (
-    <section className="guia" aria-labelledby="guia-titulo">
-      <h2 id="guia-titulo">Como ler o grafo</h2>
-      <ul>
-        <li>
-          <span className="guia-glifos" aria-hidden="true">
-            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.5" fill="#56B4E9" /></svg>
-            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1 15 14H1Z" fill="#E69F00" /></svg>
-            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="#009E73" /></svg>
-          </span>
-          <span>
-            <strong>Forma e cor</strong> são a comunidade (a forma separa em cinza).
-          </span>
-        </li>
-        <li>
-          <span className="guia-glifos" aria-hidden="true">
-            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="4" cy="8" r="2.4" fill="currentColor" /></svg>
-            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.5" fill="currentColor" /></svg>
-          </span>
-          <span>
-            <strong>Tamanho</strong> é a centralidade do passo 4.
-          </span>
-        </li>
-        <li>
-          <span className="guia-glifos" aria-hidden="true">
-            <svg viewBox="0 0 24 16" width="22" height="14"><path d="M1 4h22" stroke="currentColor" strokeWidth="1" /><path d="M1 11h22" stroke="currentColor" strokeWidth="3" /></svg>
-          </span>
-          <span>
-            <strong>Espessura</strong> da aresta é o peso.
-          </span>
-        </li>
-        <li>
-          <span className="guia-glifos" aria-hidden="true">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"><path d="M3 2l9 5-4 1.2L6.5 12 3 2Z" /></svg>
-          </span>
-          <span>
-            <strong>Clique</strong> no nó abre os detalhes.
-          </span>
-        </li>
-      </ul>
-    </section>
-  );
+function Marca() {
+  return <svg viewBox="0 0 32 16" width="32" height="16" aria-hidden="true">
+    <circle cx="5" cy="8" r="4.5" fill="#56B4E9" />
+    <path d="M16 3 21 12.5H11Z" fill="#E69F00" />
+    <rect x="23" y="3.5" width="8.5" height="8.5" rx="2" fill="#009E73" />
+  </svg>;
 }
 
-const icone = (children: React.ReactNode, tamanho = 18) => (
-  <svg viewBox="0 0 24 24" width={tamanho} height={tamanho} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {children}
-  </svg>
-);
-
-const ICONE_DADOS = icone(
-  <>
-    <ellipse cx="12" cy="6" rx="7" ry="3" />
-    <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
-  </>,
-);
-const ICONE_PROJECAO = icone(
-  <>
-    <circle cx="6" cy="7" r="2.3" />
-    <circle cx="6" cy="17" r="2.3" />
-    <rect x="14" y="9.5" width="6.5" height="5" rx="1.4" />
-    <path d="M8 8l6 3M8 16l6-3" />
-  </>,
-);
-const ICONE_COMUNIDADES = icone(
-  <>
-    <circle cx="8" cy="9" r="3" />
-    <circle cx="16" cy="9" r="3" />
-    <circle cx="12" cy="16" r="3" />
-  </>,
-);
-const ICONE_CENTRALIDADE = icone(
-  <>
-    <circle cx="12" cy="12" r="2.4" fill="currentColor" />
-    <circle cx="12" cy="12" r="6.5" />
-    <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21" />
-  </>,
-);
-
-const ICONE_METRICA: Record<string, React.ReactNode> = {
-  igual: icone(
-    <>
-      <circle cx="5" cy="12" r="2.6" />
-      <circle cx="12" cy="12" r="2.6" />
-      <circle cx="19" cy="12" r="2.6" />
-    </>,
-    15,
-  ),
-  degree: icone(
-    <>
-      <circle cx="12" cy="12" r="3" fill="currentColor" />
-      <path d="M12 9V4.5M12 15v4.5M9 12H4.5M15 12h4.5" />
-      <circle cx="12" cy="3.5" r="1.4" />
-      <circle cx="12" cy="20.5" r="1.4" />
-      <circle cx="3.5" cy="12" r="1.4" />
-      <circle cx="20.5" cy="12" r="1.4" />
-    </>,
-    15,
-  ),
-  betweenness: icone(
-    <>
-      <circle cx="4.5" cy="12" r="2.2" />
-      <circle cx="19.5" cy="12" r="2.2" />
-      <circle cx="12" cy="12" r="3" fill="currentColor" />
-      <path d="M6.8 12H9M15 12h2.2" />
-    </>,
-    15,
-  ),
-  eigenvector: icone(
-    <>
-      <circle cx="12" cy="12" r="2.4" fill="currentColor" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="9.5" opacity="0.5" />
-    </>,
-    15,
-  ),
+const DESCRICAO_METRICA: Record<string, string> = {
+  igual: "Igual: todos os nós têm o mesmo tamanho.",
+  degree: "Grau: quantos vizinhos o nó tem.",
+  betweenness: "Intermediação: quanto o nó faz ponte entre grupos.",
+  eigenvector: "Autovetor: quanto os vizinhos do nó também são centrais.",
 };
 
 /** Barra flutuante de zoom: aproximar, afastar e centralizar o grafo. */
@@ -681,7 +494,6 @@ function ControlesZoom(props: {
         {traco(
           <>
             <path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" />
-            <circle cx="12" cy="12" r="2.2" fill="currentColor" />
           </>,
         )}
       </button>
@@ -696,8 +508,8 @@ function BotaoTema({ tema, onAlternar }: { tema: Tema; onAlternar: () => void })
       type="button"
       className="tema-botao"
       aria-pressed={claro}
-      aria-label="Modo claro"
-      title={claro ? "Voltar ao modo escuro" : "Usar o modo claro"}
+      aria-label="Alternar tema claro e escuro"
+      title={claro ? "Usar o modo escuro" : "Usar o modo claro"}
       onClick={onAlternar}
     >
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -710,6 +522,7 @@ function BotaoTema({ tema, onAlternar }: { tema: Tema; onAlternar: () => void })
           <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
         )}
       </svg>
+      Tema
     </button>
   );
 }
@@ -727,7 +540,6 @@ function StatusApi({ estado }: { estado: Estado<HealthResponse> }) {
     <div className="status-pilula">
       <span className="status-ponto" aria-hidden="true" />
       <span className="status-versao">API v{estado.dados.version}</span>
-      <span className="status-sep" aria-hidden="true" />
       <span
         className="status-raizes"
         tabIndex={0}
@@ -739,39 +551,14 @@ function StatusApi({ estado }: { estado: Estado<HealthResponse> }) {
   );
 }
 
-const ICONE_GRAFO = (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-    <path d="M7 7l10 3M7 7l4 10M17 10l-6 7" />
-    <circle cx="7" cy="7" r="2.4" />
-    <circle cx="17" cy="10" r="2.4" />
-    <circle cx="11" cy="17" r="2.4" />
-  </svg>
-);
-
-const ICONE_ALERTA = (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 4 3 20h18L12 4Z" />
-    <path d="M12 10v4M12 17.2v.1" />
-  </svg>
-);
-
-function Vazio({
-  children,
-  tipo,
-  icone,
-}: {
+function Vazio({ children, tipo }: {
   children: React.ReactNode;
   tipo: "vazio" | "carregando" | "erro";
-  icone: React.ReactNode;
 }) {
-  return (
-    <div
-      className={`vazio vazio-${tipo}`}
-      role={tipo === "erro" ? "alert" : "status"}
-      aria-live={tipo === "erro" ? undefined : "polite"}
-    >
-      <span className="vazio-icone">{icone}</span>
-      <span className="vazio-texto">{children}</span>
-    </div>
-  );
+  return <div className={`vazio vazio-${tipo}`} role={tipo === "erro" ? "alert" : "status"}
+    aria-live={tipo === "erro" ? undefined : "polite"}>
+    <h2>{tipo === "vazio" ? "Nenhuma figura ainda" : tipo === "carregando" ? "Carregando a projeção…" : "A API não respondeu"}</h2>
+    <p>{children}</p>
+    {tipo === "carregando" && <span className="fio" aria-hidden="true"><span /></span>}
+  </div>;
 }

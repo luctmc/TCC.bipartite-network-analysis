@@ -4,27 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>edugraph — análise topológica de redes educacionais</title>
-    <meta name="theme-color" content="#021716" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#FBFAF7" />
+    <meta name="color-scheme" content="light dark" />
     <meta
       name="description"
       content="Visualização interativa do grafo bipartido, comunidades e centralidades. Uso interno — TCC Grupo 16, UniAnchieta."
     />
     <script>
-      // Tema antes da primeira pintura (sem piscar): escolha salva ou preferência do sistema.
+      // Tema antes da primeira pintura (sem piscar): escolha salva ou papel claro padrão.
       (function () {
         var tema = null;
         try {
           tema = localStorage.getItem("edugraph-tema");
         } catch (erro) {
-          /* sem armazenamento: vale a preferência do sistema */
+          /* sem armazenamento: vale o papel claro padrão */
         }
         if (tema !== "light" && tema !== "dark") {
-          try {
-            tema = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-          } catch (erro) {
-            tema = "dark";
-          }
+          tema = "light";
         }
         document.documentElement.setAttribute("data-theme", tema);
       })();

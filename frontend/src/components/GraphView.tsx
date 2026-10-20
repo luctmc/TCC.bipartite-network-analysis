@@ -43,34 +43,32 @@ const MAX_ALUNOS_ROTULADOS = 40;
 const MAX_VIZINHOS_ROTULADOS = 15;
 
 /** Mesma pilha de fontes do CSS: o rótulo do canvas combina com a interface. */
-const FONTE = 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const FONTE = '"Source Sans 3", system-ui, sans-serif';
 
 /**
  * Tamanho do rótulo **na tela**, em px. O fit amplia grafos pequenos (7 nós
  * chegam a zoom 3), e um rótulo de 8–10px de modelo virava texto de 30px,
  * maior que qualquer título da interface. O tamanho de modelo passa a ser
- * `min(base, ROTULO_TELA / zoom)`: perto, o rótulo para em ~11px; longe, segue
+ * `min(base, ROTULO_TELA / zoom)`: perto, o rótulo para em ~13px; longe, segue
  * a regra antiga (`min-zoomed-font-size` o esconde quando ilegível).
  */
-const ROTULO_TELA = 11.5;
-const ROTULO_ALUNO = 8;
-const ROTULO_DISCIPLINA = 10;
+const ROTULO_TELA = 13;
 
 /** Até aqui as arestas são curvas (bézier); acima, retas curtas (haystack). */
 const MAX_EDGES_CURVAS = 400;
 
 /**
  * Zoom máximo do enquadramento automático. Grafo pequeno (7 nós) chegava a
- * zoom ~3 e os nós ficavam enormes perto de rótulos de 11,5px; o usuário
+ * zoom ~3 e os nós ficavam enormes perto de rótulos de 13px; o usuário
  * ainda pode aproximar à mão (`maxZoom` do Cytoscape continua 4).
  */
 const ZOOM_MAX_ENQUADRAMENTO = 2.4;
 
 /**
- * Acima disto o desenho é "fixo": sem gradiente, sem reflexo e sem funções de
+ * Acima disto o desenho é "fixo": sem funções de
  * estilo que dependem do zoom. Cada atualização de estilo reavalia o grafo
  * inteiro (medido pelo revisor: ~5 ms em 81 nós, ~31 ms em 1250 nós/5000
- * arestas), e gradiente/imagem por nó também custam no canvas.
+ * arestas).
  */
 const MAX_NOS_DINAMICO = 400;
 const MAX_ARESTAS_DINAMICO = 1600;
@@ -78,19 +76,16 @@ const MAX_ARESTAS_DINAMICO = 1600;
 /** O zoom é quantizado em 6 faixas por oitava (~12%): o estilo só reavalia ao trocar de faixa. */
 const FAIXAS_POR_OITAVA = 6;
 
-/** Abaixo deste tamanho na tela o reflexo só polui o nó. */
-const BRILHO_MIN_PX = 14;
-
 /** Controles de zoom: passo por clique e duração da animação (nenhuma com movimento reduzido). */
 const PASSO_ZOOM = 1.25;
 const DURACAO_ZOOM_MS = 200;
 
 const PADDING_FIT = 72;
 const PADDING_FIT_ESTREITO = 28;
-const TAMANHO_MIN = 10;
-const TAMANHO_MAX = 42;
-const TAMANHO_NEUTRO = 16;
-const DURACAO_MS = 450;
+const TAMANHO_MIN = 8;
+const TAMANHO_MAX = 22;
+const TAMANHO_NEUTRO = 14;
+const DURACAO_MS = 150;
 
 /**
  * Fator de escala dos nós pelo tamanho do grafo. Com 22 disciplinas os
@@ -190,320 +185,62 @@ function zoomDaFaixa(faixa: number): number {
   return 2 ** (faixa / FAIXAS_POR_OITAVA);
 }
 
-/** Mistura `cor` (#rrggbb) com `alvo` na proporção `t` (0 = cor, 1 = alvo). */
-function misturar(cor: string, alvo: string, t: number): string {
-  const canais = (hex: string) => {
-    const h = hex.replace("#", "");
-    const n = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
-    return [0, 2, 4].map((i) => parseInt(n.slice(i, i + 2), 16));
-  };
-  const a = canais(cor);
-  const b = canais(alvo);
-  const saida = a.map((v, i) => Math.round(v + (b[i] - v) * t));
-  return `#${saida.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-}
-
-/**
- * Tons de acabamento derivados da cor-base do nó: claro (topo), escuro
- * (base) e anel. A cor-base continua sendo a da paleta Okabe & Ito.
- */
-export function tons(cor: string) {
-  const claro = misturar(cor, "#ffffff", 0.34);
-  const escuro = misturar(cor, "#000000", 0.18);
-  // No claro um anel branco some no papel: o anel escurece a própria cor.
-  const temaClaro = document.documentElement.dataset.theme === "light";
-  // Brilho de borda (rim light): no escuro, um tom bem mais claro da própria cor.
-  const anel = temaClaro ? misturar(cor, "#021716", 0.4) : misturar(cor, "#ffffff", 0.7);
-  return { claro, escuro, anel, grad: `${claro} ${cor} ${escuro}` };
-}
-
-/**
- * Mesma família de forma, versão de cantos arredondados do Cytoscape. A forma
- * continua separando os grupos em escala de cinza (triângulo segue triângulo).
- */
-const FORMA_ARREDONDADA: Record<string, string> = {
-  triangle: "round-triangle",
-  diamond: "round-diamond",
-  hexagon: "round-hexagon",
-  pentagon: "round-pentagon",
-};
-function arredondar(forma: string): string {
-  return FORMA_ARREDONDADA[forma] ?? forma;
-}
-
-/**
- * Camada de vidro do nó, **desenhada por forma** (o Cytoscape a recorta pelo
- * contorno do nó): refração escura na base, reflexo especular nítido na parte
- * de cima, que acompanha as arestas da própria forma, e um fio de brilho
- * (rim light) rente ao contorno. Sem uma camada para a forma (estrela, "vee"),
- * ficam só o gradiente e o rim light da borda.
- */
-interface VidroForma {
-  /** Contorno (fio de brilho) no quadro 0–100. */
-  contorno: string;
-  /** Reflexo especular, de borda inferior curva, que segue a parte de cima da forma. */
-  reflexo: string;
-}
-const VIDRO_POR_FORMA: Record<string, VidroForma> = {
-  ellipse: {
-    contorno: '<ellipse cx="50" cy="50" rx="48.5" ry="48.5"/>',
-    reflexo: '<path d="M10 41C12 17 34 6 50 6s38 11 40 35C72 31 28 31 10 41Z"/>',
-  },
-  "round-rectangle": {
-    contorno: '<rect x="1.5" y="1.5" width="97" height="97" rx="22"/>',
-    // Topo reto e cantos arredondados como os do nó; a borda de baixo é a única curva.
-    reflexo: '<path d="M7 40V28Q7 7 28 7H72Q93 7 93 28V40Q50 28 7 40Z"/>',
-  },
-  "round-triangle": {
-    contorno: '<path d="M50 3 97 97H3Z" stroke-linejoin="round"/>',
-    reflexo: '<path d="M50 9 71 52Q50 42 29 52Z"/>',
-  },
-  "round-diamond": {
-    contorno: '<path d="M50 2 98 50 50 98 2 50Z" stroke-linejoin="round"/>',
-    reflexo: '<path d="M50 8 86 44Q50 34 14 44Z"/>',
-  },
-  "round-hexagon": {
-    contorno: '<path d="M26 3H74L97 50 74 97H26L3 50Z" stroke-linejoin="round"/>',
-    reflexo: '<path d="M27 8H73L89 36Q50 26 11 36Z"/>',
-  },
-  "round-pentagon": {
-    contorno: '<path d="M50 3 97 38 79 97H21L3 38Z" stroke-linejoin="round"/>',
-    reflexo: '<path d="M50 9 88 36Q50 27 12 36Z"/>',
-  },
-};
-
-const URI_VIDRO = new Map<string, string>();
-
-/** URI do SVG de vidro da forma, ou `none` se a forma não tem camada própria. */
-function vidroDaForma(forma: string): string {
-  const v = VIDRO_POR_FORMA[forma];
-  if (!v) return "none";
-  let uri = URI_VIDRO.get(forma);
-  if (!uri) {
-    uri =
-      "data:image/svg+xml;utf8," +
-      encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" preserveAspectRatio="none">' +
-          "<defs>" +
-          '<linearGradient id="e" x1="0" y1="0" x2="0" y2="1">' +
-          '<stop offset="0" stop-color="#fff" stop-opacity="0.95"/>' +
-          '<stop offset="0.6" stop-color="#fff" stop-opacity="0.3"/>' +
-          '<stop offset="1" stop-color="#fff" stop-opacity="0.04"/></linearGradient>' +
-          '<linearGradient id="b" x1="0" y1="0" x2="0" y2="1">' +
-          '<stop offset="0" stop-color="#000" stop-opacity="0"/>' +
-          '<stop offset="1" stop-color="#000" stop-opacity="0.24"/></linearGradient>' +
-          "</defs>" +
-          '<rect y="52" width="100" height="48" fill="url(#b)"/>' +
-          `<g fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="3">${v.contorno}</g>` +
-          `<g fill="url(#e)">${v.reflexo}</g>` +
-          "</svg>",
-      );
-    URI_VIDRO.set(forma, uri);
-  }
-  return uri;
-}
-
-/** Forma do nó: a da comunidade (já arredondada) ou, sem partição, a do tipo. */
-function formaDoNo(no: cytoscape.NodeSingular): string {
-  const forma = no.data("shape");
-  if (typeof forma === "string") return forma;
-  return no.data("kind") === "discipline" ? "round-rectangle" : "ellipse";
-}
-
+/** Estilo editorial: preenchimento chapado, filetes e anel na forma do nó. */
 function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.StylesheetJson {
-  const dinamico = ehDinamico(graph);
-  // Em grafo grande o zoom não entra no estilo (valores fixos, sem reavaliar).
-  const zoom = dinamico ? zoomReal : () => 1;
-  const fonteRotulo = (base: number) => () => Math.min(base, ROTULO_TELA / Math.max(zoom(), 0.01));
-  const fonteDestaque = () => ROTULO_TELA / Math.max(zoom(), 0.01);
-  // Larguras em px **de tela**: em unidades do modelo elas escalam com o zoom
-  // (grafos pequenos chegam a zoom 3) e o anel/aresta viravam traço grosso.
+  const zoom = ehDinamico(graph) ? zoomReal : () => 1;
   const px = (n: number) => () => n / Math.max(zoom(), 0.01);
-  const larguraAresta = (aresta: cytoscape.EdgeSingular) => {
-    const t = pesoMax > pesoMin ? (Number(aresta.data("weight")) - pesoMin) / (pesoMax - pesoMin) : 0.5;
-    return (0.8 + t * 1.0) / Math.max(zoom(), 0.01);
-  };
-  const pesos = graph.edges.map((edge) => edge.weight);
-  const pesoMin = pesos.length ? Math.min(...pesos) : 0;
-  const pesoMax = pesos.length ? Math.max(...pesos) : 1;
-  const rotularAlunos = graph.nodes.length <= MAX_ALUNOS_ROTULADOS;
-  const rotularDisciplinas = graph.nodes.length <= MAX_DISCIPLINAS_ROTULADAS;
+  const pesos = graph.edges.map(e => e.weight);
+  const minimo = pesos.length ? Math.min(...pesos) : 0;
+  const maximo = pesos.length ? Math.max(...pesos) : 1;
+  const relativo = (edge: cytoscape.EdgeSingular) => maximo > minimo ? (Number(edge.data("weight")) - minimo) / (maximo - minimo) : 0.5;
+  const claro = document.documentElement.dataset.theme === "light";
   const cor = {
-    student: themeColor("--node-student", "#6ea8fe"),
-    discipline: themeColor("--node-discipline", "#f0a868"),
-    edge: themeColor("--edge", "#707d7d"),
-    surface: themeColor("--surface", "#032221"),
-    bg: themeColor("--bg", "#021716"),
-    text: themeColor("--text", "#f1f7f6"),
-    muted: themeColor("--text-muted", "#9bb0ab"),
-    text2: themeColor("--text-2", "#aacbc4"),
+    student: themeColor("--node-student", "#56B4E9"),
+    discipline: themeColor("--node-discipline", "#E69F00"),
+    edge: themeColor("--edge", "#1A1915"),
+    sheet: themeColor("--sheet", "#FFFFFF"),
+    text: themeColor("--text", "#1A1915"),
   };
-
-  // Bézier fica elegante, mas custa caro com milhares de arestas: acima do
-  // limite o haystack (reta curta, sem controle) segura o desenho.
-  const estiloCurva = graph.edges.length <= MAX_EDGES_CURVAS ? "bezier" : "haystack";
-
-  /**
-   * Acabamento do nó: gradiente vertical (claro → base → escuro), anel na cor
-   * do próprio nó e reflexo — o reflexo só quando o nó tem >= BRILHO_MIN_PX na tela.
-   */
-  const acabamento = (base: string) => {
-    const t = tons(base);
-    // Vidro: preenchimento translúcido (no claro, um pouco mais denso, para a cor
-    // não lavar sobre o papel). Em grafo grande o desenho é fixo, quase opaco.
-    const claro = document.documentElement.dataset.theme === "light";
-    const comum = { "border-color": t.anel, "background-opacity": dinamico ? (claro ? 0.86 : 0.8) : 0.9 };
-    if (!dinamico) return comum;
-    return {
-      ...comum,
-      "background-fill": "linear-gradient",
-      "background-gradient-direction": "to-bottom",
-      "background-gradient-stop-colors": t.grad,
-      "background-gradient-stop-positions": "0% 55% 100%",
-      "background-image": (no: cytoscape.NodeSingular) =>
-        Number(no.data("size")) * zoom() >= BRILHO_MIN_PX ? vidroDaForma(formaDoNo(no)) : "none",
-      "background-fit": "cover",
-      "background-width": "100%",
-      "background-height": "100%",
-      "background-clip": "node",
-      "background-image-opacity": 1,
-    };
-  };
-
   return [
-    {
-      selector: "node",
-      style: {
-        "background-color": cor.student,
-        ...acabamento(cor.student),
-        label: rotularAlunos ? "data(label)" : "",
-        "font-family": FONTE,
-        "font-size": fonteRotulo(ROTULO_ALUNO),
-        "font-weight": 500,
-        // Só desenha o rótulo quando ele fica legível na tela: longe, o
-        // grafo é forma; perto, é nome.
-        "min-zoomed-font-size": 10,
-        color: cor.text,
-        "text-opacity": 0.82,
-        "text-valign": "bottom",
-        "text-margin-y": 5,
-        // Sem pílula: o contorno na cor do fundo separa o texto das arestas.
-        "text-outline-width": 2,
-        "text-outline-color": cor.bg,
-        "text-outline-opacity": 0.4,
-        // Halo suave na cor do próprio nó, no lugar de borda escura.
-        "underlay-color": cor.student,
-        // Em repouso o nó é limpo (só o anel fino); o halo aparece ao interagir.
-        "underlay-opacity": 0,
-        "underlay-padding": px(5),
-        "underlay-shape": "ellipse",
-        "overlay-opacity": 0,
-        width: "data(size)",
-        height: "data(size)",
-        // Anel fino e claro: dá borda ao nó sem desenhar um adesivo.
-        "border-width": px(1.2),
-        "border-opacity": 0.6,
-        "transition-property": "width, height, background-color, underlay-color, underlay-opacity, opacity",
-        "transition-duration": DURACAO_MS,
-        "transition-timing-function": "ease-in-out-cubic",
-      } as unknown as cytoscape.Css.Node,
-    },
-    {
-      selector: 'node[kind = "discipline"]',
-      style: {
-        "background-color": cor.discipline,
-        ...acabamento(cor.discipline),
-        "underlay-color": cor.discipline,
-        shape: "round-rectangle",
-        "font-size": fonteRotulo(ROTULO_DISCIPLINA),
-        label: rotularDisciplinas ? "data(label)" : "",
-      } as unknown as cytoscape.Css.Node,
-    },
-    {
-      // Por classe, não por "[color]": o Cytoscape não reavalia seletor de
-      // dado quando o dado é removido, e a cor antiga ficava na tela.
-      selector: "node.comunidade",
-      // "data(shape)" é válido no Cytoscape, mas os tipos só aceitam formas literais.
-      style: {
-        "background-color": "data(color)",
-        // Tons claro/base/escuro e anel vêm de `data`, calculados com a cor da comunidade.
-        ...(dinamico ? { "background-gradient-stop-colors": "data(grad)" } : {}),
-        "border-color": "data(anel)",
-        "underlay-color": "data(color)",
-        shape: "data(shape)",
-      } as unknown as cytoscape.Css.Node,
-    },
-    {
-      selector: "edge",
-      style: {
-        // Com muitas arestas, largura fixa fina: reavaliar milhares a cada zoom pesa.
-        width: graph.edges.length <= MAX_EDGES_CURVAS * 4 ? larguraAresta : 0.5,
-        "line-color": cor.edge,
-        "line-cap": "round",
-        "curve-style": estiloCurva,
-        opacity: 0.28,
-        "transition-property": "opacity, line-color",
-        "transition-duration": DURACAO_MS,
-      } as unknown as cytoscape.Css.Edge,
-    },
-    {
-      // Aresta dentro de uma comunidade ganha a cor dela: os grupos
-      // aparecem pela trama, não só pelos nós.
-      selector: "edge.intra",
-      style: { "line-color": "data(color)", opacity: 0.5 },
-    },
+    { selector: "node", style: {
+      "background-color": cor.student, "background-opacity": 1,
+      label: graph.nodes.length <= MAX_ALUNOS_ROTULADOS ? "data(label)" : "",
+      "font-family": FONTE, "font-size": px(ROTULO_TELA), "font-weight": 600,
+      "min-zoomed-font-size": 10, color: cor.text, "text-valign": "bottom",
+      "text-margin-y": px(9), "text-outline-width": px(2),
+      "text-outline-color": cor.sheet, "text-outline-opacity": 1,
+      width: "data(size)", height: "data(size)",
+      "border-width": px(claro ? 1.25 : 2),
+      "border-color": claro ? cor.text : cor.sheet,
+      "overlay-opacity": 0, "outline-color": cor.text,
+      "outline-width": 0, "outline-offset": px(6),
+      "transition-property": "width, height, opacity", "transition-duration": DURACAO_MS,
+    } as unknown as cytoscape.Css.Node },
+    { selector: 'node[kind = "discipline"]', style: {
+      "background-color": cor.discipline, shape: "round-rectangle",
+      label: graph.nodes.length <= MAX_DISCIPLINAS_ROTULADAS ? "data(label)" : "",
+    } },
+    { selector: "node.comunidade", style: {
+      "background-color": "data(color)", shape: "data(shape)",
+    } as unknown as cytoscape.Css.Node },
+    { selector: "edge", style: {
+      width: graph.edges.length <= MAX_EDGES_CURVAS * 4 ? (e: cytoscape.EdgeSingular) => (0.75 + relativo(e) * 4) / Math.max(zoom(), 0.01) : 0.5,
+      "line-color": cor.edge, "line-cap": "round",
+      "curve-style": graph.edges.length <= MAX_EDGES_CURVAS ? "bezier" : "haystack",
+      opacity: (e: cytoscape.EdgeSingular) => 0.08 + relativo(e) * 0.22,
+      "transition-property": "opacity", "transition-duration": DURACAO_MS,
+    } as unknown as cytoscape.Css.Edge },
     { selector: ".apagado", style: { opacity: 0.06 } },
-    {
-      selector: "node.realce",
-      style: {
-        label: "data(label)",
-        "min-zoomed-font-size": 0,
-        "font-size": fonteDestaque,
-        "font-weight": 600,
-        color: cor.text,
-        "text-opacity": 1,
-        "text-outline-width": 2.5,
-        "text-outline-opacity": 0.7,
-        "border-width": px(1.8),
-        "border-color": cor.text,
-        "border-opacity": 0.9,
-        "underlay-opacity": 0.3,
-        "z-index": 20,
-      } as unknown as cytoscape.Css.Node,
-    },
-    {
-      selector: "node.rotulo, node:selected",
-      style: {
-        label: "data(label)",
-        "min-zoomed-font-size": 0,
-        "font-size": fonteDestaque,
-        color: cor.text,
-        "text-opacity": 1,
-        "z-index": 10,
-      } as unknown as cytoscape.Css.Node,
-    },
-    // Destaque da vizinhança neutro: o verde de acento se confundiria com a comunidade verde.
-    { selector: "edge.vizinho", style: { opacity: 0.85, "line-color": cor.text2 } },
-    {
-      selector: "node:selected",
-      style: {
-        "border-width": px(2.2),
-        "border-color": cor.text,
-        "border-opacity": 1,
-        "underlay-color": cor.text,
-        "underlay-opacity": 0.3,
-        "underlay-padding": px(8),
-        "font-weight": 600,
-        "text-outline-width": 2.5,
-        "text-outline-opacity": 0.7,
-      } as unknown as cytoscape.Css.Node,
-    },
-    {
-      // O halo do selecionado é um círculo: atrás de triângulo, losango ou
-      // quadrado ele vira um disco solto. Nessas formas fica só o anel.
-      selector: 'node:selected[shape][shape != "ellipse"], node[kind = "discipline"]:selected',
-      style: { "underlay-opacity": 0, "border-width": px(2.6) } as unknown as cytoscape.Css.Node,
-    },
+    { selector: "node.realce, node.rotulo, node:selected", style: {
+      label: "data(label)", "min-zoomed-font-size": 0, "text-opacity": 1,
+      "font-size": px(ROTULO_TELA), "z-index": 10,
+    } as unknown as cytoscape.Css.Node },
+    { selector: "node.realce", style: { "outline-width": px(1), "outline-opacity": 0.5 } as unknown as cytoscape.Css.Node },
+    { selector: "edge.vizinho", style: { opacity: (e: cytoscape.EdgeSingular) => 0.3 + relativo(e) * 0.55 } as unknown as cytoscape.Css.Edge },
+    { selector: "node:selected", style: {
+      "outline-width": px(1.5), "outline-opacity": 1,
+      "font-weight": 700, "text-margin-y": px(17), "z-index": 20,
+    } as unknown as cytoscape.Css.Node },
   ];
 }
 
@@ -577,8 +314,7 @@ function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesa
     nodeRepulsion: 6000,
     idealEdgeLength: 60,
     fit: true,
-    // Folga maior que a de antes: a faixa de números e o painel do nó
-    // flutuam sobre o palco e cobriam os nós da borda.
+    // Folga do layout preservada; números e painel ocupam áreas próprias.
     padding,
   };
   const conexo = cy.elements().components().length <= 1;
@@ -653,7 +389,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
     });
     rodarLayout(cy, { continuar, pesado });
 
-    // Rótulo, anel e reflexo dependem do zoom. O estilo só é reavaliado ao
+    // Rótulo, anel e arestas dependem do zoom. O estilo só é reavaliado ao
     // cruzar uma faixa de zoom (~12%), no máximo uma vez por quadro — e nunca
     // em grafo grande, onde o estilo é fixo.
     let quadro = 0;
@@ -706,22 +442,13 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
         const comunidade = membership?.[node.id()];
         if (ordem && comunidade !== undefined) {
           const { color, shape } = communityStyle(ordem.get(comunidade) ?? 0);
-          node.data({ color, shape: arredondar(shape), ...tons(color) });
+          node.data({ color, shape });
           node.addClass("comunidade");
         } else {
           node.removeClass("comunidade");
         }
       });
-      cy.edges().forEach((edge) => {
-        const a = membership?.[edge.source().id()];
-        const b = membership?.[edge.target().id()];
-        if (ordem && a !== undefined && a === b) {
-          edge.data("color", communityStyle(ordem.get(a) ?? 0).color);
-          edge.addClass("intra");
-        } else {
-          edge.removeClass("intra");
-        }
-      });
+
     });
   }, [graph, membership, tema]);
 

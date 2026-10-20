@@ -24,7 +24,6 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
-  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 
@@ -42,7 +41,6 @@ interface SeletorProps {
   value: string;
   opcoes: OpcaoSeletor[];
   onChange: (valor: string) => void;
-  icone: ReactNode;
   titulo?: string;
 }
 
@@ -66,7 +64,7 @@ interface Posicao {
   borda: number;
 }
 
-export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: SeletorProps) {
+export function Seletor({ nome, value, opcoes, onChange, titulo }: SeletorProps) {
   const base = useId();
   const [aberto, setAberto] = useState(false);
   const [ativo, setAtivo] = useState(0);
@@ -245,9 +243,6 @@ export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: Seleto
         }}
         onKeyDown={aoTeclar}
       >
-        <span className="seletor-icone" aria-hidden="true">
-          {icone}
-        </span>
         <span className="seletor-valor">{selecionada?.rotulo ?? value}</span>
         <svg className="seletor-seta" viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M3 4.5 6 7.5 9 4.5" />
