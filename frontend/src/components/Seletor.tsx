@@ -145,7 +145,8 @@ export function Seletor({ nome, value, opcoes, onChange, icone, titulo }: Seleto
     setPosicao({
       left: Math.max(FOLGA_PX, Math.min(gatilho.left, window.innerWidth - largura - FOLGA_PX)),
       width: largura,
-      maxHeight: Math.max(96, Math.min(ALTURA_MAX_PX, espaco - 6)),
+      // Nunca passa do espaço do lado escolhido (sem piso): o painel não sai da janela.
+      maxHeight: Math.max(0, Math.min(ALTURA_MAX_PX, espaco - 6)),
       acima: paraCima,
       borda: paraCima ? window.innerHeight - gatilho.top + 6 : gatilho.bottom + 6,
     });

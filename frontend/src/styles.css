@@ -1170,8 +1170,11 @@ code {
   .topo { flex-wrap: wrap; gap: var(--s-2); padding: var(--s-3) var(--s-4); }
   .topo::before { display: none; }
   .topo-lado { order: -1; justify-content: space-between; width: 100%; }
-  /* O status só some quando está tudo bem: "API offline" continua visível. */
-  .status-pilula:not(.status-off) { display: none; }
+  /* Status compacto e sempre visível: ponto + versão; a raiz encurta com reticências (title com o texto todo). */
+  .topo-lado { gap: var(--s-2); }
+  .status-pilula { padding: 0 0.7rem 0 0.65rem; gap: 0.45rem; }
+  .status-sep { height: 12px; }
+  .status-raizes { max-width: 7ch; }
   .sobrelinha, .autores { display: none; }
   .topo h1 { margin: 0; font-size: 1.15rem; }
   .guia { display: none; }
