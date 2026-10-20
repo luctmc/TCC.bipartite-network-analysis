@@ -83,20 +83,6 @@ Ver as regras em [`README.md`](README.md).
 - **Como resolver:** atualizar os números, a data e a descrição das specs
   concluídas; distinguir os marcadores históricos do estado atual da suíte.
 
-### C-OBS-10 · README não avisa que a coorte por avaliação está sem métricas
-
-- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
-- **Onde:** `docs/specs/frente-c/README.md:73` e
-  `observacoes/para-todos.md:8`.
-- **O quê:** a tabela apresenta `oulad_bbb_2013j` como o grafo menor para
-  comparar Louvain × Girvan-Newman, sem avisar da falta de comunidades e
-  centralidades registrada em T-OBS-01. A auditoria confirmou que os
-  TOMLs já declaram as etapas, mas não pôde verificar a execução real:
-  esta máquina não tem `data/processed` nem os dados brutos OULAD.
-- **Como resolver:** acrescentar o aviso e a referência a T-OBS-01 enquanto
-  a execução estiver pendente; atualizar o texto depois da rodada ou da
-  decisão de excluir o dataset.
-
 ### C-OBS-11 · Baixa prioridade: referências históricas a xfail, TODO e handler 501
 
 - **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
@@ -125,6 +111,22 @@ Ver as regras em [`README.md`](README.md).
   `frontend/README.md` também não foi alterado.
 
 ## Resolvidas
+
+### C-OBS-10 · README não avisa que a coorte por avaliação está sem métricas
+
+- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
+- **Onde:** `docs/specs/frente-c/README.md:73` e
+  `observacoes/para-todos.md:8`.
+- **O quê:** a tabela apresenta `oulad_bbb_2013j` como o grafo menor para
+  comparar Louvain × Girvan-Newman, sem avisar da falta de comunidades e
+  centralidades registrada em T-OBS-01. A auditoria confirmou que os
+  TOMLs já declaram as etapas, mas não pôde verificar a execução real:
+  esta máquina não tem `data/processed` nem os dados brutos OULAD.
+- **Como resolver:** acrescentar o aviso e a referência a T-OBS-01 enquanto
+  a execução estiver pendente; atualizar o texto depois da rodada ou da
+  decisão de excluir o dataset.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — README da Frente C avisa da rodada pendente para oulad_bbb_2013j, referencia T-OBS-01 e distingue configuração existente de execução não verificável sem OULAD.
+
 
 ### C-OBS-08 · Lockfile ignorado impede reproduzir as dependências do frontend
 
