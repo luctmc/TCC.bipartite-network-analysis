@@ -660,11 +660,18 @@ function BotaoTema({ tema, onAlternar }: { tema: Tema; onAlternar: () => void })
 
 function StatusApi({ estado }: { estado: Estado<HealthResponse> }) {
   if (estado.status !== "pronto") {
-    return <span className="pill pill-off">API offline</span>;
+    return (
+      <span className="status-pilula status-off">
+        <span className="status-ponto" aria-hidden="true" />
+        API offline
+      </span>
+    );
   }
   return (
-    <div className="status-api">
-      <span className="pill pill-on">API v{estado.dados.version}</span>
+    <div className="status-pilula">
+      <span className="status-ponto" aria-hidden="true" />
+      <span className="status-versao">API v{estado.dados.version}</span>
+      <span className="status-sep" aria-hidden="true" />
       <span
         className="status-raizes"
         tabIndex={0}
