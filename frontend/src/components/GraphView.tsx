@@ -16,7 +16,7 @@
  * avisa.
  */
 
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import cytoscape, { type Core, type ElementDefinition, type Position } from "cytoscape";
 import fcose from "cytoscape-fcose";
 
@@ -42,10 +42,50 @@ const MAX_ALUNOS_ROTULADOS = 40;
 /** Vizinhos do nó selecionado com nome visível; acima disto, só o painel lista. */
 const MAX_VIZINHOS_ROTULADOS = 15;
 
-const TAMANHO_MIN = 10;
-const TAMANHO_MAX = 42;
-const TAMANHO_NEUTRO = 16;
-const DURACAO_MS = 450;
+/** Mesma pilha de fontes do CSS: o rótulo do canvas combina com a interface. */
+const FONTE = '"Source Sans 3", system-ui, sans-serif';
+
+/**
+ * Tamanho do rótulo **na tela**, em px. O fit amplia grafos pequenos (7 nós
+ * chegam a zoom 3), e um rótulo de 8–10px de modelo virava texto de 30px,
+ * maior que qualquer título da interface. O tamanho de modelo passa a ser
+ * `min(base, ROTULO_TELA / zoom)`: perto, o rótulo para em ~13px; longe, segue
+ * a regra antiga (`min-zoomed-font-size` o esconde quando ilegível).
+ */
+const ROTULO_TELA = 13;
+
+/** Até aqui as arestas são curvas (bézier); acima, retas curtas (haystack). */
+const MAX_EDGES_CURVAS = 400;
+
+/**
+ * Limite do enquadramento editorial: grafos pequenos aproveitam a figura.
+ * A folga considera o bounding box com rótulos; o usuário ainda pode
+ * aproximar à mão (`maxZoom` do Cytoscape continua 4).
+ */
+const ZOOM_MAX_ENQUADRAMENTO = 3.6;
+
+/**
+ * Acima disto o desenho é "fixo": sem funções de
+ * estilo que dependem do zoom. Cada atualização de estilo reavalia o grafo
+ * inteiro (medido pelo revisor: ~5 ms em 81 nós, ~31 ms em 1250 nós/5000
+ * arestas).
+ */
+const MAX_NOS_DINAMICO = 400;
+const MAX_ARESTAS_DINAMICO = 1600;
+
+/** O zoom é quantizado em 6 faixas por oitava (~12%): o estilo só reavalia ao trocar de faixa. */
+const FAIXAS_POR_OITAVA = 6;
+
+/** Controles de zoom: passo por clique e duração da animação (nenhuma com movimento reduzido). */
+const PASSO_ZOOM = 1.25;
+const DURACAO_ZOOM_MS = 200;
+
+const PADDING_FIT = 36;
+const PADDING_FIT_ESTREITO = 28;
+const TAMANHO_MIN = 8;
+const TAMANHO_MAX = 22;
+const TAMANHO_NEUTRO = 14;
+const DURACAO_MS = 150;
 
 /**
  * Fator de escala dos nós pelo tamanho do grafo. Com 22 disciplinas os
@@ -70,6 +110,8 @@ interface GraphViewProps {
   /** Métrica que dimensiona os nós. `null` = todos do mesmo tamanho. */
   sizeBy: CentralityMetric | null;
   selected: string | null;
+  /** Tema atual: o canvas relê os tokens CSS quando ele muda. */
+  tema: "light" | "dark";
   onSelect: (nodeId: string | null) => void;
 }
 
@@ -131,103 +173,119 @@ function toElements(graph: GraphResponse): ElementDefinition[] {
   return [...nodes, ...edges];
 }
 
-function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
-  const pesos = graph.edges.map((edge) => edge.weight);
-  const pesoMin = pesos.length ? Math.min(...pesos) : 0;
-  const pesoMax = pesos.length ? Math.max(...pesos) : 1;
-  const rotularAlunos = graph.nodes.length <= MAX_ALUNOS_ROTULADOS;
-  const rotularDisciplinas = graph.nodes.length <= MAX_DISCIPLINAS_ROTULADAS;
-  const cor = {
-    student: themeColor("--node-student", "#6ea8fe"),
-    discipline: themeColor("--node-discipline", "#f0a868"),
-    edge: themeColor("--edge", "#3c4654"),
-    surface: themeColor("--surface", "#171b21"),
-    bg: themeColor("--bg", "#0f1216"),
-    text: themeColor("--text", "#e6e9ee"),
-    muted: themeColor("--text-muted", "#9aa5b1"),
-    accent: themeColor("--accent", "#6ea8fe"),
-  };
+function ehDinamico(graph: GraphResponse): boolean {
+  return graph.nodes.length <= MAX_NOS_DINAMICO && graph.edges.length <= MAX_ARESTAS_DINAMICO;
+}
 
+/** Faixa de zoom (índice inteiro) e o zoom representativo dela. */
+function faixaDeZoom(zoom: number): number {
+  return Math.round(Math.log2(Math.max(zoom, 0.01)) * FAIXAS_POR_OITAVA);
+}
+function zoomDaFaixa(faixa: number): number {
+  return 2 ** (faixa / FAIXAS_POR_OITAVA);
+}
+
+/** Estilo editorial: preenchimento chapado, filetes e anel na forma do nó. */
+function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.StylesheetJson {
+  const zoom = ehDinamico(graph) ? zoomReal : () => 1;
+  const px = (n: number) => () => n / Math.max(zoom(), 0.01);
+  const pesos = graph.edges.map(e => e.weight);
+  const minimo = pesos.length ? Math.min(...pesos) : 0;
+  const maximo = pesos.length ? Math.max(...pesos) : 1;
+  const relativo = (edge: cytoscape.EdgeSingular) => maximo > minimo ? (Number(edge.data("weight")) - minimo) / (maximo - minimo) : 0.5;
+  const claro = document.documentElement.dataset.theme === "light";
+  const cor = {
+    student: themeColor("--node-student", "#56B4E9"),
+    discipline: themeColor("--node-discipline", "#E69F00"),
+    edge: themeColor("--edge", "#1A1915"),
+    sheet: themeColor("--sheet", "#FFFFFF"),
+    text: themeColor("--text", "#1A1915"),
+  };
   return [
-    {
-      selector: "node",
-      style: {
-        "background-color": cor.student,
-        label: rotularAlunos ? "data(label)" : "",
-        "font-size": 8,
-        // Só desenha o rótulo quando ele fica legível na tela: longe, o
-        // grafo é forma; perto, é nome.
-        "min-zoomed-font-size": 11,
-        color: cor.muted,
-        "text-valign": "bottom",
-        "text-margin-y": 3,
-        "text-outline-width": 2,
-        "text-outline-color": cor.bg,
-        "text-outline-opacity": 0.8,
-        width: "data(size)",
-        height: "data(size)",
-        "border-width": 1,
-        "border-color": cor.surface,
-        "transition-property": "width, height, background-color, opacity",
-        "transition-duration": DURACAO_MS,
-        "transition-timing-function": "ease-in-out-cubic",
-      },
-    },
-    {
-      selector: 'node[kind = "discipline"]',
-      style: {
-        "background-color": cor.discipline,
-        shape: "round-rectangle",
-        "font-size": 10,
-        label: rotularDisciplinas ? "data(label)" : "",
-      },
-    },
-    {
-      // Por classe, não por "[color]": o Cytoscape não reavalia seletor de
-      // dado quando o dado é removido, e a cor antiga ficava na tela.
-      selector: "node.comunidade",
-      // "data(shape)" é válido no Cytoscape, mas os tipos só aceitam formas literais.
-      style: { "background-color": "data(color)", shape: "data(shape)" } as unknown as cytoscape.Css.Node,
-    },
-    {
-      selector: "edge",
-      style: {
-        width: pesoMax > pesoMin ? `mapData(weight, ${pesoMin}, ${pesoMax}, 0.5, 4)` : 1,
-        "line-color": cor.edge,
-        "curve-style": "haystack",
-        opacity: 0.45,
-        "transition-property": "opacity, line-color",
-        "transition-duration": DURACAO_MS,
-      },
-    },
-    {
-      // Aresta dentro de uma comunidade ganha a cor dela: os grupos
-      // aparecem pela trama, não só pelos nós.
-      selector: "edge.intra",
-      style: { "line-color": "data(color)", opacity: 0.35 },
-    },
-    { selector: ".apagado", style: { opacity: 0.08 } },
-    {
-      selector: "node.realce",
-      style: {
-        label: "data(label)",
-        "min-zoomed-font-size": 0,
-        color: cor.text,
-        "border-width": 2,
-        "border-color": cor.text,
-        "z-index": 20,
-      },
-    },
-    {
-      selector: "node.rotulo, node:selected",
-      style: { label: "data(label)", "min-zoomed-font-size": 0, color: cor.text, "z-index": 10 },
-    },
-    { selector: "edge.vizinho", style: { opacity: 0.9, "line-color": cor.accent } },
-    {
-      selector: "node:selected",
-      style: { "border-width": 3, "border-color": cor.accent, "font-size": 11 },
-    },
+    { selector: "node", style: {
+      "background-color": cor.student, "background-opacity": 1,
+      label: graph.nodes.length <= MAX_ALUNOS_ROTULADOS ? "data(label)" : "",
+      "font-family": FONTE, "font-size": px(ROTULO_TELA), "font-weight": 600,
+      "min-zoomed-font-size": 10, color: cor.text, "text-valign": "bottom",
+      "text-margin-y": px(9), "text-outline-width": px(2),
+      "text-outline-color": cor.sheet, "text-outline-opacity": 1,
+      width: "data(size)", height: "data(size)",
+      "border-width": px(claro ? 1.25 : 2),
+      "border-color": claro ? cor.text : cor.sheet,
+      "overlay-opacity": 0, "outline-color": cor.text,
+      "outline-width": 0, "outline-offset": px(6),
+      "transition-property": "width, height, opacity", "transition-duration": DURACAO_MS,
+    } as unknown as cytoscape.Css.Node },
+    { selector: 'node[kind = "discipline"]', style: {
+      "background-color": cor.discipline, shape: "round-rectangle",
+      label: graph.nodes.length <= MAX_DISCIPLINAS_ROTULADAS ? "data(label)" : "",
+    } },
+    { selector: "node.comunidade", style: {
+      "background-color": "data(color)", shape: "data(shape)",
+    } as unknown as cytoscape.Css.Node },
+    { selector: "edge", style: {
+      width: graph.edges.length <= MAX_EDGES_CURVAS * 4 ? (e: cytoscape.EdgeSingular) => (0.75 + relativo(e) * 4) / Math.max(zoom(), 0.01) : 0.5,
+      "line-color": cor.edge, "line-cap": "round",
+      "curve-style": graph.edges.length <= MAX_EDGES_CURVAS ? "bezier" : "haystack",
+      opacity: (e: cytoscape.EdgeSingular) => 0.08 + relativo(e) * 0.22,
+      "transition-property": "opacity", "transition-duration": DURACAO_MS,
+    } as unknown as cytoscape.Css.Edge },
+    { selector: ".apagado", style: { opacity: 0.06 } },
+    { selector: "node.realce, node.rotulo, node:selected", style: {
+      label: "data(label)", "min-zoomed-font-size": 0, "text-opacity": 1,
+      "font-size": px(ROTULO_TELA), "z-index": 10,
+    } as unknown as cytoscape.Css.Node },
+    { selector: "node.realce", style: { "outline-width": px(1), "outline-opacity": 0.5 } as unknown as cytoscape.Css.Node },
+    { selector: "edge.vizinho", style: { opacity: (e: cytoscape.EdgeSingular) => 0.3 + relativo(e) * 0.55 } as unknown as cytoscape.Css.Edge },
+    { selector: "node:selected", style: {
+      "outline-width": px(1.5), "outline-opacity": 1,
+      "font-weight": 700, "text-margin-y": px(17), "z-index": 20,
+    } as unknown as cytoscape.Css.Node },
   ];
+}
+
+/** Folga do enquadramento: menor em tela estreita. */
+function paddingDoFit(cy: Core): number {
+  return cy.width() < 600 ? PADDING_FIT_ESTREITO : PADDING_FIT;
+}
+
+const movimentoReduzido = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Zoom em torno do centro do viewport, respeitando minZoom/maxZoom do Cytoscape. */
+function zoomPorPasso(cy: Core, fator: number) {
+  const nivel = Math.min(cy.maxZoom(), Math.max(cy.minZoom(), cy.zoom() * fator));
+  const centro = { x: cy.width() / 2, y: cy.height() / 2 };
+  cy.stop();
+  if (movimentoReduzido()) cy.zoom({ level: nivel, renderedPosition: centro });
+  else
+    cy.animate(
+      { zoom: { level: nivel, renderedPosition: centro } },
+      { duration: DURACAO_ZOOM_MS, easing: "ease-out" },
+    );
+}
+
+/**
+ * Enquadra o grafo como no fim do layout: mesma folga, e o mesmo limite de
+ * zoom (`ZOOM_MAX_ENQUADRAMENTO`) para que grafo pequeno não vire gigante.
+ * Não mexe em posições, seleção nem dados.
+ */
+function enquadrar(cy: Core) {
+  if (cy.elements().empty()) return;
+  const padding = paddingDoFit(cy);
+  const caixa = cy.elements().boundingBox();
+  const livreX = Math.max(cy.width() - 2 * padding, 1);
+  const livreY = Math.max(cy.height() - 2 * padding, 1);
+  const nivel = Math.max(
+    cy.minZoom(),
+    Math.min(cy.maxZoom(), ZOOM_MAX_ENQUADRAMENTO, livreX / Math.max(caixa.w, 1), livreY / Math.max(caixa.h, 1)),
+  );
+  const pan = {
+    x: cy.width() / 2 - nivel * (caixa.x1 + caixa.w / 2),
+    y: cy.height() / 2 - nivel * (caixa.y1 + caixa.h / 2),
+  };
+  cy.stop();
+  if (movimentoReduzido()) cy.viewport({ zoom: nivel, pan });
+  else cy.animate({ zoom: nivel, pan }, { duration: DURACAO_ZOOM_MS, easing: "ease-out" });
 }
 
 /**
@@ -246,6 +304,7 @@ function estilo(graph: GraphResponse): cytoscape.StylesheetJson {
  * branco na apresentação.
  */
 function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesado: boolean }) {
+  const padding = paddingDoFit(cy);
   const base = {
     name: "fcose",
     samplingType: false,
@@ -255,13 +314,14 @@ function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesa
     nodeRepulsion: 6000,
     idealEdgeLength: 60,
     fit: true,
-    padding: 24,
+    // Folga do layout preservada; números e painel ocupam áreas próprias.
+    padding,
   };
   const conexo = cy.elements().components().length <= 1;
   const tentativas = [
     { ...base, randomize: !(continuar && conexo) },
     { ...base, randomize: true, packComponents: true },
-    { name: "grid", fit: true, padding: 24 },
+    { name: "grid", fit: true, padding },
   ];
   for (const opcoes of tentativas) {
     try {
@@ -273,12 +333,32 @@ function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesa
   }
 }
 
-export function GraphView({ graph, membership, sizeBy, selected, onSelect }: GraphViewProps) {
+/** O que o pai pode pedir ao grafo (controles de zoom do palco). */
+export interface GraphViewHandle {
+  aproximar: () => void;
+  afastar: () => void;
+  centralizar: () => void;
+}
+
+export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
+  { graph, membership, sizeBy, selected, tema, onSelect },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   // O callback mais recente sem recriar o Cytoscape quando o pai re-renderiza.
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      aproximar: () => cyRef.current && zoomPorPasso(cyRef.current, PASSO_ZOOM),
+      afastar: () => cyRef.current && zoomPorPasso(cyRef.current, 1 / PASSO_ZOOM),
+      centralizar: () => cyRef.current && enquadrar(cyRef.current),
+    }),
+    [],
+  );
 
   // 1. Um Cytoscape por grafo.
   useEffect(() => {
@@ -291,7 +371,7 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
     const cy = cytoscape({
       container: containerRef.current,
       elements: toElements(graph),
-      style: estilo(graph),
+      style: estilo(graph, () => zoomDaFaixa(faixaDeZoom(cyRef.current?.zoom() ?? 1))),
       layout: { name: "preset" },
       wheelSensitivity: 0.2,
       minZoom: 0.05,
@@ -299,11 +379,31 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
     });
 
     cy.on("layoutstop", () => {
+      // Mesma câmera do botão Centralizar, sem alterar as posições do fcose.
+      enquadrar(cy);
       cy.nodes().forEach((node) => {
         posicoes.set(node.id(), { ...node.position() });
       });
     });
     rodarLayout(cy, { continuar, pesado });
+
+    // Rótulo, anel e arestas dependem do zoom. O estilo só é reavaliado ao
+    // cruzar uma faixa de zoom (~12%), no máximo uma vez por quadro — e nunca
+    // em grafo grande, onde o estilo é fixo.
+    let quadro = 0;
+    let ultimaFaixa = Number.NaN;
+    const aoMudarZoom = () => {
+      if (quadro) return;
+      quadro = requestAnimationFrame(() => {
+        quadro = 0;
+        if (cy.destroyed()) return;
+        const faixa = faixaDeZoom(cy.zoom());
+        if (faixa === ultimaFaixa) return;
+        ultimaFaixa = faixa;
+        cy.style().update();
+      });
+    };
+    if (ehDinamico(graph)) cy.on("zoom", aoMudarZoom);
 
     cy.on("mouseover", "node", (event) => {
       event.target.addClass("realce");
@@ -320,6 +420,8 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
 
     cyRef.current = cy;
     return () => {
+      cy.off("zoom", aoMudarZoom);
+      if (quadro) cancelAnimationFrame(quadro);
       cy.nodes().forEach((node) => {
         posicoes.set(node.id(), { ...node.position() });
       });
@@ -344,18 +446,20 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
           node.removeClass("comunidade");
         }
       });
-      cy.edges().forEach((edge) => {
-        const a = membership?.[edge.source().id()];
-        const b = membership?.[edge.target().id()];
-        if (ordem && a !== undefined && a === b) {
-          edge.data("color", communityStyle(ordem.get(a) ?? 0).color);
-          edge.addClass("intra");
-        } else {
-          edge.removeClass("intra");
-        }
-      });
+
     });
-  }, [graph, membership]);
+  }, [graph, membership, tema]);
+
+  // Troca de tema: refaz a folha de estilo com as cores dos tokens, sem tocar
+  // em dados, posições nem seleção. A primeira montagem já nasce no tema atual.
+  const temaAplicado = useRef(tema);
+  useEffect(() => {
+    if (temaAplicado.current === tema) return;
+    temaAplicado.current = tema;
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.style(estilo(graph, () => zoomDaFaixa(faixaDeZoom(cy.zoom()))));
+  }, [graph, tema]);
 
   // 3. Tamanho pela métrica, animado pela transição de estilo.
   useEffect(() => {
@@ -418,7 +522,13 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
           )}
         </p>
       )}
-      <div ref={containerRef} className="graph-canvas" />
+      <div
+        ref={containerRef}
+        className="graph-canvas"
+        tabIndex={0}
+        role="group"
+        aria-label="Grafo interativo. Com o foco aqui: + aproxima, − afasta e 0 centraliza."
+      />
     </div>
   );
-}
+});

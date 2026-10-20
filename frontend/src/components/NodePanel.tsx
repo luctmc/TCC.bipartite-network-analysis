@@ -7,9 +7,11 @@
  * apresentação.
  */
 
+import { type CSSProperties } from "react";
 import { motion } from "framer-motion";
 
-import { communityOrder, communityStyle } from "../palette";
+import { communityOrder, communityStyle, themeColor } from "../palette";
+import { SILHUETAS } from "./CommunityLegend";
 import type { CentralityMetric, GraphResponse } from "../types";
 
 const METRICAS: { id: CentralityMetric; nome: string }[] = [
@@ -55,47 +57,48 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
     }))
     .sort((a, b) => b.weight - a.weight || porCodigo(a.id, b.id));
 
+  const pesoMax = vizinhos[0]?.weight ?? 0;
+
+  const ordem = membership ? communityOrder(membership) : null;
+  const estiloDe = (id: string) => {
+    const c = membership?.[id];
+    return ordem && c !== undefined ? communityStyle(ordem.get(c) ?? 0) : null;
+  };
   const comunidade = membership?.[nodeId];
-  const estiloComunidade =
-    membership && comunidade !== undefined
-      ? communityStyle(communityOrder(membership).get(comunidade) ?? 0)
-      : null;
+  const estiloComunidade = estiloDe(nodeId);
+  // Sem partição, o nó usa a cor e a forma do tipo (aluno / disciplina), como no grafo.
+  const disciplina = no.kind === "discipline";
+  const corNo =
+    estiloComunidade?.color ??
+    themeColor(disciplina ? "--node-discipline" : "--node-student", disciplina ? "#f0a868" : "#6ea8fe");
+  const formaNo = estiloComunidade?.shape ?? (disciplina ? "round-rectangle" : "ellipse");
 
   return (
     <motion.section
       className="node-panel"
       key={nodeId}
-      initial={{ opacity: 0, x: 12 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
       <header className="node-panel-topo">
-        <div>
-          <h2>{no.kind === "discipline" ? "Disciplina" : "Aluno"}</h2>
-          <p className="node-panel-nome">{no.label}</p>
-        </div>
-        <button type="button" className="fechar" onClick={() => onSelect(null)} aria-label="Fechar">
-          ×
+        <span>{disciplina ? "Disciplina" : "Aluno"}</span>
+        <button type="button" className="fechar" onClick={() => onSelect(null)} aria-label="Fechar painel do nó">
+          <svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" /></svg>
         </button>
       </header>
-
-      <dl className="inventario">
-        <dt>comunidade</dt>
-        <dd>
-          {estiloComunidade ? (
-            <span className="comunidade">
-              <span className="amostra" style={{ background: estiloComunidade.color }} />
-              {comunidade}
-            </span>
-          ) : (
-            <span className="dim">—</span>
-          )}
-        </dd>
+      <h2 className="node-panel-nome">{no.label}</h2>
+      <p className="comunidade-chip">
+        <Silhueta forma={formaNo} cor={corNo} tamanho={15} />
+        {estiloComunidade ? <>Comunidade {comunidade} · {Object.values(membership ?? {}).filter(c => c === comunidade).length} de {graph.nodes.length} nós</> : "sem comunidade"}
+      </p>
+      <h3>Centralidade <span>posição entre {graph.nodes.length}</span></h3>
+      <div className="metricas">
         {METRICAS.map(({ id, nome }) => {
           const scores = graph.centrality?.[id];
           const valor = scores?.[nodeId];
           return (
-            <FragmentoMetrica
+            <Metrica
               key={id}
               nome={nome}
               valor={valor}
@@ -104,52 +107,70 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
             />
           );
         })}
-      </dl>
+      </div>
 
-      <h3>
-        Vizinhos <span className="dim">({vizinhos.length})</span>
-      </h3>
-      {graph.truncation.truncated && (
-        <p className="dim">Só entre as arestas mostradas (a resposta foi cortada).</p>
-      )}
-      <ul className="vizinhos">
-        {vizinhos.slice(0, MAX_VIZINHOS).map((vizinho) => (
-          <li key={vizinho.id}>
-            <button type="button" onClick={() => onSelect(vizinho.id)}>
-              <span>{rotulos.get(vizinho.id) ?? vizinho.id}</span>
-              <span className="dim">{vizinho.weight.toLocaleString("pt-BR")}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      {vizinhos.length > MAX_VIZINHOS && (
-        <p className="dim">e mais {vizinhos.length - MAX_VIZINHOS}</p>
-      )}
+      <div className="vizinhos-bloco">
+        <h3>
+          Vizinhos <span>{vizinhos.length}, por peso</span>
+        </h3>
+        {graph.truncation.truncated && (
+          <p className="dim">Só entre as arestas mostradas (a resposta foi cortada).</p>
+        )}
+        <ul className="vizinhos">
+          {vizinhos.slice(0, MAX_VIZINHOS).map((vizinho) => {
+            const nome = rotulos.get(vizinho.id) ?? vizinho.id;
+            const estiloVizinho = estiloDe(vizinho.id);
+            return (
+              <li key={vizinho.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(vizinho.id)}
+                  title={nome}
+                  style={{ "--w": `${pesoMax > 0 ? (100 * vizinho.weight) / pesoMax : 0}%` } as CSSProperties}
+                >
+                  <span className="vizinho-forma">
+                    {estiloVizinho && (
+                      <Silhueta forma={estiloVizinho.shape} cor={estiloVizinho.color} tamanho={12} />
+                    )}
+                  </span>
+                  <span className="vizinho-nome">{nome}</span>
+                  <span className="vizinho-peso">{vizinho.weight.toLocaleString("pt-BR")}</span>
+                  <span className="vizinho-barra" aria-hidden="true"><span /></span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {vizinhos.length > MAX_VIZINHOS && (
+          <p className="dim resto">e mais {vizinhos.length - MAX_VIZINHOS}</p>
+        )}
+      </div>
     </motion.section>
   );
 }
 
-function FragmentoMetrica(props: {
-  nome: string;
-  valor: number | undefined;
-  posicao: number | null;
-  total: number;
-}) {
-  return (
-    <>
-      <dt>{props.nome.toLowerCase()}</dt>
-      <dd>
-        {props.valor === undefined ? (
-          <span className="dim">não calculada</span>
-        ) : (
-          <>
-            {props.valor.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}{" "}
-            <span className="dim">
-              {props.posicao}º/{props.total}
-            </span>
-          </>
-        )}
-      </dd>
-    </>
-  );
+/** Forma chapada com contorno contrastante, igual ao grafo. */
+function Silhueta(props: { forma: string; cor: string; tamanho: number }) {
+  return <svg className="amostra" viewBox="0 0 16 16" width={props.tamanho} height={props.tamanho} aria-hidden="true">
+    <path d={SILHUETAS[props.forma] ?? SILHUETAS.ellipse} fill={props.cor} stroke="var(--node-stroke)" strokeWidth="1" strokeLinejoin="round" />
+  </svg>;
+}
+
+/** Posição exata em texto; até 15 pontos, proporcionais em redes maiores. */
+function Metrica(props: { nome: string; valor: number | undefined; posicao: number | null; total: number }) {
+  const { nome, valor, posicao: pos, total } = props;
+  const marcas = Math.min(total, 15);
+  const marca = pos === null ? -1 : total <= 15 ? pos - 1 : Math.round((pos - 1) * (marcas - 1) / (total - 1));
+  return <div className="metrica">
+    <span className="metrica-nome">{nome}</span>
+    <span className={`metrica-valor ${valor === undefined ? "metrica-nula" : ""}`}>
+      {valor === undefined ? "não calculada" : valor.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+    </span>
+    {valor !== undefined && pos !== null && <div className="metrica-ranking">
+      <span className="pontos" role="img" aria-label={`${pos}º lugar entre ${total} nós`}>
+        {Array.from({ length: marcas }, (_, i) => <i key={i} className={i === marca ? "on" : ""} />)}
+      </span>
+      <span className="posicao"><b>{pos}º</b> de {total}</span>
+    </div>}
+  </div>;
 }

@@ -11,7 +11,7 @@ import { communityOrder, communityStyle } from "../palette";
 const MAX_ITENS = 10;
 
 /** Silhueta em SVG da forma do Cytoscape, para a legenda. */
-const SILHUETAS: Record<string, string> = {
+export const SILHUETAS: Record<string, string> = {
   ellipse: "M8 1a7 7 0 1 0 0.01 0Z",
   triangle: "M8 1 15 15H1Z",
   "round-rectangle": "M3 2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z",
@@ -39,17 +39,16 @@ export function CommunityLegend({ membership }: { membership: Record<string, num
         return (
           <li key={comunidade}>
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-              <path d={SILHUETAS[shape] ?? SILHUETAS.ellipse} fill={color} />
+              <path d={SILHUETAS[shape] ?? SILHUETAS.ellipse} fill={color} stroke="var(--node-stroke)" strokeWidth="1" />
             </svg>
-            <span>comunidade {comunidade}</span>
-            <span className="dim">
-              {n} · {((100 * n) / total).toFixed(0)}%
-            </span>
+            <span title={`comunidade ${comunidade}`}>Comunidade {comunidade}</span>
+            <span className="legenda-num">{n} nós</span>
+            <span className="legenda-pct">{((100 * n) / total).toFixed(0)}%</span>
           </li>
         );
       })}
       {itens.length > MAX_ITENS && (
-        <li className="dim">e mais {itens.length - MAX_ITENS} comunidades menores</li>
+        <li className="legenda-resto dim">e mais {itens.length - MAX_ITENS} comunidades menores</li>
       )}
     </ul>
   );
