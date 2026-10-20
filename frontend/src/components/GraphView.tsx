@@ -111,6 +111,8 @@ interface GraphViewProps {
   /** Métrica que dimensiona os nós. `null` = todos do mesmo tamanho. */
   sizeBy: CentralityMetric | null;
   selected: string | null;
+  /** Tema atual: o canvas relê os tokens CSS quando ele muda. */
+  tema: "light" | "dark";
   onSelect: (nodeId: string | null) => void;
 }
 
@@ -204,7 +206,10 @@ function misturar(cor: string, alvo: string, t: number): string {
 export function tons(cor: string) {
   const claro = misturar(cor, "#ffffff", 0.26);
   const escuro = misturar(cor, "#000000", 0.28);
-  return { claro, escuro, anel: misturar(cor, "#ffffff", 0.5), grad: `${claro} ${cor} ${escuro}` };
+  // No claro um anel branco some no papel: o anel escurece a própria cor.
+  const temaClaro = document.documentElement.dataset.theme === "light";
+  const anel = temaClaro ? misturar(cor, "#0b1220", 0.4) : misturar(cor, "#ffffff", 0.5);
+  return { claro, escuro, anel, grad: `${claro} ${cor} ${escuro}` };
 }
 
 /**
@@ -473,7 +478,7 @@ function rodarLayout(cy: Core, { continuar, pesado }: { continuar: boolean; pesa
   }
 }
 
-export function GraphView({ graph, membership, sizeBy, selected, onSelect }: GraphViewProps) {
+export function GraphView({ graph, membership, sizeBy, selected, tema, onSelect }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   // O callback mais recente sem recriar o Cytoscape quando o pai re-renderiza.
@@ -579,7 +584,18 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
         }
       });
     });
-  }, [graph, membership]);
+  }, [graph, membership, tema]);
+
+  // Troca de tema: refaz a folha de estilo com as cores dos tokens, sem tocar
+  // em dados, posições nem seleção. A primeira montagem já nasce no tema atual.
+  const temaAplicado = useRef(tema);
+  useEffect(() => {
+    if (temaAplicado.current === tema) return;
+    temaAplicado.current = tema;
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.style(estilo(graph, () => zoomDaFaixa(faixaDeZoom(cy.zoom()))));
+  }, [graph, tema]);
 
   // 3. Tamanho pela métrica, animado pela transição de estilo.
   useEffect(() => {

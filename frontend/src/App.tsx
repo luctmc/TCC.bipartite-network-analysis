@@ -50,7 +50,16 @@ function particoesDa(resumo: DatasetSummary | null, projecao: string | null): st
     .sort((a, b) => Number(!a.startsWith("louvain")) - Number(!b.startsWith("louvain")) || a.localeCompare(b));
 }
 
+type Tema = "light" | "dark";
+const CHAVE_TEMA = "edugraph-tema";
+
+/** O atributo já foi posto por `index.html` antes da primeira pintura. */
+function temaInicial(): Tema {
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+
 export default function App() {
+  const [tema, setTema] = useState<Tema>(temaInicial);
   const [health, setHealth] = useState<Estado<HealthResponse>>({ status: "carregando" });
   const [datasets, setDatasets] = useState<Estado<DatasetSummary[]>>({ status: "carregando" });
   const [datasetAtivo, setDatasetAtivo] = useState<string | null>(null);
@@ -82,6 +91,27 @@ export default function App() {
       })
       .catch((erro: ApiError) => setDatasets({ status: "erro", erro }));
   }, []);
+
+  /**
+   * Alterna claro/escuro. O atributo é posto **antes** de `setTema`: o canvas
+   * do grafo lê as cores dos tokens CSS ao reagir à troca, então eles já
+   * precisam valer. A transição curta só roda sem movimento reduzido.
+   */
+  const alternarTema = () => {
+    const novo: Tema = tema === "light" ? "dark" : "light";
+    const raiz = document.documentElement;
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      raiz.classList.add("tema-trocando");
+      window.setTimeout(() => raiz.classList.remove("tema-trocando"), 320);
+    }
+    raiz.dataset.theme = novo;
+    try {
+      localStorage.setItem(CHAVE_TEMA, novo);
+    } catch {
+      /* sem armazenamento: a escolha vale só nesta sessão */
+    }
+    setTema(novo);
+  };
 
   const resumoAtivo = useMemo(
     () =>
@@ -183,7 +213,10 @@ export default function App() {
             </svg>
             edugraph
           </span>
-          <StatusApi estado={health} />
+          <div className="topo-status">
+            <StatusApi estado={health} />
+            <BotaoTema tema={tema} onAlternar={alternarTema} />
+          </div>
         </div>
       </header>
 
@@ -368,6 +401,7 @@ export default function App() {
                   graph={dadosGrafo}
                   membership={membership}
                   sizeBy={metricaAtiva}
+                  tema={tema}
                   selected={selecionado}
                   onSelect={setSelecionado}
                 />
@@ -568,6 +602,31 @@ const ICONE_METRICA: Record<string, React.ReactNode> = {
     15,
   ),
 };
+
+function BotaoTema({ tema, onAlternar }: { tema: Tema; onAlternar: () => void }) {
+  const claro = tema === "light";
+  return (
+    <button
+      type="button"
+      className="tema-botao"
+      aria-pressed={claro}
+      aria-label="Modo claro"
+      title={claro ? "Voltar ao modo escuro" : "Usar o modo claro"}
+      onClick={onAlternar}
+    >
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {claro ? (
+          <>
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" />
+          </>
+        ) : (
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+        )}
+      </svg>
+    </button>
+  );
+}
 
 function StatusApi({ estado }: { estado: Estado<HealthResponse> }) {
   if (estado.status !== "pronto") {

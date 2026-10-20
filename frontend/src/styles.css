@@ -36,6 +36,10 @@
   --erro: #ff8f92;
   --ok: #7fd6a2;
 
+  /* Fundo do palco: núcleo levemente mais claro e vinheta nas bordas. */
+  --palco-nucleo: color-mix(in srgb, var(--accent) 7%, #121822);
+  --palco-vinheta: rgb(0 0 0 / 0.38);
+
   /* Espaço (base 4). */
   --s-1: 0.25rem;
   --s-2: 0.5rem;
@@ -53,6 +57,7 @@
   --shadow-float:
     0 0 0 1px rgb(255 255 255 / 0.05), 0 12px 32px -8px rgb(0 0 0 / 0.55),
     0 2px 6px rgb(0 0 0 / 0.3);
+  --shadow-pop: 0 16px 36px -8px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.35);
 
   /* Movimento: ease-out forte para entradas, curva padrão para hover. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -74,6 +79,62 @@
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/*
+ * Tema claro: papel off-white, superfícies brancas, texto grafite e bordas
+ * suaves. Contraste (WCAG AA): --text 14:1, --text-2 9:1, --text-muted 5,8:1
+ * sobre --surface; --accent 5,8:1; --border-control >= 3:1 (1.4.11). O
+ * atributo vem de `index.html` (antes da primeira pintura) e do botão do
+ * cabeçalho. As cores das comunidades (palette.ts) não mudam com o tema.
+ */
+:root[data-theme="light"] {
+  --bg: #f3f1ec;
+  --surface: #ffffff;
+  --surface-2: #f6f5f1;
+  --surface-3: #ebe9e3;
+  --border: #e2dfd7;
+  --border-strong: #cdc9bd;
+  --border-control: #80868f;
+
+  --text: #1c2330;
+  --text-2: #3b4656;
+  --text-muted: #5b6676;
+
+  --accent: #1d5fd1;
+  --accent-strong: #0f3f9e;
+  --edge: #6b7a90;
+  --erro: #b3261e;
+  --ok: #1a7f4b;
+
+  --palco-nucleo: color-mix(in srgb, var(--accent) 6%, #ffffff);
+  --palco-vinheta: rgb(70 56 20 / 0.1);
+
+  --shadow-float:
+    0 0 0 1px rgb(15 23 42 / 0.07), 0 12px 32px -8px rgb(15 23 42 / 0.2),
+    0 2px 6px rgb(15 23 42 / 0.08);
+  --shadow-pop:
+    0 16px 36px -8px rgb(15 23 42 / 0.28), 0 2px 6px rgb(15 23 42 / 0.12);
+
+  color-scheme: light;
+}
+
+/* Troca de tema: transição curta, só enquanto a classe existe (nenhuma com movimento reduzido). */
+:root.tema-trocando *,
+:root.tema-trocando *::before,
+:root.tema-trocando *::after {
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease,
+    box-shadow 220ms ease,
+    fill 220ms ease,
+    stroke 220ms ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.tema-trocando *,
+  :root.tema-trocando *::before,
+  :root.tema-trocando *::after { transition: none !important; }
 }
 
 * { box-sizing: border-box; }
@@ -185,6 +246,32 @@ body { margin: 0; }
 }
 /* Monograma: duas colunas de pontos (as duas partes do grafo bipartido), um ponto no acento. */
 .marca-simbolo { flex: none; color: var(--text); }
+
+.topo-status { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+.tema-botao {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border-control);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background-color var(--t-fast) ease,
+    color var(--t-fast) ease,
+    border-color var(--t-fast) ease,
+    transform var(--t-fast) var(--ease-out);
+}
+.tema-botao:active { transform: scale(0.94); }
+.tema-botao[aria-pressed="true"] { color: var(--accent-strong); border-color: var(--accent); }
+@media (hover: hover) and (pointer: fine) {
+  .tema-botao:hover { background: var(--surface-3); color: var(--text); }
+}
+@media (prefers-reduced-motion: reduce) { .tema-botao:active { transform: none; } }
 
 .status-api { display: flex; align-items: center; gap: var(--s-3); font-size: 0.72rem; min-width: 0; }
 .status-raizes {
@@ -330,8 +417,7 @@ body { margin: 0; }
   background: var(--surface-3);
   box-shadow:
     0 0 0 1px var(--border-control),
-    0 16px 36px -8px rgb(0 0 0 / 0.6),
-    0 2px 6px rgb(0 0 0 / 0.35);
+    var(--shadow-pop);
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
   /* Nasce do gatilho: curta, com origem no canto de cima. */
@@ -454,8 +540,8 @@ body { margin: 0; }
   /* Sem grade de pontos: um núcleo levemente mais claro e vinheta nas bordas
    * dão profundidade sem competir com o grafo. */
   background:
-    radial-gradient(ellipse 65% 60% at 50% 45%, color-mix(in srgb, var(--accent) 7%, #121822) 0%, transparent 100%),
-    radial-gradient(ellipse 120% 110% at 50% 50%, transparent 55%, rgb(0 0 0 / 0.38) 100%),
+    radial-gradient(ellipse 65% 60% at 50% 45%, var(--palco-nucleo) 0%, transparent 100%),
+    radial-gradient(ellipse 120% 110% at 50% 50%, transparent 55%, var(--palco-vinheta) 100%),
     var(--bg);
 }
 .palco-conteudo { grid-area: grafo; display: flex; min-width: 0; min-height: 0; }
