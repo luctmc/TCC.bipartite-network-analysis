@@ -65,8 +65,9 @@ As capturas da interface são material complementar do capítulo 3.
   título "Análise Topológica e Detecção de Comunidades em Redes Complexas"
   em fonte serifada do sistema, os autores (os mesmos de `pyproject.toml`,
   em `AUTORES` no `App.tsx`), o wordmark *edugraph* com um monograma SVG e,
-  à direita, o status da API, as raízes consultadas e o botão de tema. No
-  celular ficam só o wordmark, os chips e o título.
+  ao lado, uma pílula de status (API, versão e raízes consultadas) e o botão de
+  tema, na mesma altura. No celular ficam o wordmark, o tema e o título; o
+  status só aparece se a API estiver offline.
 - **Modo claro e escuro.** O botão sol/lua (`aria-pressed`) troca o atributo
   `data-theme` do `<html>`. O tema inicial vem de `prefers-color-scheme` e
   é definido por um script em `index.html` **antes da primeira pintura**
@@ -77,6 +78,22 @@ As capturas da interface são material complementar do capítulo 3.
   relendo os tokens, sem tocar em dados, posições nem seleção. A paleta das
   comunidades é a mesma nos dois temas; só o anel dos nós se ajusta. A
   transição é curta e não existe com `prefers-reduced-motion`.
+- **Paleta verde.** Os dois temas usam os verdes da referência do trabalho:
+  no escuro, fundo Rich Black (`#021716`), superfícies Dark Green, Pine e
+  Basil, texto Anti-Flash White e Pistachio e acento Caribbean Green; no claro,
+  fundo Anti-Flash White, superfícies brancas, texto Rich Black e acento
+  Bangladesh Green. Os pares de contraste (WCAG) estão calculados no comentário
+  do topo de `styles.css`. A fonte da referência (Axiforma) é comercial e não
+  é usada: vale a pilha do sistema. **As cores das comunidades não mudam**
+  (Okabe & Ito, `palette.ts`); como uma delas é verde, o anel e o halo do nó
+  selecionado, e as arestas destacadas, são neutros (cor do texto), não o
+  verde de acento.
+- **Controles do grafo.** Uma barra no canto superior direito do palco
+  aproxima, afasta (passo 1,25 em torno do centro, respeitando `minZoom` e
+  `maxZoom`) e centraliza (o mesmo enquadramento do fim do layout, com o
+  limite de 2,4 em grafo pequeno). Os atalhos `+`, `−` e `0` valem com o foco
+  dentro do palco; o canvas aceita foco. A animação é de 200 ms e não existe
+  com `prefers-reduced-motion`.
 - **Barra lateral em quatro passos** (Dados, Projeção, Comunidades,
   Centralidade), com ajuda curta. Projeções e algoritmos aparecem com
   rótulo em português (`ROTULO_PROJECAO` e `ROTULO_ALGORITMO` em `App.tsx`);

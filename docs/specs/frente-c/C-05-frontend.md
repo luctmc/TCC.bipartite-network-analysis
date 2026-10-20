@@ -111,6 +111,13 @@ Acrescentados durante a implementação:
   algoritmos, ids intactos), cartão "Como ler o grafo", botão de tema e
   rodapé com o link do repositório. O botão de tema (`tema`) é o único estado
   novo do `App`: apresentação pura, guardada em `localStorage`.
+- Controles de zoom (`ControlesZoom` em `App.tsx`; `GraphViewHandle` em
+  `GraphView.tsx`) — aproximar, afastar e centralizar, com os atalhos `+`,
+  `−` e `0` quando o foco está no palco. O `GraphView` os expõe por `ref`, sem
+  mudar o fluxo de dados do `App`.
+- Paleta verde dos dois temas (`styles.css`) — as cores das comunidades
+  (`palette.ts`) não mudam; o anel e o halo do nó selecionado são neutros para
+  não se confundirem com a comunidade verde (#009E73).
 - `frontend/index.html` — script que define `data-theme` antes da primeira
   pintura (escolha salva ou `prefers-color-scheme`).
 - `frontend/README.md` — seção "Aparência, tema e acessibilidade".
