@@ -215,7 +215,7 @@ Ver as regras em [`README.md`](README.md).
   com artefatos em `tmp_path`, cobrindo parâmetros, saída e erros. Para
   `serve`, testar a configuração do servidor sem deixar processo ativo;
   incluir o teste de colisão de raízes descrito em T-OBS-02.
-- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — 11 testes de integração cobrem estágio, all/compute/critical/evaluate/report, api openapi e serve (incluindo reload), com cópias das fixtures e saídas em tmp_path; verificam cobertura, parâmetros, colunas e idempotência.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — 14 casos em test_cli.py cobrem estágio, all/compute/critical/evaluate/report, api openapi e serve (incluindo reload), configuração e sensibilidade, com cópias das fixtures e saídas em tmp_path; verificam cobertura, parâmetros, colunas e idempotência. O teste de colisão de raízes ficou com T-OBS-02, pois pertence ao runner compartilhado.
 
 
 ### C-OBS-02 · Figura 9: capturas da interface
