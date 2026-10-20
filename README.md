@@ -41,7 +41,7 @@ Esperado: os dois datasets de fixture validando, e a suíte com **275
 testes passando e 11 `xfail`**. Os `xfail` são as specs ainda abertas da
 Frente C — cada um traz o id da spec que o destrava.
 
-Requer **Python 3.11+**. O front-end requer **Node 18+**, e é opcional:
+Requer **Python 3.11+**. O front-end requer **Node 20 (>=20.19), 22 (>=22.13) ou >=24** (ESLint 10), e é opcional:
 a análise inteira funciona sem ele.
 
 ## O que dá para fazer agora

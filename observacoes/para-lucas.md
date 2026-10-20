@@ -83,19 +83,6 @@ Ver as regras em [`README.md`](README.md).
 - **Como resolver:** atualizar os números, a data e a descrição das specs
   concluídas; distinguir os marcadores históricos do estado atual da suíte.
 
-### C-OBS-07 · Script lint chama ESLint ausente das dependências
-
-- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
-- **Onde:** `frontend/package.json:12` e `frontend/package.json:22`.
-- **O quê:** o script `lint` executa `eslint src --ext .ts,.tsx`, mas
-  `eslint` não consta nas dependências ou devDependencies. A auditoria
-  AUD-01 registrou falha de `npm run lint` por ESLint inexistente; uma
-  instalação baseada no manifesto não fornece o executável prometido.
-- **Como resolver:** Lucas decide entre remover o script ou adicionar e
-  configurar ESLint. A segunda opção altera dependências e requer a
-  autorização correspondente; não instalar pacotes apenas para esconder
-  a inconsistência local.
-
 ### C-OBS-08 · Lockfile ignorado impede reproduzir as dependências do frontend
 
 - **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
@@ -149,6 +136,21 @@ Ver as regras em [`README.md`](README.md).
   `frontend/README.md` também não foi alterado.
 
 ## Resolvidas
+
+### C-OBS-07 · Script lint chama ESLint ausente das dependências
+
+- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
+- **Onde:** `frontend/package.json:12` e `frontend/package.json:22`.
+- **O quê:** o script `lint` executa `eslint src --ext .ts,.tsx`, mas
+  `eslint` não consta nas dependências ou devDependencies. A auditoria
+  AUD-01 registrou falha de `npm run lint` por ESLint inexistente; uma
+  instalação baseada no manifesto não fornece o executável prometido.
+- **Como resolver:** Lucas decide entre remover o script ou adicionar e
+  configurar ESLint. A segunda opção altera dependências e requer a
+  autorização correspondente; não instalar pacotes apenas para esconder
+  a inconsistência local.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — ESLint 10.13.0, typescript-eslint 8.72.0 e eslint-plugin-react-hooks 7.1.1 fixados; flat config verifica TypeScript e regras/dependências de hooks; npm run lint passou sem alterar componentes. Manifesto e README explicitam as versões de Node compatíveis.
+
 
 ### C-OBS-09 · Erro 422 da API pode aparecer como [object Object] no frontend
 
