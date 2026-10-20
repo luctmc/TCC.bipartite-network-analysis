@@ -890,31 +890,51 @@ code {
   grid-area: stats;
   justify-self: start;
   display: flex;
+  gap: 2rem;
   margin: 0 var(--s-3) var(--s-3);
-  padding: 0;
+  padding: 0.7rem 1.35rem 0.75rem;
   max-width: calc(100% - 1.5rem);
   border-radius: var(--r-lg);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   box-shadow: var(--shadow-float);
-  overflow: hidden;
 }
-.stat { padding: 0.55rem 1rem; min-width: 0; }
-.stat + .stat { border-left: 1px solid var(--border); }
+.stat { min-width: 0; }
 .stat dt {
-  font-size: 0.62rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
 }
+.stat-icone { display: grid; color: var(--text-muted); opacity: 0.85; }
 .stat dd {
-  margin: 0.1rem 0 0;
-  font-size: 1.15rem;
+  margin: 0.15rem 0 0;
+  font-size: 1.4rem;
   font-weight: 650;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
+}
+/* Q ganha o acento e um medidor fino de 0 a 1. */
+.stat-q dd { color: var(--accent-strong); }
+.stat-q .stat-icone { color: var(--accent); opacity: 1; }
+.stat-medidor {
+  display: block;
+  height: 3px;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.stat-medidor > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  transition: width 360ms var(--ease-out);
 }
 
 /* ---------------------------------------------------------------------
@@ -964,9 +984,11 @@ code {
   .graph-canvas { min-height: 0; }
   .inspetor-vazio { display: none; }
   .stats { justify-self: stretch; margin: 0 var(--s-2) var(--s-2); max-width: none; }
-  .stat { flex: 1 1 0; padding: 0.4rem 0.55rem; }
-  .stat dt { font-size: 0.56rem; letter-spacing: 0.05em; white-space: normal; line-height: 1.25; }
-  .stat dd { font-size: 1rem; }
+  .stats { gap: var(--s-3); padding: 0.55rem 0.8rem 0.6rem; }
+  .stat { flex: 1 1 0; }
+  .stat-icone { display: none; }
+  .stat dt { font-size: 0.66rem; white-space: normal; line-height: 1.2; }
+  .stat dd { font-size: 1.05rem; }
 
   /* Folha inferior: ocupa o fim da área do grafo (acima da faixa de números,
    * que continua visível); cabeçalho + métricas numa linha, vizinhos rolam. */
