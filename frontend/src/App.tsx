@@ -21,6 +21,7 @@ import { CommunityLegend } from "./components/CommunityLegend";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { GraphView } from "./components/GraphView";
 import { NodePanel } from "./components/NodePanel";
+import { Seletor } from "./components/Seletor";
 import { StatsBar } from "./components/StatsBar";
 import type {
   CentralityMetric,
@@ -167,16 +168,19 @@ export default function App() {
         </div>
         <div className="topo-lado">
           <span className="wordmark">
-            <span className="marca-glifo" aria-hidden="true">
-              <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-                <path d="M5 5.5 15 4M5 5.5 15 10M5 14.5 15 10M5 14.5 15 16M5 5.5 15 16" opacity="0.55" />
-                <circle cx="5" cy="5.5" r="2.2" fill="currentColor" />
-                <circle cx="5" cy="14.5" r="2.2" fill="currentColor" />
-                <rect x="13" y="2.6" width="4.4" height="3.4" rx="1" fill="currentColor" />
-                <rect x="13" y="8.3" width="4.4" height="3.4" rx="1" fill="currentColor" />
-                <rect x="13" y="14.3" width="4.4" height="3.4" rx="1" fill="currentColor" />
-              </svg>
-            </span>
+            <svg className="marca-simbolo" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+              <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.65">
+                <path d="M6 5 18 12M6 12h12M6 19h12" />
+              </g>
+              <g fill="currentColor">
+                <circle cx="6" cy="5" r="2" />
+                <circle cx="6" cy="12" r="2" />
+                <circle cx="6" cy="19" r="2" />
+                <circle cx="18" cy="19" r="2" />
+                <circle cx="18" cy="5" r="2" opacity="0.6" />
+              </g>
+              <circle cx="18" cy="12" r="2.6" fill="var(--accent)" />
+            </svg>
             edugraph
           </span>
           <StatusApi estado={health} />
@@ -200,24 +204,19 @@ export default function App() {
             </p>
           )}
           {datasets.status === "pronto" && (
-            <Campo icone={ICONE_DADOS} id={null}>
-              <select
-                aria-label="Dataset"
+            <Campo id={null}>
+              <Seletor
+                nome="Dataset"
+                icone={ICONE_DADOS}
                 value={datasetAtivo ?? ""}
-                title={datasetAtivo ?? undefined}
-                onChange={(event) => {
-                  const escolhido = event.target.value;
+                titulo={datasetAtivo ?? undefined}
+                opcoes={datasets.dados.map((d) => ({ value: d.dataset, rotulo: d.dataset }))}
+                onChange={(escolhido) => {
                   setDatasetAtivo(escolhido);
                   const resumo = datasets.dados.find((d) => d.dataset === escolhido);
                   setProjecaoAtiva(resumo?.projections[0] ?? null);
                 }}
-              >
-                {datasets.dados.map((d) => (
-                  <option key={d.dataset} value={d.dataset} title={d.dataset}>
-                    {d.dataset}
-                  </option>
-                ))}
-              </select>
+              />
             </Campo>
           )}
         </section>
@@ -234,19 +233,19 @@ export default function App() {
               {resumoAtivo.projections.length === 0 ? (
                 <p className="nota">nenhuma projeção neste dataset</p>
               ) : (
-                <Campo icone={ICONE_PROJECAO} id={ROTULO_PROJECAO[projecaoAtiva ?? ""] ? projecaoAtiva : null}>
-                  <select
-                    aria-label="Projeção"
+                <Campo id={ROTULO_PROJECAO[projecaoAtiva ?? ""] ? projecaoAtiva : null}>
+                  <Seletor
+                    nome="Projeção"
+                    icone={ICONE_PROJECAO}
                     value={projecaoAtiva ?? ""}
-                    title={projecaoAtiva ?? undefined}
-                    onChange={(event) => setProjecaoAtiva(event.target.value)}
-                  >
-                    {resumoAtivo.projections.map((id) => (
-                      <option key={id} value={id} title={id}>
-                        {ROTULO_PROJECAO[id] ?? id}
-                      </option>
-                    ))}
-                  </select>
+                    titulo={projecaoAtiva ?? undefined}
+                    opcoes={resumoAtivo.projections.map((id) => ({
+                      value: id,
+                      rotulo: ROTULO_PROJECAO[id] ?? id,
+                      id: ROTULO_PROJECAO[id] ? id : undefined,
+                    }))}
+                    onChange={(id) => setProjecaoAtiva(id)}
+                  />
                 </Campo>
               )}
             </section>
@@ -261,23 +260,21 @@ export default function App() {
               {particoes.length === 0 ? (
                 <p className="nota">nenhuma partição desta projeção em disco</p>
               ) : (
-                <Campo icone={ICONE_COMUNIDADES} id={null}>
-                  <select
-                    aria-label="Partição de comunidades"
+                <Campo id={null}>
+                  <Seletor
+                    nome="Algoritmo de comunidades"
+                    icone={ICONE_COMUNIDADES}
                     value={particaoAtiva ?? ""}
-                    title={particaoAtiva ?? undefined}
-                    onChange={(event) => setParticaoAtiva(event.target.value || null)}
-                  >
-                    <option value="">sem cor por comunidade</option>
-                    {particoes.map((id) => {
-                      const algoritmo = id.split("__")[0];
-                      return (
-                        <option key={id} value={id}>
-                          {ROTULO_ALGORITMO[algoritmo] ?? algoritmo}
-                        </option>
-                      );
-                    })}
-                  </select>
+                    titulo={particaoAtiva ?? undefined}
+                    opcoes={[
+                      { value: "", rotulo: "sem cor por comunidade" },
+                      ...particoes.map((id) => {
+                        const algoritmo = id.split("__")[0];
+                        return { value: id, rotulo: ROTULO_ALGORITMO[algoritmo] ?? algoritmo };
+                      }),
+                    ]}
+                    onChange={(id) => setParticaoAtiva(id || null)}
+                  />
                 </Campo>
               )}
               {particao && membership && (
@@ -447,16 +444,11 @@ function Passo(props: { n: number; titulo: string; ajuda: string; icone: React.R
   );
 }
 
-/** Seletor com ícone à esquerda e o id técnico, secundário, logo abaixo. */
-function Campo(props: { icone: React.ReactNode; id: string | null; children: React.ReactNode }) {
+/** Espaço do seletor, com o id técnico (secundário) logo abaixo quando há. */
+function Campo(props: { id: string | null; children: React.ReactNode }) {
   return (
     <div className="campo">
-      <div className="campo-caixa">
-        <span className="campo-icone" aria-hidden="true">
-          {props.icone}
-        </span>
-        {props.children}
-      </div>
+      {props.children}
       {props.id && <code className="campo-id">{props.id}</code>}
     </div>
   );
