@@ -208,11 +208,12 @@ function misturar(cor: string, alvo: string, t: number): string {
  * (base) e anel. A cor-base continua sendo a da paleta Okabe & Ito.
  */
 export function tons(cor: string) {
-  const claro = misturar(cor, "#ffffff", 0.26);
-  const escuro = misturar(cor, "#000000", 0.28);
+  const claro = misturar(cor, "#ffffff", 0.34);
+  const escuro = misturar(cor, "#000000", 0.18);
   // No claro um anel branco some no papel: o anel escurece a própria cor.
   const temaClaro = document.documentElement.dataset.theme === "light";
-  const anel = temaClaro ? misturar(cor, "#021716", 0.4) : misturar(cor, "#ffffff", 0.5);
+  // Brilho de borda (rim light): no escuro, um tom bem mais claro da própria cor.
+  const anel = temaClaro ? misturar(cor, "#021716", 0.4) : misturar(cor, "#ffffff", 0.7);
   return { claro, escuro, anel, grad: `${claro} ${cor} ${escuro}` };
 }
 
@@ -230,15 +231,31 @@ function arredondar(forma: string): string {
   return FORMA_ARREDONDADA[forma] ?? forma;
 }
 
-/** Reflexo de vidro no terço superior; o Cytoscape o recorta pela forma do nó. */
+/**
+ * Camada de vidro do nó (o Cytoscape a recorta pela forma): refração escura
+ * na base, reflexo especular nítido no topo (crescente de borda inferior
+ * curva e bem marcada) e um brilho fino de borda por dentro.
+ */
 const BRILHO_URI =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" preserveAspectRatio="none">' +
-      '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#fff" stop-opacity="0.24"/>' +
-      '<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>' +
-      '<ellipse cx="50" cy="30" rx="46" ry="28" fill="url(#g)"/></svg>',
+      "<defs>" +
+      '<linearGradient id="e" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#fff" stop-opacity="0.95"/>' +
+      '<stop offset="0.6" stop-color="#fff" stop-opacity="0.3"/>' +
+      '<stop offset="1" stop-color="#fff" stop-opacity="0.04"/></linearGradient>' +
+      '<linearGradient id="b" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#000" stop-opacity="0"/>' +
+      '<stop offset="1" stop-color="#000" stop-opacity="0.24"/></linearGradient>' +
+      '<radialGradient id="r" cx="0.5" cy="0.5" r="0.5">' +
+      '<stop offset="0.8" stop-color="#fff" stop-opacity="0"/>' +
+      '<stop offset="1" stop-color="#fff" stop-opacity="0.3"/></radialGradient>' +
+      "</defs>" +
+      '<rect y="50" width="100" height="50" fill="url(#b)"/>' +
+      '<ellipse cx="50" cy="50" rx="50" ry="50" fill="url(#r)"/>' +
+      '<path d="M10 41C12 17 34 6 50 6s38 11 40 35C72 31 28 31 10 41Z" fill="url(#e)"/>' +
+      "</svg>",
   );
 
 function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.StylesheetJson {
@@ -280,7 +297,10 @@ function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.Stylesh
    */
   const acabamento = (base: string) => {
     const t = tons(base);
-    const comum = { "border-color": t.anel };
+    // Vidro: preenchimento translúcido (no claro, um pouco mais denso, para a cor
+    // não lavar sobre o papel). Em grafo grande o desenho é fixo, quase opaco.
+    const claro = document.documentElement.dataset.theme === "light";
+    const comum = { "border-color": t.anel, "background-opacity": dinamico ? (claro ? 0.86 : 0.8) : 0.9 };
     if (!dinamico) return comum;
     return {
       ...comum,
@@ -395,7 +415,7 @@ function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.Stylesh
         "border-width": px(1.8),
         "border-color": cor.text,
         "border-opacity": 0.9,
-        "underlay-opacity": 0.22,
+        "underlay-opacity": 0.3,
         "z-index": 20,
       } as unknown as cytoscape.Css.Node,
     },
