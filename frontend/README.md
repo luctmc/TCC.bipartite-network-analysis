@@ -6,9 +6,11 @@ Consome a API somente leitura do FastAPI e é compilado para
 
 ## Requisitos
 
-**Node.js 18 ou superior** (Vite 5 não roda em versões anteriores).
-Confira com `node --version`; se estiver abaixo, instale o LTS atual —
-versões anteriores à 18 estão sem suporte de segurança.
+**Node.js `^20.19.0 || ^22.13.0 || >=24`.** A faixa vem do ESLint 10, que o
+branch `c/pendencias-frente-c` adiciona e declara em `engines` no
+`package.json`; o Vite 5 sozinho roda em versões mais antigas, mas o projeto
+passa a exigir esta faixa. Confira com `node --version`; se estiver fora dela,
+instale o LTS atual.
 
 ## Comandos
 
@@ -126,9 +128,8 @@ As capturas da interface são material complementar do capítulo 3.
   de números e a troca de projeção; `MotionConfig reducedMotion="user"` e a
   regra global de `prefers-reduced-motion` em `styles.css` tiram o
   deslocamento e deixam só o que ajuda a entender.
-- **Limites conhecidos.** O `npm run lint` existe em `package.json`, mas o
-  ESLint não é dependência do projeto: o comando falha com
-  `eslint: command not found`. O reflexo e os gradientes dos nós não foram
+- **Limites conhecidos.** O ESLint chega pelo branch
+  `c/pendencias-frente-c`. O reflexo e os gradientes dos nós não foram
   medidos em grafos acima de 400 nós (nesse caso o desenho fixo os
   desliga).
 

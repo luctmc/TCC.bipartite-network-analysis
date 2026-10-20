@@ -19,7 +19,8 @@ esta stack em vez da página estática recomendada no plano porque a defesa
 é uma apresentação, e transições controladas melhoram a legibilidade do
 que está sendo mostrado na banca.
 
-**Requisito de máquina:** Node.js 18+.
+**Requisito de máquina:** Node.js `^20.19.0 || ^22.13.0 || >=24` (faixa exigida
+pelo ESLint 10, adicionado pelo branch `c/pendencias-frente-c`).
 
 ## Dependências
 
