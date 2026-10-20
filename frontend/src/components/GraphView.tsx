@@ -59,6 +59,13 @@ const ROTULO_DISCIPLINA = 10;
 /** Até aqui as arestas são curvas (bézier); acima, retas curtas (haystack). */
 const MAX_EDGES_CURVAS = 400;
 
+/**
+ * Zoom máximo do enquadramento automático. Grafo pequeno (7 nós) chegava a
+ * zoom ~3 e os nós ficavam enormes perto de rótulos de 11,5px; o usuário
+ * ainda pode aproximar à mão (`maxZoom` do Cytoscape continua 4).
+ */
+const ZOOM_MAX_ENQUADRAMENTO = 2.4;
+
 const PADDING_FIT = 72;
 const PADDING_FIT_ESTREITO = 28;
 const TAMANHO_MIN = 10;
@@ -205,7 +212,8 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         "text-outline-opacity": 0.4,
         // Halo suave na cor do próprio nó, no lugar de borda escura.
         "underlay-color": cor.student,
-        "underlay-opacity": 0.16,
+        // Em repouso o nó é limpo (só o anel fino); o halo aparece ao interagir.
+        "underlay-opacity": 0,
         "underlay-padding": px(5),
         "underlay-shape": "ellipse",
         "overlay-opacity": 0,
@@ -215,7 +223,7 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         "border-width": px(1.2),
         "border-color": "#ffffff",
         "border-opacity": 0.32,
-        "transition-property": "width, height, background-color, underlay-color, opacity",
+        "transition-property": "width, height, background-color, underlay-color, underlay-opacity, opacity",
         "transition-duration": DURACAO_MS,
         "transition-timing-function": "ease-in-out-cubic",
       } as unknown as cytoscape.Css.Node,
@@ -274,7 +282,7 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         "text-outline-opacity": 0.7,
         "border-width": px(1.8),
         "border-opacity": 0.85,
-        "underlay-opacity": 0.3,
+        "underlay-opacity": 0.22,
         "z-index": 20,
       } as unknown as cytoscape.Css.Node,
     },
@@ -297,8 +305,8 @@ function estilo(graph: GraphResponse, zoom: () => number): cytoscape.StylesheetJ
         "border-color": cor.accentStrong,
         "border-opacity": 1,
         "underlay-color": cor.accent,
-        "underlay-opacity": 0.38,
-        "underlay-padding": px(9),
+        "underlay-opacity": 0.3,
+        "underlay-padding": px(8),
         "font-weight": 600,
         "text-outline-width": 2.5,
         "text-outline-opacity": 0.7,
@@ -379,6 +387,10 @@ export function GraphView({ graph, membership, sizeBy, selected, onSelect }: Gra
     });
 
     cy.on("layoutstop", () => {
+      if (cy.zoom() > ZOOM_MAX_ENQUADRAMENTO) {
+        cy.zoom(ZOOM_MAX_ENQUADRAMENTO);
+        cy.center();
+      }
       cy.nodes().forEach((node) => {
         posicoes.set(node.id(), { ...node.position() });
       });
