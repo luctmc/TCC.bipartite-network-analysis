@@ -10,24 +10,33 @@
  * #707D7D, Pistachio #AACBC4. A tipografia da referência (Axiforma) é
  * comercial e não entra: vale a pilha do sistema.
  *
+ * Hierarquia (rodada 10): o PRETO é a base. No escuro, fundo e superfícies são
+ * pretos neutros levemente esverdeados em camadas (#050B0A, #0A1211, #0F1917,
+ * #16231F), as bordas são finas e translúcidas e os componentes são vidro
+ * escuro (translúcido, com blur, realce interno no topo e sombra funda). O
+ * verde (Caribbean, Mountain Meadow) é só acento pontual: estado ativo, foco,
+ * medidores, ponto de status, Q. Rich Black (#021716) fica como o preto de
+ * referência das sombras e do texto sobre o acento.
+ *
  * ATENÇÃO (regra da C-05): as cores das comunidades (Okabe & Ito, em
  * `palette.ts`) NÃO mudam com o tema, e uma delas é verde (#009E73). Por isso
  * o anel e o halo do nó selecionado são neutros (texto), nunca o verde de
  * acento, e as arestas de destaque também.
  *
- * Contraste (WCAG, calculado) no escuro: --text/--bg 17,0 · --text-2/--surface
- * 9,6 · --text-muted/--surface-2 5,7 (/--surface-3 4,8) · --accent/--bg 10,4 ·
- * --accent-strong/--surface 7,4 · --on-accent/--accent 10,4 · borda de
- * controle/--surface 3,9.
+ * Contraste (WCAG, calculado) no escuro, sobre --bg / --surface / --surface-2 /
+ * --surface-3: --text 18,3 / 17,5 / 16,5 / 15,0 · --text-2 11,4 / 10,9 / 10,3 /
+ * 9,3 · --text-muted 8,7 / 8,3 / 7,8 / 7,1 · --accent 11,2 / 10,7 / 10,1 / 9,2 ·
+ * --accent-strong 8,7 / 8,4 / 7,9 / 7,2 · borda de controle (Stone) 4,7 / 4,4 /
+ * 4,2 / 3,8 (alvo 3:1) · --on-accent/--accent 10,4.
  */
 :root {
   /* Superfícies, da mais funda para a mais elevada: Rich Black → Dark Green → Pine → Basil. */
-  --bg: #021716;
-  --surface: #032221;
-  --surface-2: #06302b;
-  --surface-3: #0b453a;
-  --border: #0b453a;
-  --border-strong: #095544;
+  --bg: #050b0a;
+  --surface: #0a1211;
+  --surface-2: #0f1917;
+  --surface-3: #16231f;
+  --border: rgb(170 203 196 / 0.1);
+  --border-strong: rgb(170 203 196 / 0.19);
   /* Borda de controle (Stone): >= 3:1 contra --surface e --surface-2 (WCAG 1.4.11). */
   --border-control: #707d7d;
 
@@ -48,8 +57,19 @@
   --ok: #2cc295;
 
   /* Fundo do palco: núcleo levemente mais claro e vinheta nas bordas. */
-  --palco-nucleo: color-mix(in srgb, var(--accent) 6%, #032221);
-  --palco-vinheta: rgb(0 8 7 / 0.5);
+  --palco-nucleo: color-mix(in srgb, var(--accent) 3.5%, #0a1211);
+  --palco-vinheta: rgb(0 0 0 / 0.65);
+
+  /* Vidro escuro: superfície translúcida, anel de 1px, realce interno no topo, sombra funda. */
+  --glass: rgb(15 25 23 / 0.62);
+  --glass-forte: rgb(10 18 17 / 0.9);
+  --glass-afundado: rgb(0 0 0 / 0.3);
+  --glass-anel: 0 0 0 1px rgb(170 203 196 / 0.12);
+  --glass-realce: inset 0 1px 0 rgb(241 247 246 / 0.09);
+  --glass-sombra: 0 14px 34px -10px rgb(0 0 0 / 0.75), 0 2px 6px rgb(0 0 0 / 0.45);
+  --glass-blur: blur(18px) saturate(1.5);
+  /* Brilho fino do estado ativo (acento, nunca bloco chapado). */
+  --glow: 0 0 14px -3px color-mix(in srgb, var(--accent) 55%, transparent);
 
   /* Espaço (base 4). */
   --s-1: 0.25rem;
@@ -124,6 +144,15 @@
 
   --palco-nucleo: color-mix(in srgb, var(--accent) 5%, #ffffff);
   --palco-vinheta: rgb(2 23 22 / 0.08);
+
+  /* Vidro claro: branco translúcido sobre o papel, com o mesmo realce e anel. */
+  --glass: rgb(255 255 255 / 0.74);
+  --glass-forte: rgb(255 255 255 / 0.95);
+  --glass-afundado: rgb(2 23 22 / 0.045);
+  --glass-anel: 0 0 0 1px rgb(2 23 22 / 0.09);
+  --glass-realce: inset 0 1px 0 rgb(255 255 255 / 0.95);
+  --glass-sombra: 0 12px 30px -10px rgb(2 23 22 / 0.22), 0 2px 6px rgb(2 23 22 / 0.08);
+  --glow: 0 0 12px -3px color-mix(in srgb, var(--accent) 45%, transparent);
 
   --shadow-float:
     0 0 0 1px rgb(2 23 22 / 0.07), 0 12px 32px -8px rgb(2 23 22 / 0.2),
@@ -367,12 +396,18 @@ body { margin: 0; }
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
-  color: var(--accent-strong);
+  background: var(--glass-afundado);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--text-2);
   font-size: 0.72rem;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
+  transition: color var(--t-fast) ease, box-shadow var(--t-fast) ease;
+}
+/* O passo "atual" (com foco dentro) ganha o acento. */
+.cartao:focus-within .passo-num {
+  color: var(--accent-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 65%, transparent), var(--glow);
 }
 .passo-texto h2 {
   margin: 0;
@@ -1242,6 +1277,119 @@ code {
   .cartao { padding: var(--s-2) var(--s-3) var(--s-3); }
   .painel h2 { margin-bottom: var(--s-2); }
   .seletor-gatilho { padding-top: 0.45rem; padding-bottom: 0.45rem; }
+}
+
+/* ---------------------------------------------------------------------
+ * Vidro: o mesmo idioma em todos os componentes
+ *
+ * Superfície translúcida sobre o preto, blur + saturate onde há algo por
+ * trás, anel de 1px, realce interno no topo e sombra funda e suave. Controles
+ * que ficam DENTRO de um cartão são "afundados" (mais escuros), nunca outra
+ * camada clara por cima — vidro sobre vidro perde legibilidade. O verde só
+ * aparece no estado ativo, como brilho fino.
+ * ------------------------------------------------------------------- */
+
+.topo {
+  background: linear-gradient(180deg, var(--glass), color-mix(in srgb, var(--bg) 70%, transparent));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.painel {
+  background:
+    radial-gradient(130% 55% at 0% 0%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 62%),
+    var(--bg);
+}
+
+.cartao,
+.guia {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-anel), var(--glass-realce);
+}
+.guia { background: var(--glass); }
+
+.stats,
+.zoom-controles {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-anel), var(--glass-realce), var(--glass-sombra);
+}
+
+.status-pilula,
+.tema-botao {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-anel), var(--glass-realce);
+}
+.status-pilula { box-shadow: var(--glass-anel), var(--glass-realce); }
+.tema-botao[aria-pressed="true"] { box-shadow: var(--glass-anel), var(--glass-realce), var(--glow); }
+
+.node-panel,
+.inspetor-vazio {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-left-color: var(--border-strong);
+  box-shadow: var(--glass-realce);
+}
+.rodape {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-realce);
+}
+
+/* Controles afundados dentro dos cartões. */
+.q-metrica,
+.metricas {
+  background: var(--glass-afundado);
+  box-shadow: inset 0 0 0 1px var(--border), inset 0 1px 2px rgb(0 0 0 / 0.18);
+}
+.seletor-gatilho {
+  background: var(--glass-afundado);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.18);
+}
+.seletor-icone { color: var(--text-muted); transition: color var(--t-fast) ease; }
+.seletor-gatilho[aria-expanded="true"],
+.seletor-gatilho:focus-visible {
+  background: var(--glass-afundado);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent), var(--glow);
+}
+.seletor-gatilho[aria-expanded="true"] .seletor-icone,
+.seletor-gatilho:focus-visible .seletor-icone { color: var(--accent); }
+@media (hover: hover) and (pointer: fine) {
+  .seletor-gatilho:hover { background: color-mix(in srgb, var(--text) 5%, var(--glass-afundado)); }
+}
+
+/* Menu aberto: vidro mais denso, porque cobre conteúdo. */
+.seletor-painel {
+  background: var(--glass-forte);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow: 0 0 0 1px var(--border-strong), var(--glass-realce), var(--shadow-pop);
+}
+.seletor-opcao[data-ativo="true"] { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Segmentado de centralidade: trilho afundado; o ativo acende em verde fino, sem bloco chapado. */
+.segmentado {
+  background: var(--glass-afundado);
+  box-shadow: inset 0 0 0 1px var(--border-control), inset 0 1px 2px rgb(0 0 0 / 0.18);
+}
+.segmentado button.ativo {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent), var(--glow);
+}
+@media (hover: hover) and (pointer: fine) {
+  .segmentado button:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+  .segmentado button.ativo:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+}
+
+/* No celular a folha do nó cobre o grafo: vidro denso. */
+@media (max-width: 760px) {
+  .node-panel { background: var(--glass-forte); box-shadow: var(--glass-anel), var(--glass-realce), var(--glass-sombra); }
 }
 
 /* ---------------------------------------------------------------------
