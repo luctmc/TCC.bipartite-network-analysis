@@ -212,7 +212,7 @@ export function tons(cor: string) {
   const escuro = misturar(cor, "#000000", 0.28);
   // No claro um anel branco some no papel: o anel escurece a própria cor.
   const temaClaro = document.documentElement.dataset.theme === "light";
-  const anel = temaClaro ? misturar(cor, "#0b1220", 0.4) : misturar(cor, "#ffffff", 0.5);
+  const anel = temaClaro ? misturar(cor, "#021716", 0.4) : misturar(cor, "#ffffff", 0.5);
   return { claro, escuro, anel, grad: `${claro} ${cor} ${escuro}` };
 }
 
@@ -262,14 +262,12 @@ function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.Stylesh
   const cor = {
     student: themeColor("--node-student", "#6ea8fe"),
     discipline: themeColor("--node-discipline", "#f0a868"),
-    edge: themeColor("--edge", "#5d6d84"),
-    surface: themeColor("--surface", "#131820"),
-    bg: themeColor("--bg", "#0c0f13"),
-    text: themeColor("--text", "#e9edf2"),
-    muted: themeColor("--text-muted", "#8e9aa8"),
-    text2: themeColor("--text-2", "#b4bdc8"),
-    accent: themeColor("--accent", "#7db4ff"),
-    accentStrong: themeColor("--accent-strong", "#c4dcff"),
+    edge: themeColor("--edge", "#707d7d"),
+    surface: themeColor("--surface", "#032221"),
+    bg: themeColor("--bg", "#021716"),
+    text: themeColor("--text", "#f1f7f6"),
+    muted: themeColor("--text-muted", "#9bb0ab"),
+    text2: themeColor("--text-2", "#aacbc4"),
   };
 
   // Bézier fica elegante, mas custa caro com milhares de arestas: acima do
@@ -412,14 +410,15 @@ function estilo(graph: GraphResponse, zoomReal: () => number): cytoscape.Stylesh
         "z-index": 10,
       } as unknown as cytoscape.Css.Node,
     },
-    { selector: "edge.vizinho", style: { opacity: 0.85, "line-color": cor.accentStrong } },
+    // Destaque da vizinhança neutro: o verde de acento se confundiria com a comunidade verde.
+    { selector: "edge.vizinho", style: { opacity: 0.85, "line-color": cor.text2 } },
     {
       selector: "node:selected",
       style: {
         "border-width": px(2.2),
-        "border-color": cor.accentStrong,
+        "border-color": cor.text,
         "border-opacity": 1,
-        "underlay-color": cor.accent,
+        "underlay-color": cor.text,
         "underlay-opacity": 0.3,
         "underlay-padding": px(8),
         "font-weight": 600,

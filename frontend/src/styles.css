@@ -3,42 +3,53 @@
  * em sala escura come contraste. Cores em variáveis porque o
  * GraphView as consome via `var(--...)` no estilo do Cytoscape.
  *
- * Direção visual (C-05, redesign): instrumento científico — grafite
- * azulado, uma só cor de acento, números tabulares e hierarquia feita
- * por peso e tom, não por caixas. As cores das comunidades (Okabe & Ito)
- * ficam em `palette.ts` e não são tocadas aqui.
+ * Paleta (verdes da referência do trabalho). Primárias: Rich Black #021716,
+ * Dark Green #032221, Bangladesh Green #03624C, Mountain Meadow #2CC295,
+ * Caribbean Green #00DF81, Anti-Flash White #F1F7F6. Secundárias: Pine
+ * #06302B, Basil #0B453A, Forest #095544, Frog #17876D, Mint #2FA98C, Stone
+ * #707D7D, Pistachio #AACBC4. A tipografia da referência (Axiforma) é
+ * comercial e não entra: vale a pilha do sistema.
  *
- * Contraste (WCAG AA, sobre --surface): --text 15:1, --text-2 8,5:1,
- * --text-3 5,6:1; --accent 8:1.
+ * ATENÇÃO (regra da C-05): as cores das comunidades (Okabe & Ito, em
+ * `palette.ts`) NÃO mudam com o tema, e uma delas é verde (#009E73). Por isso
+ * o anel e o halo do nó selecionado são neutros (texto), nunca o verde de
+ * acento, e as arestas de destaque também.
+ *
+ * Contraste (WCAG, calculado) no escuro: --text/--bg 17,0 · --text-2/--surface
+ * 9,6 · --text-muted/--surface-2 5,7 (/--surface-3 4,8) · --accent/--bg 10,4 ·
+ * --accent-strong/--surface 7,4 · --on-accent/--accent 10,4 · borda de
+ * controle/--surface 3,9.
  */
 :root {
-  /* Superfícies, da mais funda para a mais elevada. */
-  --bg: #0c0f13;
-  --surface: #131820;
-  --surface-2: #1a2029;
-  --surface-3: #232b36;
-  --border: #252d38;
-  --border-strong: #354050;
-  /* Borda de controle: >= 3:1 contra --surface e --bg (WCAG 1.4.11). */
-  --border-control: #64707f;
+  /* Superfícies, da mais funda para a mais elevada: Rich Black → Dark Green → Pine → Basil. */
+  --bg: #021716;
+  --surface: #032221;
+  --surface-2: #06302b;
+  --surface-3: #0b453a;
+  --border: #0b453a;
+  --border-strong: #095544;
+  /* Borda de controle (Stone): >= 3:1 contra --surface e --surface-2 (WCAG 1.4.11). */
+  --border-control: #707d7d;
 
-  /* Texto. */
-  --text: #e9edf2;
-  --text-2: #b4bdc8;
-  --text-muted: #8e9aa8;
+  /* Texto: Anti-Flash White, Pistachio e um tom entre Pistachio e Stone (Stone puro não passa em AA). */
+  --text: #f1f7f6;
+  --text-2: #aacbc4;
+  --text-muted: #9bb0ab;
 
-  --accent: #7db4ff;
-  --accent-strong: #c4dcff;
+  /* Acento: Caribbean Green; Mountain Meadow para estados e hover. */
+  --accent: #00df81;
+  --accent-strong: #2cc295;
   --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --on-accent: #021716;
   --node-student: #6ea8fe;
   --node-discipline: #f0a868;
-  --edge: #5d6d84;
+  --edge: #707d7d;
   --erro: #ff8f92;
-  --ok: #7fd6a2;
+  --ok: #2cc295;
 
   /* Fundo do palco: núcleo levemente mais claro e vinheta nas bordas. */
-  --palco-nucleo: color-mix(in srgb, var(--accent) 7%, #121822);
-  --palco-vinheta: rgb(0 0 0 / 0.38);
+  --palco-nucleo: color-mix(in srgb, var(--accent) 6%, #032221);
+  --palco-vinheta: rgb(0 8 7 / 0.5);
 
   /* Espaço (base 4). */
   --s-1: 0.25rem;
@@ -55,9 +66,9 @@
 
   /* Sombras: borda interna de 1px + queda suave. */
   --shadow-float:
-    0 0 0 1px rgb(255 255 255 / 0.05), 0 12px 32px -8px rgb(0 0 0 / 0.55),
-    0 2px 6px rgb(0 0 0 / 0.3);
-  --shadow-pop: 0 16px 36px -8px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.35);
+    0 0 0 1px rgb(170 203 196 / 0.09), 0 12px 32px -8px rgb(0 0 0 / 0.6),
+    0 2px 6px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 16px 36px -8px rgb(0 0 0 / 0.65), 0 2px 6px rgb(0 0 0 / 0.4);
 
   /* Movimento: ease-out forte para entradas, curva padrão para hover. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -82,39 +93,43 @@
 }
 
 /*
- * Tema claro: papel off-white, superfícies brancas, texto grafite e bordas
- * suaves. Contraste (WCAG AA): --text 14:1, --text-2 9:1, --text-muted 5,8:1
- * sobre --surface; --accent 5,8:1; --border-control >= 3:1 (1.4.11). O
- * atributo vem de `index.html` (antes da primeira pintura) e do botão do
- * cabeçalho. As cores das comunidades (palette.ts) não mudam com o tema.
+ * Tema claro: fundo Anti-Flash White, superfícies brancas, texto Rich Black,
+ * secundário em Stone escurecido, bordas em Pistachio claro e acento Bangladesh
+ * Green (Caribbean só em detalhes). Contraste (WCAG, calculado): --text/--bg
+ * 17,0 · --text-2/--surface 9,6 · --text-muted/--surface 5,5 (/--bg 5,1) ·
+ * --accent/--surface 7,4 · --accent-strong/--surface 8,8 · --on-accent/--accent
+ * 7,4 · borda de controle/--bg 3,9. O atributo vem de `index.html` (antes da
+ * primeira pintura) e do botão do cabeçalho. As cores das comunidades não
+ * mudam com o tema.
  */
 :root[data-theme="light"] {
-  --bg: #f3f1ec;
+  --bg: #f1f7f6;
   --surface: #ffffff;
-  --surface-2: #f6f5f1;
-  --surface-3: #ebe9e3;
-  --border: #e2dfd7;
-  --border-strong: #cdc9bd;
-  --border-control: #80868f;
+  --surface-2: #f7fbfa;
+  --surface-3: #e5efec;
+  --border: #dce9e6;
+  --border-strong: #c3d8d3;
+  --border-control: #707d7d;
 
-  --text: #1c2330;
-  --text-2: #3b4656;
-  --text-muted: #5b6676;
+  --text: #021716;
+  --text-2: #2f4a45;
+  --text-muted: #5e6b6b;
 
-  --accent: #1d5fd1;
-  --accent-strong: #0f3f9e;
-  --edge: #6b7a90;
+  --accent: #03624c;
+  --accent-strong: #095544;
+  --on-accent: #ffffff;
+  --edge: #707d7d;
   --erro: #b3261e;
-  --ok: #1a7f4b;
+  --ok: #03624c;
 
-  --palco-nucleo: color-mix(in srgb, var(--accent) 6%, #ffffff);
-  --palco-vinheta: rgb(70 56 20 / 0.1);
+  --palco-nucleo: color-mix(in srgb, var(--accent) 5%, #ffffff);
+  --palco-vinheta: rgb(2 23 22 / 0.08);
 
   --shadow-float:
-    0 0 0 1px rgb(15 23 42 / 0.07), 0 12px 32px -8px rgb(15 23 42 / 0.2),
-    0 2px 6px rgb(15 23 42 / 0.08);
+    0 0 0 1px rgb(2 23 22 / 0.07), 0 12px 32px -8px rgb(2 23 22 / 0.2),
+    0 2px 6px rgb(2 23 22 / 0.08);
   --shadow-pop:
-    0 16px 36px -8px rgb(15 23 42 / 0.28), 0 2px 6px rgb(15 23 42 / 0.12);
+    0 16px 36px -8px rgb(2 23 22 / 0.28), 0 2px 6px rgb(2 23 22 / 0.12);
 
   color-scheme: light;
 }
