@@ -97,11 +97,10 @@ body { margin: 0; }
 .app {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "topo   topo"
-    "painel palco"
-    "rodape rodape";
+    "painel palco";
   height: 100vh;
   height: 100dvh;
   min-height: 560px;
@@ -554,18 +553,6 @@ code {
   overflow-wrap: anywhere;
 }
 
-.rodape {
-  grid-area: rodape;
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s-4);
-  padding: 0.5rem var(--s-5);
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
 /* ---------------------------------------------------------------------
  * Seletor segmentado (métrica de tamanho)
  * ------------------------------------------------------------------- */
@@ -956,8 +943,8 @@ code {
     height: auto;
     min-height: 100dvh;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto auto;
-    grid-template-areas: "topo" "painel" "palco" "rodape";
+    grid-template-rows: auto auto auto;
+    grid-template-areas: "topo" "painel" "palco";
   }
   /* Wordmark + status em cima, título curto embaixo; sem sobrelinha/autores/rede. */
   .topo { flex-wrap: wrap; gap: var(--s-2); padding: var(--s-3) var(--s-4); }
@@ -1029,7 +1016,6 @@ code {
   .cartao { padding: var(--s-2) var(--s-3) var(--s-3); }
   .painel h2 { margin-bottom: var(--s-2); }
   .seletor-gatilho { padding-top: 0.45rem; padding-bottom: 0.45rem; }
-  .rodape { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 0.15rem; }
 }
 
 /* ---------------------------------------------------------------------

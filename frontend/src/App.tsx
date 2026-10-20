@@ -396,10 +396,6 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="rodape">
-        <span>Uso interno da instituição</span>
-        <span>TCC Grupo 16 · UniAnchieta</span>
-      </footer>
     </div>
     </MotionConfig>
   );
