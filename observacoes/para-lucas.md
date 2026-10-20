@@ -36,29 +36,6 @@ Ver as regras em [`README.md`](README.md).
   dos números. Preservar o contrato congelado; se a solução exigir mudá-lo,
   seguir ADR e aprovação dos três.
 
-### C-OBS-04 · Estágio e handlers de CLI da Frente C sem testes automatizados
-
-- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
-- **Onde:** `src/edugraph/centrality/stage.py:104`,
-  `src/edugraph/centrality/cli.py:153`,
-  `src/edugraph/centrality/cli.py:177`,
-  `src/edugraph/centrality/cli.py:189`,
-  `src/edugraph/centrality/cli.py:270`,
-  `src/edugraph/centrality/cli.py:354`,
-  `src/edugraph/api/cli.py:30` e `src/edugraph/api/cli.py:53`.
-- **O quê:** a suíte testa algoritmos, relatórios e rotas, mas não exercita
-  `CentralityStage.run`, os `cmd_*` de centralidade nem `api openapi/serve`
-  pela CLI. A busca
-  `rg -n 'CentralityStage|cmd_|openapi|api.*serve|centrality.stage|centrality.cli' tests`
-  só encontra, para OpenAPI, testes do endpoint `/openapi.json` e de
-  `client.app.openapi()`, não dos comandos. A execução manual da AUD-01b
-  passou, mas não substitui regressão automatizada da composição e dos
-  parâmetros de entrada.
-- **Como resolver:** acrescentar testes de integração dos comandos e do estágio,
-  com artefatos em `tmp_path`, cobrindo parâmetros, saída e erros. Para
-  `serve`, testar a configuração do servidor sem deixar processo ativo;
-  incluir o teste de colisão de raízes descrito em T-OBS-02.
-
 ### C-OBS-05 · Figura 9 precisa acompanhar o redesign da interface
 
 - **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
@@ -170,6 +147,31 @@ Ver as regras em [`README.md`](README.md).
   contrato. Prioridade baixa; preservar o histórico relevante.
 
 ## Resolvidas
+
+### C-OBS-04 · Estágio e handlers de CLI da Frente C sem testes automatizados
+
+- **De:** auditoria AUD-01, sessão do Lucas · **Data:** 20/10/2026
+- **Onde:** `src/edugraph/centrality/stage.py:104`,
+  `src/edugraph/centrality/cli.py:153`,
+  `src/edugraph/centrality/cli.py:177`,
+  `src/edugraph/centrality/cli.py:189`,
+  `src/edugraph/centrality/cli.py:270`,
+  `src/edugraph/centrality/cli.py:354`,
+  `src/edugraph/api/cli.py:30` e `src/edugraph/api/cli.py:53`.
+- **O quê:** a suíte testa algoritmos, relatórios e rotas, mas não exercita
+  `CentralityStage.run`, os `cmd_*` de centralidade nem `api openapi/serve`
+  pela CLI. A busca
+  `rg -n 'CentralityStage|cmd_|openapi|api.*serve|centrality.stage|centrality.cli' tests`
+  só encontra, para OpenAPI, testes do endpoint `/openapi.json` e de
+  `client.app.openapi()`, não dos comandos. A execução manual da AUD-01b
+  passou, mas não substitui regressão automatizada da composição e dos
+  parâmetros de entrada.
+- **Como resolver:** acrescentar testes de integração dos comandos e do estágio,
+  com artefatos em `tmp_path`, cobrindo parâmetros, saída e erros. Para
+  `serve`, testar a configuração do servidor sem deixar processo ativo;
+  incluir o teste de colisão de raízes descrito em T-OBS-02.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — 11 testes de integração cobrem estágio, all/compute/critical/evaluate/report, api openapi e serve (incluindo reload), com cópias das fixtures e saídas em tmp_path; verificam cobertura, parâmetros, colunas e idempotência.
+
 
 ### C-OBS-02 · Figura 9: capturas da interface
 
