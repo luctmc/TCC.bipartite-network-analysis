@@ -177,11 +177,11 @@ export default function App() {
       </header>
 
       <aside className="painel">
-        <section>
+        <section className="cartao">
           <h2>Dataset</h2>
-          {datasets.status === "carregando" && <p className="dim">carregando datasets…</p>}
+          {datasets.status === "carregando" && <p className="nota nota-carregando"><span className="giro giro-pequeno" />carregando datasets…</p>}
           {datasets.status === "erro" && (
-            <p className="erro">
+            <p className="nota nota-erro" role="alert">
               API fora do ar: {datasets.erro.message}
               <br />
               <code>python -m edugraph api serve --root data/fixtures</code>
@@ -198,7 +198,7 @@ export default function App() {
               }}
             >
               {datasets.dados.map((d) => (
-                <option key={d.dataset} value={d.dataset}>
+                <option key={d.dataset} value={d.dataset} title={d.dataset}>
                   {d.dataset}
                 </option>
               ))}
@@ -208,10 +208,10 @@ export default function App() {
 
         {resumoAtivo && (
           <>
-            <section>
+            <section className="cartao">
               <h2>Projeção</h2>
               {resumoAtivo.projections.length === 0 ? (
-                <p className="dim">nenhuma projeção neste dataset</p>
+                <p className="nota">nenhuma projeção neste dataset</p>
               ) : (
                 <select
                   value={projecaoAtiva ?? ""}
@@ -226,10 +226,10 @@ export default function App() {
               )}
             </section>
 
-            <section>
+            <section className="cartao">
               <h2>Cor: comunidades</h2>
               {particoes.length === 0 ? (
-                <p className="dim">nenhuma partição desta projeção em disco</p>
+                <p className="nota">nenhuma partição desta projeção em disco</p>
               ) : (
                 <select
                   value={particaoAtiva ?? ""}
@@ -254,10 +254,10 @@ export default function App() {
               )}
             </section>
 
-            <section>
+            <section className="cartao">
               <h2>Tamanho: centralidade</h2>
               {dadosGrafo && metricasDisponiveis.length === 0 ? (
-                <p className="dim">
+                <p className="nota">
                   sem centralidades desta projeção em disco
                   <br />
                   <code>python -m edugraph centrality all</code>
@@ -323,6 +323,14 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
 
+        {!(dadosGrafo && selecionado) && (
+          <aside className="inspetor-vazio">
+            <span className="vazio-icone" aria-hidden="true">
+              {ICONE_GRAFO}
+            </span>
+            <p>Selecione um nó no grafo para ver comunidade, centralidades e vizinhos.</p>
+          </aside>
+        )}
         <AnimatePresence>
           {dadosGrafo && selecionado && (
             <NodePanel

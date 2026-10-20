@@ -7,6 +7,7 @@
  * apresentação.
  */
 
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 
 import { communityOrder, communityStyle } from "../palette";
@@ -56,6 +57,8 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
     }))
     .sort((a, b) => b.weight - a.weight || porCodigo(a.id, b.id));
 
+  const pesoMax = vizinhos[0]?.weight ?? 0;
+
   const comunidade = membership?.[nodeId];
   const estiloComunidade =
     membership && comunidade !== undefined
@@ -82,25 +85,25 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
         </button>
       </header>
 
-      <dl className="inventario">
-        <dt>comunidade</dt>
-        <dd>
-          {estiloComunidade ? (
-            <span className="comunidade">
-              <svg className="amostra" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-                <path d={SILHUETAS[estiloComunidade.shape] ?? SILHUETAS.ellipse} fill={estiloComunidade.color} />
-              </svg>
-              {comunidade}
-            </span>
-          ) : (
-            <span className="dim">—</span>
-          )}
-        </dd>
+      <div className="comunidade-chip">
+        {estiloComunidade ? (
+          <span className="comunidade">
+            <svg className="amostra" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+              <path d={SILHUETAS[estiloComunidade.shape] ?? SILHUETAS.ellipse} fill={estiloComunidade.color} />
+            </svg>
+            comunidade {comunidade}
+          </span>
+        ) : (
+          <span className="dim">sem comunidade</span>
+        )}
+      </div>
+
+      <div className="metricas">
         {METRICAS.map(({ id, nome }) => {
           const scores = graph.centrality?.[id];
           const valor = scores?.[nodeId];
           return (
-            <FragmentoMetrica
+            <Metrica
               key={id}
               nome={nome}
               valor={valor}
@@ -109,52 +112,77 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
             />
           );
         })}
-      </dl>
+      </div>
 
-      <h3>
-        Vizinhos <span className="dim">({vizinhos.length})</span>
-      </h3>
-      {graph.truncation.truncated && (
-        <p className="dim">Só entre as arestas mostradas (a resposta foi cortada).</p>
-      )}
-      <ul className="vizinhos">
-        {vizinhos.slice(0, MAX_VIZINHOS).map((vizinho) => (
-          <li key={vizinho.id}>
-            <button type="button" onClick={() => onSelect(vizinho.id)}>
-              <span>{rotulos.get(vizinho.id) ?? vizinho.id}</span>
-              <span className="dim">{vizinho.weight.toLocaleString("pt-BR")}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      {vizinhos.length > MAX_VIZINHOS && (
-        <p className="dim">e mais {vizinhos.length - MAX_VIZINHOS}</p>
-      )}
+      <div className="vizinhos-bloco">
+        <h3>
+          Vizinhos <span className="dim">({vizinhos.length})</span>
+        </h3>
+        {graph.truncation.truncated && (
+          <p className="dim">Só entre as arestas mostradas (a resposta foi cortada).</p>
+        )}
+        <ul className="vizinhos">
+          {vizinhos.slice(0, MAX_VIZINHOS).map((vizinho) => {
+            const nome = rotulos.get(vizinho.id) ?? vizinho.id;
+            return (
+              <li key={vizinho.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(vizinho.id)}
+                  title={nome}
+                  style={{ "--w": `${pesoMax > 0 ? (100 * vizinho.weight) / pesoMax : 0}%` } as CSSProperties}
+                >
+                  <span>{nome}</span>
+                  <span className="dim">{vizinho.weight.toLocaleString("pt-BR")}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {vizinhos.length > MAX_VIZINHOS && (
+          <p className="dim resto">e mais {vizinhos.length - MAX_VIZINHOS}</p>
+        )}
+      </div>
     </motion.section>
   );
 }
 
-function FragmentoMetrica(props: {
+/** Uma centralidade: valor em destaque, posição como badge e medidor da posição relativa. */
+function Metrica(props: {
   nome: string;
   valor: number | undefined;
   posicao: number | null;
   total: number;
 }) {
+  const { nome, valor, posicao: pos, total } = props;
   return (
-    <>
-      <dt>{props.nome.toLowerCase()}</dt>
-      <dd>
-        {props.valor === undefined ? (
-          <span className="dim">não calculada</span>
-        ) : (
-          <>
-            {props.valor.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}{" "}
-            <span className="dim">
-              {props.posicao}º/{props.total}
-            </span>
-          </>
+    <div className="metrica">
+      <div className="metrica-topo">
+        <span className="metrica-nome" title={nome}>
+          {nome}
+        </span>
+        {valor !== undefined && pos !== null && (
+          <span className="posicao" title={`${pos}º lugar entre ${total} nós`}>
+            {pos}º<span>/{total}</span>
+          </span>
         )}
-      </dd>
-    </>
+      </div>
+      {valor === undefined ? (
+        <span className="metrica-valor metrica-nula">não calculada</span>
+      ) : (
+        <>
+          <span className="metrica-valor">
+            {valor.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+          </span>
+          <span
+            className="medidor"
+            role="img"
+            aria-label={`${pos}º lugar entre ${total} nós`}
+          >
+            <span style={{ width: `${total > 0 && pos !== null ? (100 * (total - pos + 1)) / total : 0}%` }} />
+          </span>
+        </>
+      )}
+    </div>
   );
 }

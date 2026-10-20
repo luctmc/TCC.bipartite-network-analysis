@@ -41,15 +41,18 @@ export function CommunityLegend({ membership }: { membership: Record<string, num
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
               <path d={SILHUETAS[shape] ?? SILHUETAS.ellipse} fill={color} />
             </svg>
-            <span>comunidade {comunidade}</span>
+            <span title={`comunidade ${comunidade}`}>comunidade {comunidade}</span>
             <span className="dim">
               {n} · {((100 * n) / total).toFixed(0)}%
+            </span>
+            <span className="barra" aria-hidden="true">
+              <span style={{ width: `${(100 * n) / total}%`, background: color }} />
             </span>
           </li>
         );
       })}
       {itens.length > MAX_ITENS && (
-        <li className="dim">e mais {itens.length - MAX_ITENS} comunidades menores</li>
+        <li className="legenda-resto dim">e mais {itens.length - MAX_ITENS} comunidades menores</li>
       )}
     </ul>
   );

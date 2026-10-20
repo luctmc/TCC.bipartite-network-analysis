@@ -185,18 +185,25 @@ body { margin: 0; }
   overflow-y: auto;
   padding: var(--s-4);
   border-right: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--bg);
   display: flex;
   flex-direction: column;
-  gap: var(--s-5);
+  gap: var(--s-3);
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
 
-.painel section { min-width: 0; }
+/* Cada controle é um cartão: título, controle e, quando há, o que ele mostra. */
+.cartao {
+  min-width: 0;
+  padding: var(--s-3) var(--s-3) var(--s-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
 
 .painel h2 {
-  margin: 0 0 var(--s-2);
+  margin: 0 0 var(--s-3);
   font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -228,28 +235,6 @@ body { margin: 0; }
   .painel select:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong)); background-color: var(--surface-3); }
 }
 
-.inventario {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0;
-  margin: 0;
-  font-size: 0.82rem;
-}
-.inventario dt,
-.inventario dd {
-  padding: 0.4rem 0;
-  border-top: 1px solid var(--border);
-}
-.inventario dt:first-of-type,
-.inventario dt:first-of-type + dd { border-top: none; }
-.inventario dt { color: var(--text-muted); }
-.inventario dd {
-  margin: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
-}
-
 /* ---------------------------------------------------------------------
  * Palco
  * ------------------------------------------------------------------- */
@@ -257,7 +242,15 @@ body { margin: 0; }
 .palco {
   grid-area: palco;
   position: relative;
-  display: flex;
+  /* Grafo, faixa de números e inspetor ocupam áreas próprias: nada flutua
+   * sobre o canvas no desktop, então o fit nunca esconde um nó. */
+  --inspetor-w: 300px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--inspetor-w);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "grafo inspetor"
+    "stats inspetor";
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -266,10 +259,10 @@ body { margin: 0; }
     radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.045) 1px, transparent 0) 0 0 / 24px 24px,
     var(--bg);
 }
-.palco-conteudo { flex: 1; display: flex; min-width: 0; min-height: 0; }
+.palco-conteudo { grid-area: grafo; display: flex; min-width: 0; min-height: 0; }
 
 .graph-view { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.graph-canvas { flex: 1; min-height: 360px; }
+.graph-canvas { flex: 1; min-height: 280px; }
 
 /* Estados vazio / carregando / erro */
 .vazio {
@@ -322,6 +315,30 @@ body { margin: 0; }
 }
 
 .dim { color: var(--text-muted); font-size: 0.8rem; }
+
+/* Aviso discreto dentro de um cartão: "nenhuma partição…", "carregando…", erro. */
+.nota {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-md);
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.nota code { margin-top: 0.25rem; }
+.nota-erro {
+  color: var(--erro);
+  background: color-mix(in srgb, var(--erro) 8%, var(--bg));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--erro) 40%, transparent);
+}
+.giro-pequeno { width: 14px; height: 14px; border-width: 2px; flex: none; }
 .erro { color: var(--erro); font-size: 0.82rem; line-height: 1.5; }
 
 code {
@@ -401,48 +418,68 @@ code {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0.55rem;
   font-size: 0.8rem;
 }
 .legenda li {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.28rem 0.4rem;
-  margin: 0 -0.4rem;
-  border-radius: var(--r-sm);
+  column-gap: 0.55rem;
+  row-gap: 0.28rem;
 }
 .legenda li > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .legenda .dim { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .legenda svg { display: block; }
+.legenda .barra {
+  grid-column: 2 / -1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.legenda .barra > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 360ms var(--ease-out);
+}
+.legenda .legenda-resto { display: block; }
 
 /* ---------------------------------------------------------------------
- * Painel do nó selecionado
+ * Inspetor: painel do nó selecionado (ou o espaço dele, vazio)
  * ------------------------------------------------------------------- */
 
+.node-panel,
+.inspetor-vazio {
+  grid-area: inspetor;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+}
+.inspetor-vazio {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.inspetor-vazio p { margin: 0; max-width: 24ch; text-wrap: balance; line-height: 1.5; }
+
 .node-panel {
-  position: absolute;
-  top: var(--s-3);
-  right: var(--s-3);
-  z-index: 6;
-  width: 300px;
-  max-height: calc(100% - 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
   overflow-y: auto;
   padding: var(--s-4);
-  border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  backdrop-filter: blur(14px) saturate(1.2);
-  box-shadow: var(--shadow-float);
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
 .node-panel h2 {
   margin: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
   font-size: 0.66rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -450,21 +487,21 @@ code {
   color: var(--accent);
 }
 .node-panel h3 {
-  margin: var(--s-4) 0 var(--s-2);
-  font-size: 0.7rem;
+  margin: 0 0 var(--s-2);
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   color: var(--text-muted);
 }
 .node-panel h3 .dim { font-size: inherit; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-.node-panel-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s-2); margin-bottom: var(--s-3); }
+.node-panel-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s-2); }
 .node-panel-nome {
   margin: 0.2rem 0 0;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 650;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
@@ -490,17 +527,88 @@ code {
   .fechar:hover { color: var(--text); background: var(--surface-3); }
 }
 
-.comunidade { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 550; }
+.comunidade-chip { display: flex; }
+.comunidade {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.65rem 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  font-size: 0.78rem;
+  font-weight: 550;
+}
 .amostra { display: block; flex: none; }
 
+/* Centralidades: valor em destaque, posição como badge, medidor da posição. */
+.metricas { display: grid; gap: var(--s-2); }
+.metrica {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem 0.75rem 0.7rem;
+  border-radius: var(--r-md);
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--border);
+  min-width: 0;
+}
+.metrica-topo { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-width: 0; }
+.metrica-nome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.posicao {
+  flex: none;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--surface-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.posicao span { color: var(--text-muted); font-weight: 500; }
+.metrica-valor {
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  line-height: 1.2;
+}
+.metrica-nula { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0; }
+.medidor {
+  display: block;
+  height: 4px;
+  margin-top: 0.15rem;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.medidor > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 360ms var(--ease-out);
+}
+
+.vizinhos-bloco { display: flex; flex-direction: column; min-height: 0; }
 .vizinhos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
 .vizinhos button {
+  position: relative;
   width: 100%;
   display: flex;
   justify-content: space-between;
   gap: var(--s-3);
-  padding: 0.35rem 0.5rem;
-  margin: 0;
+  padding: 0.4rem 0.55rem 0.55rem;
   border: none;
   border-radius: var(--r-sm);
   background: none;
@@ -513,35 +621,45 @@ code {
     background-color var(--t-fast) ease,
     transform var(--t-fast) var(--ease-out);
 }
+/* Peso da ligação em relação à mais forte: barra fina embaixo do nome. */
+.vizinhos button::after {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  right: 0.55rem;
+  bottom: 0.2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--accent) 55%, transparent) var(--w, 0%),
+    var(--border) var(--w, 0%)
+  );
+}
 .vizinhos button > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vizinhos button .dim { font-variant-numeric: tabular-nums; flex: none; }
 .vizinhos button:active { transform: scale(0.985); }
 @media (hover: hover) and (pointer: fine) {
   .vizinhos button:hover { background: var(--surface-3); }
 }
-.node-panel > p.dim { margin: 0 0 var(--s-2); line-height: 1.5; }
-.node-panel > p.dim:last-child { margin: var(--s-2) 0 0 0.5rem; }
+.vizinhos-bloco > p.dim { margin: 0 0 var(--s-2); line-height: 1.5; }
+.vizinhos-bloco > p.resto { margin: var(--s-2) 0 0 0.55rem; }
 
 /* ---------------------------------------------------------------------
- * Faixa de números sobre o grafo
+ * Faixa de números sob o grafo
  * ------------------------------------------------------------------- */
 
 .stats {
-  position: absolute;
-  left: var(--s-3);
-  bottom: var(--s-3);
-  z-index: 5;
+  grid-area: stats;
+  justify-self: start;
   display: flex;
-  gap: 0;
-  margin: 0;
+  margin: 0 var(--s-3) var(--s-3);
   padding: 0;
   max-width: calc(100% - 1.5rem);
   border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  backdrop-filter: blur(14px) saturate(1.2);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
   box-shadow: var(--shadow-float);
-  pointer-events: auto;
+  overflow: hidden;
 }
 .stat { padding: 0.55rem 1rem; min-width: 0; }
 .stat + .stat { border-left: 1px solid var(--border); }
@@ -566,14 +684,16 @@ code {
  * Tablet
  * ------------------------------------------------------------------- */
 
+@media (max-width: 1199px) {
+  .palco { --inspetor-w: 256px; }
+}
 @media (max-width: 1100px) {
-  .app { grid-template-columns: 260px minmax(0, 1fr); }
+  .app { grid-template-columns: 252px minmax(0, 1fr); }
   .status-raizes { display: none; }
-  .node-panel { width: 272px; }
 }
 
 /* ---------------------------------------------------------------------
- * Celular: o grafo vem primeiro; controles abaixo; nó em folha inferior
+ * Celular: grafo alto primeiro; folha do nó compacta; controles enxutos
  * ------------------------------------------------------------------- */
 
 @media (max-width: 760px) {
@@ -584,40 +704,54 @@ code {
     grid-template-rows: auto auto auto auto;
     grid-template-areas: "topo" "palco" "painel" "rodape";
   }
-  .topo { padding: var(--s-3) var(--s-4); }
+  .topo { padding: var(--s-2) var(--s-4); }
+  .marca-glifo { width: 30px; height: 30px; }
   .subtitulo { display: none; }
-  .painel {
-    overflow: visible;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    padding: var(--s-4);
-    gap: var(--s-4);
+
+  .palco {
+    height: 82vh;
+    height: 82dvh;
+    min-height: 520px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "grafo" "stats";
   }
-  .palco { height: 68vh; height: 68dvh; min-height: 440px; border-bottom: none; }
   .graph-canvas { min-height: 0; }
-  .stats {
-    left: var(--s-2);
-    right: var(--s-2);
-    bottom: var(--s-2);
-    max-width: none;
-    justify-content: space-between;
-  }
-  .stat { flex: 1 1 0; padding: 0.5rem 0.55rem; }
+  .inspetor-vazio { display: none; }
+  .stats { justify-self: stretch; margin: 0 var(--s-2) var(--s-2); max-width: none; }
+  .stat { flex: 1 1 0; padding: 0.4rem 0.55rem; }
   .stat dt { font-size: 0.56rem; letter-spacing: 0.05em; white-space: normal; line-height: 1.25; }
   .stat dd { font-size: 1rem; }
+
+  /* Folha inferior: cabeçalho + métricas em uma linha; vizinhos rolam dentro. */
   .node-panel {
-    top: auto;
+    position: absolute;
     left: var(--s-2);
     right: var(--s-2);
     bottom: var(--s-2);
-    width: auto;
-    max-height: 44%;
-    padding: var(--s-3) var(--s-4);
+    z-index: 6;
+    max-height: 42%;
+    gap: var(--s-2);
+    padding: var(--s-3);
+    overflow: hidden;
+    border-left: none;
     border-radius: var(--r-lg);
-    background: var(--surface);
+    box-shadow: var(--shadow-float);
   }
-  /* Com a folha aberta, a faixa de números só atrapalharia por baixo dela. */
-  .palco:has(.node-panel) .stats { display: none; }
+  .node-panel-topo { align-items: center; }
+  .node-panel-nome { font-size: 1.05rem; margin-top: 0.1rem; }
+  .comunidade-chip { position: absolute; top: var(--s-3); right: calc(var(--s-3) + 30px); }
+  .metricas { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+  .metrica { padding: 0.4rem 0.5rem 0.5rem; gap: 0.1rem; }
+  .metrica-topo { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+  .metrica-nome { font-size: 0.58rem; letter-spacing: 0.05em; max-width: 100%; }
+  .metrica-valor { font-size: 1rem; }
+  .vizinhos-bloco { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+  .vizinhos-bloco h3 { position: sticky; top: 0; background: var(--surface); margin: 0; padding-bottom: var(--s-1); }
+
+  .painel { overflow: visible; border-right: none; border-top: 1px solid var(--border); padding: var(--s-3); gap: var(--s-2); }
+  .cartao { padding: var(--s-2) var(--s-3) var(--s-3); }
+  .painel h2 { margin-bottom: var(--s-2); }
+  .painel select { padding-top: 0.42rem; padding-bottom: 0.42rem; }
   .rodape { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 0.15rem; }
 }
 
