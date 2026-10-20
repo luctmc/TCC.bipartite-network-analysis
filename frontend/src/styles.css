@@ -2,10 +2,10 @@
  * A tela como página de periódico: o grafo é a Figura 1, com legenda;
  * os controles são a coluna de métodos; os números, uma tabela de filetes.
  * Tipografia: família Source (Adobe), SIL OFL 1.1, embutida em fonts/. */
-@font-face { font-family: "Source Serif 4"; src: url("/fonts/source-serif-4-roman.woff2") format("woff2"); font-weight: 200 900; font-style: normal; font-display: swap; }
-@font-face { font-family: "Source Serif 4"; src: url("/fonts/source-serif-4-italic.woff2") format("woff2"); font-weight: 200 900; font-style: italic; font-display: swap; }
-@font-face { font-family: "Source Sans 3"; src: url("/fonts/source-sans-3.woff2") format("woff2"); font-weight: 200 900; font-display: swap; }
-@font-face { font-family: "Source Code Pro"; src: url("/fonts/source-code-pro.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Source Serif 4"; src: url("/fonts/source-serif-4-roman.woff2") format("woff2"); font-weight: 200 900; font-style: normal; font-display: swap; unicode-range: U+0000-024F, U+0300-036F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-2199, U+2212, U+2264-2265, U+FFFD; }
+@font-face { font-family: "Source Serif 4"; src: url("/fonts/source-serif-4-italic.woff2") format("woff2"); font-weight: 200 900; font-style: italic; font-display: swap; unicode-range: U+0000-024F, U+0300-036F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-2199, U+2212, U+2264-2265, U+FFFD; }
+@font-face { font-family: "Source Sans 3"; src: url("/fonts/source-sans-3.woff2") format("woff2"); font-weight: 200 900; font-display: swap; unicode-range: U+0000-024F, U+0300-036F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-2199, U+2212, U+2264-2265, U+FFFD; }
+@font-face { font-family: "Source Code Pro"; src: url("/fonts/source-code-pro.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0000-024F, U+0300-036F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-2199, U+2212, U+2264-2265, U+FFFD; }
 
 :root {
   --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif;
@@ -20,12 +20,11 @@
   --text-muted: #6e6a60;
   --rule: #e4e0d6;
   --rule-2: #cdc7b8;
+  --rule-control: #807a6c;
   --hover: #f3f1ea;
   --focus: #1f5fbf;
   --edge: #1a1915;
   --node-stroke: #1a1915;
-  --node-sw: 1.25px;
-  --halo: #ffffff;
   --ok: #2f7d4f;
   color-scheme: light;
 }
@@ -38,12 +37,11 @@
   --text-muted: #908b7f;
   --rule: #2c2a25;
   --rule-2: #3d3a33;
+  --rule-control: #787266;
   --hover: #24221e;
   --focus: #8db4ff;
   --edge: #ece8df;
   --node-stroke: #1c1b18;
-  --node-sw: 2px;
-  --halo: #1c1b18;
   --ok: #7cc49a;
   color-scheme: dark;
 }
@@ -93,7 +91,7 @@ h1 {
 .status-raizes { font: 12.5px var(--mono); color: var(--text-muted); }
 .tema-botao {
   display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid var(--rule-2); background: transparent; border-radius: 999px;
+  border: 1px solid var(--rule-control); background: transparent; border-radius: 999px;
   padding: 4px 11px 4px 9px; cursor: pointer; font-size: 13.5px; color: var(--text-2);
   transition: background-color 150ms ease, transform 120ms ease-out;
 }
@@ -109,9 +107,9 @@ h1 {
 .stats dd { font: 400 30px/1.05 var(--serif); letter-spacing: -0.01em; }
 .stats dd i { font-style: italic; }
 .figura { position: relative; min-height: 0; }
-.zoom-controles { position: absolute; right: 0; bottom: 16px; display: flex; border: 1px solid var(--rule-2); border-radius: 4px; background: var(--sheet); overflow: hidden; }
+.zoom-controles { position: absolute; right: 0; bottom: 16px; display: flex; border: 1px solid var(--rule-control); border-radius: 4px; background: var(--sheet); overflow: hidden; }
 .zoom-controles button { width: 34px; height: 32px; border: 0; background: transparent; display: grid; place-items: center; color: var(--text-2); cursor: pointer; transition: background-color 150ms ease; }
-.zoom-controles button + button { border-left: 1px solid var(--rule); }
+.zoom-controles button + button { border-left: 1px solid var(--rule-control); }
 .zoom-controles button:hover { background: var(--hover); color: var(--text); }
 .zoom-controles button:active { transform: scale(0.95); }
 .legenda-fig {
@@ -152,14 +150,14 @@ code { font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
 .campo { margin-left: 20px; min-width: 0; }
 .campo-id { display: block; margin-top: 6px; color: var(--text-muted); }
 .seletor { position: relative; min-width: 0; }
-.seletor-gatilho { display: flex; align-items: center; gap: 8px; width: 100%; height: 38px; padding: 0 12px; border: 1px solid var(--rule-2); border-radius: 4px; background: var(--sheet); font-size: 15px; font-weight: 500; text-align: left; transition: border-color 150ms ease; }
+.seletor-gatilho { display: flex; align-items: center; gap: 8px; width: 100%; height: 38px; padding: 0 12px; border: 1px solid var(--rule-control); border-radius: 4px; background: var(--sheet); font-size: 15px; font-weight: 500; text-align: left; transition: border-color 150ms ease; }
 .seletor-gatilho:hover, .seletor-gatilho[aria-expanded="true"] { border-color: var(--text-muted); }
 .seletor-valor { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .seletor-seta { flex: 0 0 auto; }
 .seletor-nativo { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); border: 0; }
-.seletor-painel { position: fixed; z-index: 100; padding: 4px; list-style: none; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--rule-2); border-radius: 4px; background: var(--sheet); color: var(--text); box-shadow: 0 6px 18px #00000012; }
+.seletor-painel { position: fixed; z-index: 100; padding: 4px; list-style: none; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--rule-control); border-radius: 4px; background: var(--sheet); color: var(--text); box-shadow: 0 6px 18px #00000012; }
 .seletor-opcao { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 8px; border-radius: 2px; cursor: pointer; }
-.seletor-opcao[data-ativo="true"] { background: var(--hover); outline: 1px solid var(--rule-2); outline-offset: -1px; }
+.seletor-opcao[data-ativo="true"] { background: var(--hover); outline: 1px solid var(--rule-control); outline-offset: -1px; }
 .seletor-textos { flex: 1; min-width: 0; }
 .seletor-rotulo { display: block; overflow-wrap: break-word; word-break: normal; }
 .seletor-id { display: block; margin-top: 2px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -179,7 +177,7 @@ code { font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
 .segmentado button { display: flex; align-items: center; gap: 10px; background: transparent; border: 0; padding: 7px 0; font-weight: 500; font-size: 15px; text-align: left; border-radius: 4px; }
 .segmentado button:hover { background: var(--hover); }
 .segmentado button.ativo { font-weight: 600; }
-.radio-marca { width: 16px; height: 16px; border: 1.5px solid var(--rule-2); border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
+.radio-marca { width: 16px; height: 16px; border: 1.5px solid var(--rule-control); border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
 .ativo .radio-marca { border-color: var(--text); }
 .ativo .radio-marca::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--text); }
 .opcoes-desc { margin: 8px 0 0 20px; color: var(--text-muted); font-size: 13.5px; line-height: 1.4; }
@@ -246,7 +244,7 @@ code { font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
   .topo { flex-direction: column-reverse; align-items: stretch; gap: 14px; padding: 16px; }
   .topo-lado { flex-direction: row; justify-content: space-between; align-items: center; gap: 12px; }
   .topo-status { gap: 12px; font-size: 12px; }
-  .status-raizes { display: none; }
+  .status-raizes { display: inline-block; max-width: 7ch; }
   .sobrelinha { font-size: 13.5px; }
   h1 { font-size: 23px; }
   .autores { font-size: 13px; }

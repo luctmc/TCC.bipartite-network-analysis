@@ -225,6 +225,46 @@ export default function App() {
           <div className="topo-status"><StatusApi estado={health} /><BotaoTema tema={tema} onAlternar={alternarTema} /></div>
         </div>
       </header>
+      <main className="palco" onKeyDown={atalhosDoPalco}>
+        <section className="figura-area" aria-label="Figura da rede">
+          {dadosGrafo && <StatsBar graph={dadosGrafo} partition={particao} />}
+          <div className="figura">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${datasetAtivo}/${projecaoAtiva}/${grafo?.status}`}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }} className="palco-conteudo"
+              >
+                {grafo === null && <Vazio tipo="vazio">Escolha um dataset e uma projeção para ver o grafo.</Vazio>}
+                {grafo?.status === "carregando" && <Vazio tipo="carregando">{datasetAtivo} · {projecaoAtiva}</Vazio>}
+                {grafo?.status === "erro" && <Vazio tipo="erro">{grafo.erro.message}</Vazio>}
+                {dadosGrafo && (
+                  <ErrorBoundary resetKey={`${datasetAtivo}/${projecaoAtiva}`}>
+                    <GraphView ref={grafoRef} graph={dadosGrafo} membership={membership}
+                      sizeBy={metricaAtiva} tema={tema} selected={selecionado} onSelect={setSelecionado} />
+                  </ErrorBoundary>
+                )}
+              </motion.div>
+            </AnimatePresence>
+            {dadosGrafo && <ControlesZoom aoAproximar={() => grafoRef.current?.aproximar()}
+              aoAfastar={() => grafoRef.current?.afastar()} aoCentralizar={() => grafoRef.current?.centralizar()} />}
+          </div>
+          <p className="legenda-fig">
+            <b>Figura 1.</b> {ROTULO_PROJECAO[projecaoAtiva ?? ""] ?? "Rede educacional"}
+            {datasetAtivo && <>, <i>{datasetAtivo}</i></>}. <b>Forma e cor</b>{" "}
+            <span className="glifos-legenda"><Marca /></span> indicam a comunidade
+            {particao && <> ({ROTULO_ALGORITMO[particao.algorithm] ?? particao.algorithm})</>}; a forma basta para ler em cinza.{" "}
+            <b>Tamanho</b> {metricaAtiva ? `é ${METRICAS.find(m => m.id === metricaAtiva)?.nome.toLowerCase()}` : "é igual para todos os nós"}.{" "}
+            <b>Espessura</b> da linha é o peso da ligação. Clique num nó para ver os detalhes.
+          </p>
+        </section>
+        <aside className="nota-lateral" aria-label="Detalhes do nó">
+          {!(dadosGrafo && selecionado) && <p className="inspetor-vazio">Selecione um nó no grafo para ver comunidade, centralidades e vizinhos.</p>}
+          <AnimatePresence>
+            {dadosGrafo && selecionado && <NodePanel graph={dadosGrafo} membership={membership} nodeId={selecionado} onSelect={setSelecionado} />}
+          </AnimatePresence>
+        </aside>
+      </main>
       <aside className="painel" aria-label="Controles do grafo">
         <section className="cartao">
           <Passo n={1} titulo="Dados" ajuda="Conjunto lido do disco." />
@@ -358,46 +398,6 @@ export default function App() {
       </aside>
 
 
-      <main className="palco" onKeyDown={atalhosDoPalco}>
-        <section className="figura-area" aria-label="Figura da rede">
-          {dadosGrafo && <StatsBar graph={dadosGrafo} partition={particao} />}
-          <div className="figura">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${datasetAtivo}/${projecaoAtiva}/${grafo?.status}`}
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }} className="palco-conteudo"
-              >
-                {grafo === null && <Vazio tipo="vazio">Escolha um dataset e uma projeção para ver o grafo.</Vazio>}
-                {grafo?.status === "carregando" && <Vazio tipo="carregando">{datasetAtivo} · {projecaoAtiva}</Vazio>}
-                {grafo?.status === "erro" && <Vazio tipo="erro">{grafo.erro.message}</Vazio>}
-                {dadosGrafo && (
-                  <ErrorBoundary resetKey={`${datasetAtivo}/${projecaoAtiva}`}>
-                    <GraphView ref={grafoRef} graph={dadosGrafo} membership={membership}
-                      sizeBy={metricaAtiva} tema={tema} selected={selecionado} onSelect={setSelecionado} />
-                  </ErrorBoundary>
-                )}
-              </motion.div>
-            </AnimatePresence>
-            {dadosGrafo && <ControlesZoom aoAproximar={() => grafoRef.current?.aproximar()}
-              aoAfastar={() => grafoRef.current?.afastar()} aoCentralizar={() => grafoRef.current?.centralizar()} />}
-          </div>
-          <p className="legenda-fig">
-            <b>Figura 1.</b> {ROTULO_PROJECAO[projecaoAtiva ?? ""] ?? "Rede educacional"}
-            {datasetAtivo && <>, <i>{datasetAtivo}</i></>}. <b>Forma e cor</b>{" "}
-            <span className="glifos-legenda"><Marca /></span> indicam a comunidade
-            {particao && <> ({ROTULO_ALGORITMO[particao.algorithm] ?? particao.algorithm})</>}; a forma basta para ler em cinza.{" "}
-            <b>Tamanho</b> {metricaAtiva ? `é ${METRICAS.find(m => m.id === metricaAtiva)?.nome.toLowerCase()}` : "é igual para todos os nós"}.{" "}
-            <b>Espessura</b> da linha é o peso da ligação. Clique num nó para ver os detalhes.
-          </p>
-        </section>
-        <aside className="nota-lateral" aria-label="Detalhes do nó">
-          {!(dadosGrafo && selecionado) && <p className="inspetor-vazio">Selecione um nó no grafo para ver comunidade, centralidades e vizinhos.</p>}
-          <AnimatePresence>
-            {dadosGrafo && selecionado && <NodePanel graph={dadosGrafo} membership={membership} nodeId={selecionado} onSelect={setSelecionado} />}
-          </AnimatePresence>
-        </aside>
-      </main>
       <footer className="rodape">
         <span>Repositório do TCC: <a href={URL_REPOSITORIO} target="_blank" rel="noopener noreferrer"
           aria-label="Repositório do TCC no GitHub (abre em nova aba)">luctmc/TCC.bipartite-network-analysis</a></span>

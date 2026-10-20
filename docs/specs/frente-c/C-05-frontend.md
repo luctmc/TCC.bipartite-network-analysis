@@ -107,7 +107,7 @@ Acrescentados durante a implementação:
   papel claro padrão `#FBFAF7`, grafite quente `#161512` no escuro,
   filetes, métodos à esquerda, Figura 1 ao centro e detalhe do nó à direita.
   Em 390 px, figura e painel precedem os controles; status da API visível.
-- `frontend/public/fonts/` — WOFF2 oficiais Source Serif 4, Source Sans 3 e
+- `frontend/public/fonts/` — subsets latinos dos WOFF2 oficiais Source Serif 4, Source Sans 3 e
   Source Code Pro, com licenças OFL e registro dos URLs/commits da Adobe em
   `README.md`. Fontes embutidas aprovadas pelo usuário, sem dependência npm.
 - `frontend/src/components/NodePanel.tsx`, `StatsBar.tsx` — nome e números em
@@ -126,6 +126,11 @@ Acrescentados durante a implementação:
   pintura, usando escolha salva ou claro padrão; `frontend/README.md`
   descreve a direção A, as fontes e a verificação. As capturas da figura 9
   devem ser refeitas após a integração; as cenas OULAD dependem dos dados.
+
+- REBRAND-02, acabamento: bordas de controles com contraste mínimo 3:1 nos dois
+  temas, raízes da API compactas no celular e DOM na ordem figura → métodos;
+  grid desktop preservado. Fontes reduzidas em 42,3%, com português e licenças
+  preservados; regeneração documentada em `frontend/public/fonts/README.md`.
 
 ## Impacto no artigo
 

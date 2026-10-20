@@ -81,10 +81,11 @@ filetes. O título curto da aplicação e os três autores foram preservados.
   [source-serif](https://github.com/adobe-fonts/source-serif),
   [source-sans](https://github.com/adobe-fonts/source-sans) e
   [source-code-pro](https://github.com/adobe-fonts/source-code-pro).
-  Os WOFF2 originais, as três licenças OFL e os URLs imutáveis com os commits
+  Os WOFF2 reduzidos, as três licenças OFL e os URLs imutáveis com os commits
   de origem estão em [public/fonts/README.md](public/fonts/README.md).
-  São distribuições completas (cerca de 1 MB); não foi criado subset latino
-  porque o suporte Brotli de subsetting não está instalado no ambiente.
+  O subset latino com português soma 588.068 bytes (42,3% menor), com
+  `unicode-range` e eixos variáveis preservados. O script de regeneração usa
+  fonttools/Brotli em venv temporário, sem dependências novas no projeto.
   Não há CDN nem requisição externa de fonte em runtime.
 - **Métodos em quatro passos:** Dados, Projeção, Comunidades e Centralidade.
   Ids e callbacks continuam iguais; opções de tamanho têm aparência de
@@ -108,7 +109,10 @@ filetes. O título curto da aplicação e os três autores foram preservados.
   O menu usa o mesmo papel e os mesmos filetes dos campos.
 - **Responsividade:** três colunas em 1440; métodos e inspetor mais estreitos
   em 1024; em 390, cabeçalho, figura, painel, controles e rodapé nessa ordem.
-  O status da API fica visível também no celular (as raízes ficam no desktop).
+  Status e raízes da API ficam visíveis também no celular: raízes em 7ch,
+  com reticências e caminho completo no `title`. O DOM segue figura/painel
+  antes dos métodos, como no celular; o grid mantém métodos | figura | nota
+  no desktop. Tab segue a ordem do DOM nos dois tamanhos.
   Zoom permanece por ref (`aproximar`, `afastar`, `centralizar`) e atalhos
   `+`, `−`, `0`; o desenho grande mantém estilo fixo, zoom quantizado e
   cleanup. A câmera inicial e Centralizar usam a mesma folga: 36 px no
@@ -193,3 +197,17 @@ de `reporting/figures.py`.
 navegador engasga e a figura deixa de comunicar. O corte é
 responsabilidade da API (spec C-04, parâmetros `max_edges` e `cut`); o
 componente confia no que recebe, mas avisa quando o número passa.
+
+
+## Contraste dos controles (REBRAND-02)
+
+Bordas indicativas usam `--rule-control`; filetes decorativos mantêm `--rule-2`.
+Contrastes calculados pela luminância relativa sRGB (WCAG):
+
+| Tema / borda | Contra papel | Contra folha |
+| --- | ---: | ---: |
+| Claro `#807A6C` | `#FBFAF7`: **4,091:1** | `#FFFFFF`: **4,270:1** |
+| Escuro `#787266` | `#161512`: **3,823:1** | `#1C1B18`: **3,606:1** |
+
+O token identifica gatilhos e menu do Seletor, rádios inativos, botão de tema
+e bordas/divisórias do zoom. Todos superam 3:1 nos dois fundos do tema.
