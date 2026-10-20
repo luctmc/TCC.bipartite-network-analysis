@@ -38,7 +38,7 @@ pytest
 ```
 
 Esperado: os três datasets de fixture validando. Em 20/10/2026,
-`pytest -m "not slow" -q` retornou **357 testes passando, 1 pulado,
+`pytest -m "not slow" -q` retornou **358 testes passando, 1 pulado,
 0 `xfail` e 1 desmarcado** pelo filtro `not slow`. O teste pulado depende
 de `oulad_module_presentation`, ausente nas fixtures; as specs da Frente C
 estão implementadas. Houve 1 aviso de depreciação do TestClient/HTTPX.

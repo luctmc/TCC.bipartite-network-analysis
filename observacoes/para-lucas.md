@@ -135,7 +135,7 @@ Ver as regras em [`README.md`](README.md).
   não é falha de implementação.
 - **Como resolver:** atualizar os números, a data e a descrição das specs
   concluídas; distinguir os marcadores históricos do estado atual da suíte.
-- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — README e estratégia atualizados com medição final no worktree: pytest -m "not slow" -q retornou 357 passed, 1 skipped (OULAD ausente), 0 xfail, 1 deselected e 1 warning; specs da Frente C descritas como implementadas.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c — README e estratégia atualizados com medição final no worktree: pytest -m "not slow" -q retornou 357 passed, 1 skipped (OULAD ausente), 0 xfail, 1 deselected e 1 warning; specs da Frente C descritas como implementadas. Contagem renovada na FIX-C2 após o teste ponderado: 358 passed, 1 skipped, 0 xfail, 1 deselected e 1 warning; documentação sincronizada.
 
 
 ### C-OBS-10 · README não avisa que a coorte por avaliação está sem métricas

@@ -43,7 +43,7 @@ quando a raiz em uso não o contém.
 
 ## Estado atual da suíte
 
-**357 testes passando, 1 pulado, 0 `xfail`, 1 desmarcado e nenhuma falha**
+**358 testes passando, 1 pulado, 0 `xfail`, 1 desmarcado e nenhuma falha**
 (20/10/2026, `pytest -m "not slow" -q`, sobre as fixtures). O teste
 pulado depende de `oulad_module_presentation`, ausente nas fixtures; o
 filtro exclui o único teste `slow`. A execução emitiu 1 aviso de
