@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint src --max-warnings 0",
-    "capture": "node scripts/capture.mjs"
+    "capture": "node scripts/capture.mjs",
+    "test": "node --test tests/"
   },
   "dependencies": {
     "cytoscape": "^3.30.2",

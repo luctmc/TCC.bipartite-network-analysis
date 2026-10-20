@@ -55,4 +55,16 @@ uma frente ou precisa de decisão conjunta.
 
 ## Resolvidas
 
-Nenhuma ainda.
+### T-OBS-03 · Informativo: CI do frontend executa lint e testes
+
+- **De:** correção FIX-C2, sessão do Lucas · **Data:** 20/10/2026
+- **Onde:** `.github/workflows/ci.yml:96` e `frontend/package.json:14`.
+- **O quê:** o job do frontend usa o lockfile como chave de cache e
+  instala por `npm ci`; além de tipos e build, passa a executar
+  `npm run lint` e `npm test`. A sequência local
+  `npm ci && npm run lint && npm test && npm run build` passou, com
+  seis testes do cliente. O caráter informativo do job foi preservado.
+- **Como resolver:** aviso ao grupo; manter o lockfile e os testes do
+  frontend atualizados nas próximas alterações.
+- **Resolvida:** 20/10/2026 por Lucas, branch c/pendencias-frente-c —
+  CI atualizada e comandos verificados localmente; item informativo.
