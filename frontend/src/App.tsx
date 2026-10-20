@@ -13,7 +13,7 @@
  *   re-diagrame o grafo: só os nós mudam de cor, com transição.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 
 import { ApiError, api } from "./api";
@@ -60,6 +60,17 @@ function temaInicial(): Tema {
 
 export default function App() {
   const [tema, setTema] = useState<Tema>(temaInicial);
+  // Timeout que tira a classe de transição do tema; só pode haver um.
+  const fimTransicaoTema = useRef(0);
+
+  // Ao desmontar: cancela o timeout e não deixa a classe para trás.
+  useEffect(
+    () => () => {
+      window.clearTimeout(fimTransicaoTema.current);
+      document.documentElement.classList.remove("tema-trocando");
+    },
+    [],
+  );
   const [health, setHealth] = useState<Estado<HealthResponse>>({ status: "carregando" });
   const [datasets, setDatasets] = useState<Estado<DatasetSummary[]>>({ status: "carregando" });
   const [datasetAtivo, setDatasetAtivo] = useState<string | null>(null);
@@ -102,7 +113,8 @@ export default function App() {
     const raiz = document.documentElement;
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       raiz.classList.add("tema-trocando");
-      window.setTimeout(() => raiz.classList.remove("tema-trocando"), 320);
+      window.clearTimeout(fimTransicaoTema.current);
+      fimTransicaoTema.current = window.setTimeout(() => raiz.classList.remove("tema-trocando"), 320);
     }
     raiz.dataset.theme = novo;
     try {
