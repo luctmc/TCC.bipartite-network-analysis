@@ -18,6 +18,41 @@ uma frente ou precisa de decisão conjunta.
   e a Frente C roda as centralidades em seguida
   (`--only centrality`). Ou o grupo decide que ele fica de fora.
 
+- **Atualização:** auditoria de 20/10/2026 confirmou que os três TOMLs
+  OULAD (`configs/oulad_cohort_bbb_2013j.toml:11`,
+  `configs/oulad_module_presentation.toml:14` e
+  `configs/oulad_vle_bbb_2013j.toml:18`) já têm
+  `stages = ["data", "community", "centrality"]`: a falta registrada é
+  só de execução, não de configuração. A execução real não é verificável
+  nesta máquina, sem dados brutos OULAD nem `data/processed`.
+
+### T-OBS-02 · Pipeline mistura rodadas quando a raiz antiga precede a saída
+
+- **De:** auditoria AUD-01 · **Data:** 20/10/2026
+- **Onde:** `src/edugraph/__main__.py:128`,
+  `src/edugraph/__main__.py:141`,
+  `src/edugraph/community/stage.py:63` e
+  `src/edugraph/centrality/stage.py:110`.
+- **O quê:** com `--root` diferente de `--out` e o mesmo dataset nas duas
+  raízes, A grava uma nova rodada em `--out`, mas B e C resolvem artefatos
+  por `[*roots, out]` e leem primeiro a raiz antiga. Na AUD-01b, uma cópia
+  temporária do TOML sintético com dataset `tiny_v1`, só Louvain e degree,
+  executada por `python -m edugraph run <config-temporária> --root
+  <cópia-das-fixtures> --out <saída-temporária>` terminou com exit 0.
+  Porém, `python -m edugraph validate --root <saída-temporária>` falhou
+  (exit 1): `membership cobre 3 nós, mas a projeção
+  'discipline_resource_allocation' tem 7`. A reprodução isolando os
+  estágios A e C também mostrou `A output nodes=98; C output scores=6;
+  same nodes=False`. O pipeline com leitura e escrita na mesma raiz passou;
+  a quebra exige a colisão entre raiz antiga e saída distinta.
+- **Como resolver:** o runner deve promover a saída da etapa executada à
+  primeira raiz das etapas seguintes, preservando a precedência esperada
+  de execuções isoladas; acrescentar teste de colisão de dataset entre
+  entrada antiga e saída regenerada. O runner é arquivo compartilhado:
+  a alteração exige aprovação dos três. B e C devem revisar em conjunto
+  a resolução de raízes; não mudar o contrato congelado para contornar
+  o problema.
+
 ## Resolvidas
 
 Nenhuma ainda.
