@@ -7,11 +7,12 @@
  * apresentação.
  */
 
-import type { CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
 import { motion } from "framer-motion";
 
-import { communityOrder, communityStyle } from "../palette";
+import { communityOrder, communityStyle, themeColor } from "../palette";
 import { SILHUETAS } from "./CommunityLegend";
+import { tons } from "./GraphView";
 import type { CentralityMetric, GraphResponse } from "../types";
 
 const METRICAS: { id: CentralityMetric; nome: string }[] = [
@@ -59,11 +60,20 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
 
   const pesoMax = vizinhos[0]?.weight ?? 0;
 
+  const ordem = membership ? communityOrder(membership) : null;
+  const estiloDe = (id: string) => {
+    const c = membership?.[id];
+    return ordem && c !== undefined ? communityStyle(ordem.get(c) ?? 0) : null;
+  };
   const comunidade = membership?.[nodeId];
-  const estiloComunidade =
-    membership && comunidade !== undefined
-      ? communityStyle(communityOrder(membership).get(comunidade) ?? 0)
-      : null;
+  const estiloComunidade = estiloDe(nodeId);
+  // Sem partição, o nó usa a cor e a forma do tipo (aluno / disciplina), como no grafo.
+  const disciplina = no.kind === "discipline";
+  const corNo =
+    estiloComunidade?.color ??
+    themeColor(disciplina ? "--node-discipline" : "--node-student", disciplina ? "#f0a868" : "#6ea8fe");
+  const formaNo = estiloComunidade?.shape ?? (disciplina ? "round-rectangle" : "ellipse");
+  const tomNo = tons(corNo);
 
   return (
     <motion.section
@@ -74,8 +84,9 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
       <header className="node-panel-topo">
-        <div>
-          <h2>{no.kind === "discipline" ? "Disciplina" : "Aluno"}</h2>
+        <Silhueta forma={formaNo} cor={corNo} tamanho={46} className="node-panel-forma" />
+        <div className="node-panel-titulo">
+          <h2>{disciplina ? "Disciplina" : "Aluno"}</h2>
           <p className="node-panel-nome">{no.label}</p>
         </div>
         <button type="button" className="fechar" onClick={() => onSelect(null)} aria-label="Fechar painel do nó">
@@ -88,9 +99,7 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
       <div className="comunidade-chip">
         {estiloComunidade ? (
           <span className="comunidade">
-            <svg className="amostra" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-              <path d={SILHUETAS[estiloComunidade.shape] ?? SILHUETAS.ellipse} fill={estiloComunidade.color} />
-            </svg>
+            <Silhueta forma={estiloComunidade.shape} cor={estiloComunidade.color} tamanho={12} />
             comunidade {comunidade}
           </span>
         ) : (
@@ -109,6 +118,8 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
               valor={valor}
               posicao={scores && valor !== undefined ? posicao(scores, nodeId) : null}
               total={scores ? Object.keys(scores).length : 0}
+              claro={tomNo.claro}
+              cor={corNo}
             />
           );
         })}
@@ -124,6 +135,7 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
         <ul className="vizinhos">
           {vizinhos.slice(0, MAX_VIZINHOS).map((vizinho) => {
             const nome = rotulos.get(vizinho.id) ?? vizinho.id;
+            const estiloVizinho = estiloDe(vizinho.id);
             return (
               <li key={vizinho.id}>
                 <button
@@ -132,7 +144,12 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
                   title={nome}
                   style={{ "--w": `${pesoMax > 0 ? (100 * vizinho.weight) / pesoMax : 0}%` } as CSSProperties}
                 >
-                  <span>{nome}</span>
+                  <span className="vizinho-forma">
+                    {estiloVizinho && (
+                      <Silhueta forma={estiloVizinho.shape} cor={estiloVizinho.color} tamanho={12} />
+                    )}
+                  </span>
+                  <span className="vizinho-nome">{nome}</span>
                   <span className="dim">{vizinho.weight.toLocaleString("pt-BR")}</span>
                 </button>
               </li>
@@ -147,12 +164,39 @@ export function NodePanel({ graph, membership, nodeId, onSelect }: NodePanelProp
   );
 }
 
-/** Uma centralidade: valor em destaque, posição como badge e medidor da posição relativa. */
+/** Silhueta da forma do nó, com o mesmo gradiente claro → base → escuro do grafo. */
+function Silhueta(props: { forma: string; cor: string; tamanho: number; className?: string }) {
+  const id = useId();
+  const t = tons(props.cor);
+  const caminho = SILHUETAS[props.forma] ?? (props.forma === "round-rectangle" ? SILHUETAS["round-rectangle"] : SILHUETAS.ellipse);
+  return (
+    <svg
+      className={props.className ?? "amostra"}
+      viewBox="0 0 16 16"
+      width={props.tamanho}
+      height={props.tamanho}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={t.claro} />
+          <stop offset="0.55" stopColor={props.cor} />
+          <stop offset="1" stopColor={t.escuro} />
+        </linearGradient>
+      </defs>
+      <path d={caminho} fill={`url(#${id})`} stroke={t.anel} strokeOpacity="0.6" strokeWidth="0.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Uma centralidade: valor grande, posição legível ("1º de 7") e barra fina com gradiente. */
 function Metrica(props: {
   nome: string;
   valor: number | undefined;
   posicao: number | null;
   total: number;
+  claro: string;
+  cor: string;
 }) {
   const { nome, valor, posicao: pos, total } = props;
   return (
@@ -163,7 +207,7 @@ function Metrica(props: {
         </span>
         {valor !== undefined && pos !== null && (
           <span className="posicao" title={`${pos}º lugar entre ${total} nós`}>
-            {pos}º<span>/{total}</span>
+            {pos}º <span>de {total}</span>
           </span>
         )}
       </div>
@@ -174,12 +218,13 @@ function Metrica(props: {
           <span className="metrica-valor">
             {valor.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
           </span>
-          <span
-            className="medidor"
-            role="img"
-            aria-label={`${pos}º lugar entre ${total} nós`}
-          >
-            <span style={{ width: `${total > 0 && pos !== null ? (100 * (total - pos + 1)) / total : 0}%` }} />
+          <span className="medidor" role="img" aria-label={`${pos}º lugar entre ${total} nós`}>
+            <span
+              style={{
+                width: `${total > 0 && pos !== null ? (100 * (total - pos + 1)) / total : 0}%`,
+                background: `linear-gradient(90deg, ${props.cor}, ${props.claro})`,
+              }}
+            />
           </span>
         </>
       )}

@@ -201,7 +201,7 @@ function misturar(cor: string, alvo: string, t: number): string {
  * Tons de acabamento derivados da cor-base do nó: claro (topo), escuro
  * (base) e anel. A cor-base continua sendo a da paleta Okabe & Ito.
  */
-function tons(cor: string) {
+export function tons(cor: string) {
   const claro = misturar(cor, "#ffffff", 0.26);
   const escuro = misturar(cor, "#000000", 0.28);
   return { claro, escuro, anel: misturar(cor, "#ffffff", 0.5), grad: `${claro} ${cor} ${escuro}` };
