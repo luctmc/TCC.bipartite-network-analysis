@@ -87,10 +87,6 @@ def _install_exception_handlers(app: FastAPI) -> None:
         # não de requisição. Distinguir isso de 404 poupa depuração.
         return JSONResponse(status_code=409, content={"detail": str(exc)})
 
-    @app.exception_handler(NotImplementedError)
-    async def _not_implemented(request: object, exc: NotImplementedError) -> JSONResponse:
-        return JSONResponse(status_code=501, content={"detail": str(exc)})
-
 
 def _mount_frontend(app: FastAPI) -> None:
     """Serve o build do Vite em ``/``, quando ele existir.

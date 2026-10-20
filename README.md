@@ -37,11 +37,13 @@ python -m edugraph validate --root data/fixtures
 pytest
 ```
 
-Esperado: os dois datasets de fixture validando, e a suíte com **275
-testes passando e 11 `xfail`**. Os `xfail` são as specs ainda abertas da
-Frente C — cada um traz o id da spec que o destrava.
+Esperado: os três datasets de fixture validando. Em 20/10/2026,
+`pytest -m "not slow" -q` retornou **358 testes passando, 1 pulado,
+0 `xfail` e 1 desmarcado** pelo filtro `not slow`. O teste pulado depende
+de `oulad_module_presentation`, ausente nas fixtures; as specs da Frente C
+estão implementadas. Houve 1 aviso de depreciação do TestClient/HTTPX.
 
-Requer **Python 3.11+**. O front-end requer **Node 18+**, e é opcional:
+Requer **Python 3.11+**. O front-end requer **Node 20 (>=20.19), 22 (>=22.13) ou >=24** (ESLint 10), e é opcional:
 a análise inteira funciona sem ele.
 
 ## O que dá para fazer agora

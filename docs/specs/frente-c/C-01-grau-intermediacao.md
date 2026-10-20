@@ -66,15 +66,14 @@ Ver `docs/contratos/centrality.md`.
 ## Testes exigidos
 
 - **Contrato:** `scores` cobre exatamente os nós da projeção.
-- **Unitários** (`tests/centrality/test_centralidades.py`, já escritos
-  como `xfail`): grau e intermediação contra `expected/`; degeneração de
+- **Unitários** (`tests/centrality/test_centralidades.py`, implementados e passando): grau e intermediação contra `expected/`; degeneração de
   `discipline_simple`.
 
 ## Arquivos criados ou alterados
 
 - `src/edugraph/centrality/degree.py`, `betweenness.py`.
 - `src/edugraph/centrality/cli.py`, `stage.py`.
-- `tests/centrality/test_centralidades.py` — remover os `xfail`.
+- `tests/centrality/test_centralidades.py` — testes das métricas e dos casos degenerados.
 
 ## Impacto no artigo
 

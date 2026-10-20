@@ -72,6 +72,13 @@ indiferente**, e a razão está na spec A-08:
 | `oulad_module_presentation_null0..4` | réplicas nulas do anterior | linha de base |
 | `oulad_bbb_2013j` | coorte por avaliação, 1.706 alunos | comparação Louvain × Girvan-Newman (grafo menor) |
 
+**Pendente de execução:** `oulad_bbb_2013j` ainda está sem comunidades e
+centralidades, conforme [T-OBS-01](../../../observacoes/para-todos.md).
+Os TOMLs já declaram as três etapas; a comparação e a visualização com
+métricas dependem dessa rodada ou de uma decisão de excluir o dataset.
+O estado dos artefatos OULAD não foi verificável na auditoria de
+20/10/2026, realizada sem os dados reais.
+
 **O aviso que evita concluir o contrário do certo.** Na projeção
 aluno↔aluno de `oulad_module_presentation`, o Q real (0,7728) é **menor**
 que o das réplicas embaralhadas (0,781): ali não há estrutura de
