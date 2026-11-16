@@ -110,6 +110,34 @@ Ver as regras em [`README.md`](README.md).
 
 ## Resolvidas
 
+### C-OBS-15 · Rótulo da etapa ativa some com o mouse em cima
+
+- **De:** revisão para a apresentação da defesa · **Data:** 16/11/2026
+- **Onde:** `frontend/src/styles.css:346` e `frontend/src/styles.css:347`
+- **O quê:** no laboratório, com o ponteiro sobre a etapa **ativa**
+  (`.lab-etapa-chip.ativa`), a regra `.lab-etapa-chip:hover:not(:disabled)`
+  troca a cor do texto para `var(--text)`, a mesma do fundo da etapa ativa:
+  o rótulo ("Algoritmo", "Resultado") desaparece e só o número fica. Visto
+  em captura (Chromium, 1600 × 900) logo depois de clicar na etapa.
+  Sem o mouse em cima, a cor computada é a correta (papel sobre tinta).
+- **Como resolver:** excluir a ativa do hover, por exemplo
+  `.lab-etapa-chip:hover:not(:disabled):not(.ativa)`, ou repetir
+  `color: var(--paper)` em `.lab-etapa-chip.ativa:hover`.
+- **Resolvida:** 16/11/2026 pela Frente C, branch `c/apresentacao-defesa` — `frontend/src/styles.css`: o hover da etapa passou a `:not(:disabled):not(.ativa)`; conferido em captura.
+
+### C-OBS-16 · `npm test` não acha os testes no Node 22
+
+- **De:** revisão para a apresentação da defesa · **Data:** 16/11/2026
+- **Onde:** `frontend/package.json` (script `test`)
+- **O quê:** `node --test tests/` no Node 22.23 termina com
+  `Cannot find module '.../frontend/tests'` e `fail 1`: desde o Node 21 os
+  argumentos de `--test` são padrões de arquivo, não pastas.
+  `node --test tests/*.test.mjs` roda os 32 testes, todos passando.
+- **Como resolver:** trocar o script para `node --test tests/*.test.mjs`
+  (o Node expande o padrão sozinho, também no Windows) e conferir no
+  Node 20, que o README ainda aceita.
+- **Resolvida:** 16/11/2026 pela Frente C, branch `c/apresentacao-defesa` — script `test` virou `node --test`, que descobre `tests/*.test.mjs` no Node 20 e no 22; 32 testes passando no Node 22.23.
+
 ### C-OBS-14 · Informativo: percentuais do roteiro do front corrigidos
 
 - **De:** Frente A · **Data:** 04/11/2026
@@ -196,7 +224,6 @@ Ver as regras em [`README.md`](README.md).
   concluídas; distinguir os marcadores históricos do estado atual da suíte.
 - **Resolvida:** 20/10/2026 pela Frente C, branch c/pendencias-frente-c — README e estratégia atualizados com medição final no worktree: pytest -m "not slow" -q retornou 357 passed, 1 skipped (OULAD ausente), 0 xfail, 1 deselected e 1 warning; specs da Frente C descritas como implementadas. Contagem renovada na FIX-C2 após o teste ponderado: 358 passed, 1 skipped, 0 xfail, 1 deselected e 1 warning; documentação sincronizada.
 
-
 ### C-OBS-10 · README não avisa que a coorte por avaliação está sem métricas
 
 - **De:** auditoria AUD-01, Frente C · **Data:** 20/10/2026
@@ -212,7 +239,6 @@ Ver as regras em [`README.md`](README.md).
   decisão de excluir o dataset.
 - **Resolvida:** 20/10/2026 pela Frente C, branch c/pendencias-frente-c — README da Frente C avisa da rodada pendente para oulad_bbb_2013j, referencia T-OBS-01 e distingue configuração existente de execução não verificável sem OULAD.
 
-
 ### C-OBS-08 · Lockfile ignorado impede reproduzir as dependências do frontend
 
 - **De:** auditoria AUD-01, Frente C · **Data:** 20/10/2026
@@ -224,7 +250,6 @@ Ver as regras em [`README.md`](README.md).
 - **Como resolver:** versionar o lockfile e adotar instalação reproduzível,
   ou registrar explicitamente a decisão do grupo e suas limitações.
 - **Resolvida:** 20/10/2026 pela Frente C, branch c/pendencias-frente-c — frontend/package-lock.json gerado por npm install no worktree e versionado; linha de exclusão removida do .gitignore. Lockfile v3 confere com dependências, devDependencies e engines do manifesto, permitindo npm ci.
-
 
 ### C-OBS-07 · Script lint chama ESLint ausente das dependências
 
@@ -239,7 +264,6 @@ Ver as regras em [`README.md`](README.md).
   autorização correspondente; não instalar pacotes apenas para esconder
   a inconsistência local.
 - **Resolvida:** 20/10/2026 pela Frente C, branch c/pendencias-frente-c — ESLint 10.13.0, typescript-eslint 8.72.0 e eslint-plugin-react-hooks 7.1.1 fixados; flat config verifica TypeScript e regras/dependências de hooks; npm run lint passou sem alterar componentes. Manifesto e README explicitam as versões de Node compatíveis.
-
 
 ### C-OBS-09 · Erro 422 da API pode aparecer como [object Object] no frontend
 
@@ -258,7 +282,6 @@ Ver as regras em [`README.md`](README.md).
   formatar arrays de validação pelos campos `loc` e `msg`, com fallback
   para `statusText`; testar o corpo de erro 422.
 - **Resolvida:** 20/10/2026 pela Frente C, branch c/pendencias-frente-c — detail tratado como unknown; strings preservadas, arrays FastAPI formatados por loc/msg e fallback statusText para corpos malformados; seis testes Node passaram após reproduzir quatro falhas antes da correção.
-
 
 ### C-OBS-04 · Estágio e handlers de CLI da Frente C sem testes automatizados
 
@@ -283,7 +306,6 @@ Ver as regras em [`README.md`](README.md).
   `serve`, testar a configuração do servidor sem deixar processo ativo;
   incluir o teste de colisão de raízes descrito em T-OBS-02.
 - **Resolvida:** 20/10/2026 pela Frente C, branch c/pendencias-frente-c — 14 casos originais em test_cli.py cobrem estágio, all/compute/critical/evaluate/report, api openapi e serve (incluindo reload), configuração e sensibilidade, com cópias das fixtures e saídas em tmp_path; verificam cobertura, parâmetros, colunas e idempotência. O teste de colisão de raízes ficou com T-OBS-02, pois pertence ao runner compartilhado. A FIX-C2 acrescentou o 15º caso, com ponte ponderada e prova de mutação para distinguir numericamente os modos de sensibilidade.
-
 
 ### C-OBS-02 · Figura 9: capturas da interface
 

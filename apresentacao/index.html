@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>edugraph — defesa do TCC · Grupo 16 · UniAnchieta</title>
+  <meta name="theme-color" content="#FBFAF7" />
+  <meta name="description" content="Apresentação interativa da defesa do TCC: análise topológica e detecção de comunidades em redes educacionais bipartidas." />
+  <link rel="stylesheet" href="css/apresentacao.css" />
+  <link rel="stylesheet" href="css/slides.css" />
+</head>
+<body>
+<main class="deck" aria-live="polite">
+<div class="palco">
+
+
+<section class="slide tinta sem-rodape capa-anim" id="capa" data-titulo="Abertura">
+  <canvas class="cena" data-cena="abertura" aria-hidden="true"></canvas>
+  <div class="capa-texto">
+    <p class="sobrelinha" data-entra="0">Centro Universitário Padre Anchieta · Ciência da Computação<br/>Trabalho de Conclusão de Curso · Jundiaí, 2026</p>
+    <h1 class="display revela" data-entra="1">Análise Topológica e Detecção de Comunidades em Redes Complexas</h1>
+    <p class="subtitulo" data-entra="3">Projeção de grafos bipartidos e métricas de centralidade em dados educacionais</p>
+    <div class="capa-autoria" data-entra="5">
+      <p class="rotulo-tinta">Grupo 16</p>
+      <dl class="equipe">
+        <div><dt>Gabriel Luís Lopes</dt><dd>RA 2300873</dd></div>
+        <div><dt>Pedro Alexandre dos Santos Chaves</dt><dd>RA 2301503</dd></div>
+        <div><dt>Lucas Timponi Mercadante Castro</dt><dd>RA 2304913</dd></div>
+      </dl>
+      <p class="orientador"><span class="rotulo-tinta">Orientador</span> Prof. Me. Clayton Augusto Valdo</p>
+    </div>
+  </div>
+  <p class="capa-legenda" data-entra="7">Rede real do trabalho — 98 alunos de <span class="mono">synthetic_v1</span>; cor e forma: as 3 comunidades encontradas pelo Louvain (<i>Q</i> = 0,4666)</p>
+  <aside class="notas">
+    <p><b>Ação:</b> abra nesta tela e espere a animação terminar (≈ 5 s): a marca do edugraph se desfaz na rede real do trabalho.</p>
+    <p><b>Fala:</b> Boa noite, professores. Somos o Grupo 16 — Gabriel, Pedro e eu, Lucas — e apresentamos o Trabalho de Conclusão de Curso <i>Análise Topológica e Detecção de Comunidades em Redes Complexas</i>, orientado pelo professor Clayton Valdo.</p>
+    <p>A rede que acabou de se formar já é um resultado do trabalho: 98 alunos, ligados pelas disciplinas que têm em comum, e os três grupos que o algoritmo encontrou sozinho. Ao longo da apresentação, vamos mostrar como ela foi construída e o que ela permite concluir.</p>
+  </aside>
+</section>
+
+<section class="slide" id="sumario" data-titulo="Sumário">
+  <p class="sobrelinha" data-entra>Sumário</p>
+  <h2 class="titulo revela" data-entra>Roteiro da apresentação</h2>
+  <ol class="sumario corpo">
+    <li data-entra><span class="n">1</span><b>Introdução</b><p>contextualização, problema de pesquisa e objetivos</p></li>
+    <li data-entra><span class="n">2</span><b>Fundamentação teórica</b><p>grafos bipartidos, projeção, comunidades e centralidade</p></li>
+    <li data-entra><span class="n">3</span><b>Metodologia</b><p>caracterização da pesquisa, bases de dados e etapas</p></li>
+    <li data-entra><span class="n">4</span><b>Desenvolvimento</b><p>o sistema edugraph e a <i>demonstração ao vivo</i></p></li>
+    <li data-entra><span class="n">5</span><b>Resultados e discussão</b><p>dados sintéticos, base real e validação a posteriori</p></li>
+    <li data-entra><span class="n">6</span><b>Considerações finais</b><p>conclusões, limitações e trabalhos futuros</p></li>
+  </ol>
+  <aside class="notas">
+    <p><b>Fala:</b> A apresentação segue a estrutura do artigo. Começo pela introdução — o contexto, o problema e os objetivos. Depois, a fundamentação teórica, com os quatro conceitos de que o trabalho depende. Em seguida, a metodologia, o desenvolvimento do sistema — com uma demonstração ao vivo — e os resultados. Fecho com as considerações finais.</p>
+  </aside>
+</section>
+
+<section class="slide tinta divisor sem-rodape" id="sec-1" data-secao="1" data-titulo="1 · Introdução">
+  <p class="div-num" data-entra><span>01</span></p>
+  <h2 class="div-titulo revela" data-entra>Introdução</h2>
+  <p class="div-pergunta" data-entra>Por que olhar dados educacionais como uma rede?</p>
+  <ol class="div-mapa" data-entra></ol>
+  <aside class="notas"><p><b>Fala:</b> Começo pela introdução: o contexto, o problema e os objetivos.</p></aside>
+</section>
+
+<section class="slide" id="contexto" data-secao="1" data-titulo="Contextualização">
+  <p class="sobrelinha" data-entra>1 · Introdução — Contextualização</p>
+  <h2 class="titulo revela" data-entra>Instituições de ensino acumulam dados sobre quem cursa o quê — e esses dados são, por natureza, <i>relações</i>.</h2>
+  <div class="grade-3 corpo contexto">
+    <div class="cartao cor-1" data-passo="1"><span class="rotulo">Os dados existem</span><h3>Matrículas, notas e cliques no ambiente virtual</h3><p>Exemplo público: o OULAD, com dados anonimizados de alunos de uma universidade aberta britânica (Kuzilek; Hlosta; Zdrahal, 2017).</p></div>
+    <div class="cartao cor-2" data-passo="2"><span class="rotulo">Eles formam uma rede</span><h3>Aluno ↔ disciplina, aluno ↔ recurso</h3><p>A Ciência de Redes estuda sistemas assim como grafos: acha comunidades (Girvan; Newman, 2002) e mede centralidade (Brandes, 2001).</p></div>
+    <div class="cartao cor-6" data-passo="3"><span class="rotulo">Mas costumam ser lidos de outro jeito</span><h3>Planilhas ou modelos preditivos</h3><p>A planilha esconde as relações; o modelo preditivo pode acertar sem explicar o porquê — e a gestão precisa justificar suas decisões.</p></div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Toda instituição de ensino registra quem se matriculou em quê, com que nota, e — no ensino a distância — o que cada aluno acessou no ambiente virtual.</p>
+    <p><b>Ação:</b> avance os três cartões.</p>
+    <p>Esses registros existem, inclusive em bases públicas, como o OULAD, da Open University. E eles são, por natureza, relações: aluno com disciplina, aluno com recurso. A Ciência de Redes tem ferramentas clássicas para isso: encontrar comunidades e medir quem é central.</p>
+    <p>Só que, na prática, esses dados costumam ser lidos como planilha — que esconde as relações — ou entregues a modelos preditivos, que podem acertar sem explicar por quê. É desse contraste que nasce o problema da pesquisa.</p>
+  </aside>
+</section>
+
+<section class="slide" id="problema-pesquisa" data-secao="1" data-titulo="Problema de pesquisa e justificativa">
+  <p class="sobrelinha" data-entra>1 · Introdução — Problema de pesquisa</p>
+  <blockquote class="pergunta" data-entra>É possível extrair padrões estruturais de dados educacionais — <b>grupos de alunos semelhantes</b> e <b>gargalos no fluxo curricular</b> — usando apenas algoritmos de Teoria dos Grafos, sem inteligência artificial, de forma <b>interpretável</b> e <b>verificável</b>?</blockquote>
+  <div class="grade-3 corpo justificativa">
+    <div data-passo="1"><span class="rotulo">Justificativa · gestão pedagógica</span><p>Agrupamentos que a coordenação consegue ler e explicar, e disciplinas que funcionam como ponto de passagem do currículo.</p></div>
+    <div data-passo="2"><span class="rotulo">Justificativa · transparência</span><p>Cada resultado pode ser rastreado até as ligações do grafo: não há modelo treinado nem caixa-preta.</p></div>
+    <div data-passo="3"><span class="rotulo">Justificativa · pesquisa</span><p>Testar se a Ciência de Redes clássica é uma alternativa aos modelos preditivos opacos — inclusive quando a resposta for “não há estrutura”.</p></div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> A pergunta que orienta o trabalho é esta: dá para extrair padrões estruturais de dados educacionais — grupos de alunos semelhantes e gargalos no currículo — usando apenas Teoria dos Grafos, sem inteligência artificial, de um jeito que se possa interpretar e verificar?</p>
+    <p><b>Ação:</b> avance as três justificativas.</p>
+    <p>Ela se justifica por três razões: para a <b>gestão pedagógica</b>, que precisa de grupos que consiga explicar; pela <b>transparência</b>, já que tudo é rastreável até as ligações do grafo; e pela <b>pesquisa</b>, porque testa se a Ciência de Redes clássica é uma alternativa real aos modelos opacos.</p>
+    <p><b>Observação para o grupo:</b> esta formulação foi derivada do objetivo da Introdução aprovada (<code>docs/briefing.md</code>, seção 1). Se o artigo enuncia o problema com outras palavras, use as do artigo.</p>
+  </aside>
+</section>
+
+<section class="slide" id="objetivos" data-secao="1" data-titulo="Objetivos">
+  <p class="sobrelinha" data-entra>1 · Introdução — Objetivos</p>
+  <div class="objetivo-geral" data-entra>
+    <span class="rotulo">Objetivo geral</span>
+    <p>Projetar e implementar um sistema de análise estrutural capaz de mapear e extrair padrões ocultos em bases de dados educacionais utilizando <b>puramente algoritmos de Teoria dos Grafos</b>, sem o uso de IA.</p>
+  </div>
+  <span class="rotulo especificos-rotulo" data-entra>Objetivos específicos</span>
+  <ol class="objetivos">
+    <li data-passo="1"><span class="n">1</span><b>Modelar</b><p>os dados como um grafo bipartido aluno ↔ disciplina.</p></li>
+    <li data-passo="2"><span class="n">2</span><b>Projetar</b><p>o bipartido em redes de um só tipo de nó, com a força da relação como peso.</p></li>
+    <li data-passo="3"><span class="n">3</span><b>Agrupar</b><p>perfis com Louvain e Girvan–Newman, avaliados pela modularidade.</p></li>
+    <li data-passo="4"><span class="n">4</span><b>Medir</b><p>intermediação e autovetor para identificar gargalos e atributos de impacto.</p></li>
+  </ol>
+  <div class="restricao" data-passo="5">
+    <span class="tag ok">Restrição verificada por teste</span>
+    <p><b>Nenhum componente usa aprendizado de máquina.</b> <code>test_no_ml.py</code> barra bibliotecas como <span class="mono">sklearn</span>, <span class="mono">torch</span> e <span class="mono">tensorflow</span>; <code>test_outcomes_isolation.py</code> garante que o desfecho dos alunos só é lido na validação, depois do algoritmo.</p>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> O objetivo geral está na Introdução já aprovada: projetar e implementar um sistema de análise estrutural que extraia padrões de bases educacionais usando apenas Teoria dos Grafos, sem IA.</p>
+    <p><b>Ação:</b> avance os quatro objetivos específicos.</p>
+    <p>Ele se desdobra em quatro objetivos específicos: <b>modelar</b> os dados como grafo bipartido; <b>projetar</b> esse grafo para medir a força da relação entre alunos; <b>agrupar</b> perfis com Louvain e Girvan–Newman; e <b>medir</b> centralidade para achar gargalos.</p>
+    <p><b>Ação:</b> avance a faixa verde.</p>
+    <p>E a restrição de não usar IA, que foi exigência do orientador, não ficou só no papel: dois testes automáticos quebram a integração contínua se alguém importar uma biblioteca de aprendizado de máquina ou ler o desfecho dos alunos fora da validação.</p>
+    <p><b>Se perguntarem</b> “NMI e pureza não são de aprendizado de máquina?”: são medidas entre dois agrupamentos já prontos; não treinam nada e foram implementadas à mão.</p>
+  </aside>
+</section>
+
+<section class="slide tinta divisor sem-rodape" id="sec-2" data-secao="2" data-titulo="2 · Fundamentação teórica">
+  <p class="div-num" data-entra><span>02</span></p>
+  <h2 class="div-titulo revela" data-entra>Fundamentação teórica</h2>
+  <p class="div-pergunta" data-entra>Quatro ideias de Teoria dos Grafos — mostradas num caso real do repositório, com seis alunos.</p>
+  <ol class="div-mapa" data-entra></ol>
+  <aside class="notas"><p><b>Fala:</b> Para a fundamentação, vou usar um único exemplo do início ao fim: a fixture <code>tiny_v1</code> do repositório — seis alunos e três disciplinas —, o caso de teste que o grupo resolveu no papel para conferir o sistema. Todos os números dos próximos slides são dela.</p></aside>
+</section>
+
+<section class="slide" id="bipartido" data-secao="2" data-titulo="Grafo bipartido">
+  <div class="conceito">
+    <div class="coluna conceito-texto">
+      <p class="sobrelinha" data-entra>2 · Fundamentação teórica — Grafo bipartido</p>
+      <h2 class="titulo revela" data-entra>Dois tipos de ponto; cada matrícula é uma linha.</h2>
+      <p class="texto" data-entra>Alunos de um lado, disciplinas do outro. Aluno nunca se liga diretamente a aluno: a relação entre eles <b>passa pelas disciplinas</b>.</p>
+      <div class="analogia" data-passo="2"><span>No exemplo</span><p>O <b>aluno 3</b> é o único que cursa as três disciplinas. A disciplina <b>A</b> tem 4 alunos; B e C têm 3 cada.</p></div>
+      <p class="fonte" data-entra>Fixture <code>tiny_v1</code> do repositório: 6 alunos, 3 disciplinas e 10 matrículas (critério: nota ≥ 60; notas de 61 a 90).</p>
+    </div>
+    <svg class="diagrama-ex" data-exemplo="bipartido" role="img" aria-label="Grafo bipartido da fixture tiny_v1"></svg>
+  </div>
+  <p class="em-uma-frase" data-passo="2"><span>Em uma frase</span>O bipartido guarda <i>quem cursou o quê</i>; as relações entre alunos ainda estão escondidas nele.</p>
+  <aside class="notas">
+    <p><b>Fala:</b> O primeiro conceito é o <b>grafo bipartido</b>: dois tipos de ponto — alunos e disciplinas — e uma linha para cada matrícula. Este é o caso de teste do repositório: seis alunos, três disciplinas, dez matrículas.</p>
+    <p><b>Ação:</b> avance — as matrículas aparecem.</p>
+    <p>Repare que aluno não se liga diretamente a aluno: a relação entre dois alunos passa pelas disciplinas.</p>
+    <p><b>Ação:</b> avance — o destaque.</p>
+    <p>Guardem dois detalhes: o aluno 3 é o único que cursa as três disciplinas; e a disciplina A é a mais cheia, com quatro alunos.</p>
+  </aside>
+</section>
+
+<section class="slide" id="projecao" data-secao="2" data-titulo="Projeção ponderada">
+  <div class="conceito">
+    <div class="coluna conceito-texto">
+      <p class="sobrelinha" data-entra>2 · Fundamentação teórica — Projeção</p>
+      <h2 class="titulo revela" data-entra>As disciplinas saem; os alunos se ligam pelo que têm em comum.</h2>
+      <div class="pond" data-passo="1" data-esmaece="2"><span class="rotulo">Peso simples</span><p>Conta as disciplinas em comum. Os alunos 1 e 2 dividem A e B: <b>peso 2</b>.</p></div>
+      <div class="pond" data-passo="2"><span class="rotulo">Alocação de recursos (Zhou <i>et al.</i>, 2007)</span><p>Cada disciplina vale <b>1 ÷ nº de alunos dela</b>. A vale ¼, B vale ⅓: alunos 1 e 2 ficam com ¼ + ⅓ = <b>0,58</b>.</p></div>
+      <div class="analogia" data-passo="2"><span>Por quê</span><p>Dividir uma disciplina que todo mundo cursa diz pouco sobre duas pessoas; dividir uma rara diz muito.</p></div>
+    </div>
+    <svg class="diagrama-ex" data-exemplo="projecao" role="img" aria-label="Projeção aluno-aluno da fixture tiny_v1"></svg>
+  </div>
+  <p class="em-uma-frase" data-passo="2"><span>Em uma frase</span>A projeção transforma matrículas em <i>afinidade entre alunos</i> — a rede que os algoritmos vão ler.</p>
+  <aside class="notas">
+    <p><b>Fala:</b> A <b>projeção</b> tira as disciplinas do desenho e liga diretamente os alunos que têm algo em comum.</p>
+    <p><b>Ação:</b> avance — a rede se transforma.</p>
+    <p>No peso simples, contamos as disciplinas em comum: 1 e 2 dividem A e B, peso 2; o aluno 6 só divide A com eles, peso 1.</p>
+    <p><b>Ação:</b> avance — alocação de recursos.</p>
+    <p>Na alocação de recursos, de Zhou e colegas, cada disciplina vale um sobre o número de alunos dela. A, com quatro alunos, vale um quarto; B e C, um terço. Por isso as ligações que vêm só de A encolhem para 0,25. Esses valores são os que o grupo conferiu no papel e que os testes exigem do sistema.</p>
+  </aside>
+</section>
+
+<section class="slide" id="modularidade" data-secao="2" data-titulo="Comunidades e modularidade">
+  <div class="conceito conceito-mod">
+    <div class="coluna conceito-texto">
+      <p class="sobrelinha" data-entra>2 · Fundamentação teórica — Comunidades e modularidade</p>
+      <h2 class="titulo revela" data-entra>Comunidade: muito ligada por dentro, pouco ligada ao resto.</h2>
+      <p class="texto" data-passo="1">A <b>modularidade <i>Q</i></b> dá a nota de uma divisão em grupos: a fração das ligações que fica dentro dos grupos, menos a que ficaria lá <b>por acaso</b> (Newman; Girvan, 2004).</p>
+      <div class="escala-q mini" data-passo="2">
+        <div class="trilho-q"><i></i></div>
+        <span class="fim-q ini">0</span><span class="fim-q fim">1</span>
+        <div class="ponto-q acima p0" style="left:0%"><b>≈ 0</b><span>igual a sortear</span></div>
+        <div class="ponto-q abaixo p3" style="left:30%"><b>&gt; 0,3</b><span>grupos bem definidos</span></div>
+        <div class="ponto-q acima pt" style="left:46.66%"><b>0,4666</b><span>esta rede</span></div>
+      </div>
+      <div class="analogia" data-passo="3"><span>Cuidado</span><p>Em redes esparsas até um grafo sorteado tem <i>Q</i> alto. Por isso todo <i>Q</i> é comparado com <b>réplicas sorteadas</b> e só vale se ficar <b>z ≥ 3</b> desvios acima (Guimerà; Sales-Pardo; Amaral, 2004).</p></div>
+    </div>
+    <figure class="fig fig-rede">
+      <svg class="rede-mod" data-rede-real data-w="760" data-h="640" role="img" aria-label="Projeção real de synthetic_v1 colorida pelas comunidades"></svg>
+      <figcaption><b>synthetic_v1</b>: 98 alunos e 1.971 ligações (no desenho, as 5 mais fortes de cada aluno, como a API serve). Comunidades de <span data-contar="39">39</span>, <span data-contar="30">30</span> e <span data-contar="29">29</span> alunos.</figcaption>
+    </figure>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> O terceiro conceito é a <b>comunidade</b>: um grupo muito ligado por dentro e pouco ligado ao resto. Esta rede é real: os 98 alunos do conjunto sintético de teste, e as cores são os grupos que o Louvain encontrou.</p>
+    <p><b>Ação:</b> avance — modularidade.</p>
+    <p>Para dar nota a uma divisão usamos a <b>modularidade Q</b>: quanto das ligações fica dentro dos grupos, descontado o que ficaria por acaso.</p>
+    <p><b>Ação:</b> avance — a escala. Perto de zero, a divisão não é melhor que sortear; acima de 0,3, os grupos são bem definidos. Esta rede tem 0,4666.</p>
+    <p><b>Ação:</b> avance — o cuidado. Em redes esparsas até um grafo sorteado tem Q alto; por isso comparamos todo Q com redes embaralhadas. Isso vai decidir um resultado importante mais adiante.</p>
+  </aside>
+</section>
+
+<section class="slide" id="louvain" data-secao="2" data-titulo="Louvain">
+  <div class="conceito">
+    <div class="coluna conceito-texto">
+      <p class="sobrelinha" data-entra>2 · Fundamentação teórica — Algoritmo de Louvain</p>
+      <h2 class="titulo revela" data-entra>Louvain <i>junta</i>: cada aluno vai para o grupo em que <i>Q</i> mais sobe.</h2>
+      <div class="analogia" data-entra><span>Como uma festa</span><p>Cada pessoa começa sozinha numa mesa e, uma a uma, muda para a mesa vizinha onde a nota da divisão mais sobe. Para quando ninguém quer mudar (Blondel <i>et al.</i>, 2008).</p></div>
+      <div class="painel-louvain" data-q-louvain data-entra>
+        <div><span class="rotulo">Movimento</span><b class="q-mov">0 de 4</b></div>
+        <div><span class="rotulo">Grupos</span><b class="q-grupos">6</b></div>
+        <div><span class="rotulo"><i>Q</i> agora</span><b class="q-valor">—</b></div>
+        <div class="q-barra"><i></i></div>
+      </div>
+      <p class="fonte" data-entra>Rastro real de <code>edugraph.lab.trace.louvain_trace</code> sobre <code>tiny_v1</code> (semente 42): 4 movimentos, <i>Q</i> de −0,132 a 0,111, dois grupos.</p>
+    </div>
+    <svg class="diagrama-ex" data-exemplo="louvain" data-passos="5" role="img" aria-label="Louvain passo a passo na fixture tiny_v1"></svg>
+  </div>
+  <span hidden data-passo="1"></span><span hidden data-passo="2"></span><span hidden data-passo="3"></span><span hidden data-passo="4"></span>
+  <p class="em-uma-frase" data-passo="5"><span>Em escala</span>Na turma da demonstração, o mesmo processo faz <b>41 movimentos</b>, chega a <b><i>Q</i> = 0,53</b> e leva cerca de <b>1 ms</b>.</p>
+  <aside class="notas">
+    <p><b>Fala:</b> O primeiro algoritmo é o <b>Louvain</b>. Pensem numa festa: cada pessoa começa sozinha numa mesa e, uma de cada vez, muda para a mesa vizinha em que a divisão melhora mais.</p>
+    <p><b>Ação:</b> avance quatro vezes — um movimento por clique.</p>
+    <p>Primeiro o aluno 4 se junta ao 5; depois o 2 ao 1; o 3 e o 6 vêm em seguida. A cada movimento o Q sobe, até 0,11. Ninguém mais quer mudar: dois grupos.</p>
+    <p><b>Ação:</b> avance — em escala. Na turma da demonstração, são 41 movimentos, Q de 0,53, em um milésimo de segundo. Esse é o rastro real que o sistema anima — vocês vão ver ao vivo.</p>
+  </aside>
+</section>
+
+<section class="slide" id="girvan-newman" data-secao="2" data-titulo="Girvan–Newman">
+  <div class="conceito">
+    <div class="coluna conceito-texto">
+      <p class="sobrelinha" data-entra>2 · Fundamentação teórica — Algoritmo de Girvan–Newman</p>
+      <h2 class="titulo revela" data-entra>Girvan–Newman <i>corta</i>: apaga as pontes até a rede se partir.</h2>
+      <ol class="passos-gn">
+        <li data-passo="1"><b>Acha a ponte mais usada</b> — a ligação por onde passam mais caminhos: <b>3–4</b>.</li>
+        <li data-passo="2"><b>Apaga e recalcula.</b> Depois de 3–4 e 3–5, a rede se parte em dois grupos.</li>
+        <li data-passo="3"><b>Segue cortando</b> e anota o <i>Q</i> de cada corte; fica com o <b>maior</b> (Girvan; Newman, 2002).</li>
+      </ol>
+      <table class="filetes alg-tabela" data-passo="4">
+        <thead><tr><th>Turma da demonstração</th><th><i>Q</i></th><th>grupos</th><th>tempo</th></tr></thead>
+        <tbody>
+          <tr><td>Louvain</td><td class="n">0,53</td><td class="n">3</td><td class="n">≈ 1 ms</td></tr>
+          <tr><td>Girvan–Newman</td><td class="n">0,49</td><td class="n">3</td><td class="n">≈ 0,5 s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <svg class="diagrama-ex" data-exemplo="gn" role="img" aria-label="Girvan-Newman passo a passo na fixture tiny_v1"></svg>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> O segundo algoritmo faz o caminho inverso: o <b>Girvan–Newman</b> começa com a rede inteira e vai cortando.</p>
+    <p><b>Ação:</b> avance — a ponte em vermelho. Ele calcula por qual ligação passam mais caminhos entre todos os pares de alunos: aqui, a 3–4.</p>
+    <p><b>Ação:</b> avance — a rede se parte. Apaga, recalcula e apaga a 3–5: a rede se divide nos mesmos dois grupos do Louvain.</p>
+    <p><b>Ação:</b> avance — a curva. Ele continua cortando até o fim e anota o Q de cada corte; o melhor é o primeiro, com dois grupos.</p>
+    <p><b>Ação:</b> avance — a tabela. Na turma da demonstração os dois chegam aos mesmos três grupos, mas o Girvan–Newman leva centenas de vezes mais tempo, porque recalcula as pontes a cada corte.</p>
+    <p><b>Fonte:</b> <code>girvan_newman_trace</code> sobre <code>tiny_v1</code>; tabela por <code>POST /lab/run</code> (semente 12).</p>
+  </aside>
+</section>
+
+<section class="slide" id="centralidade" data-secao="2" data-titulo="Centralidade">
+  <div class="conceito">
+    <div class="coluna conceito-texto">
+      <p class="sobrelinha" data-entra>2 · Fundamentação teórica — Métricas de centralidade</p>
+      <h2 class="titulo revela" data-entra>“Importante” tem três sentidos — cada métrica faz uma pergunta.</h2>
+      <table class="filetes tab-cent" data-entra>
+        <thead><tr><th>Aluno</th><th data-m="grau">Grau</th><th data-m="intermediacao">Intermediação</th><th data-m="autovetor">Autovetor</th></tr></thead>
+        <tbody>
+          <tr class="forte"><td>3</td><td class="n" data-m="grau">1,00</td><td class="n" data-m="intermediacao">0,60</td><td class="n" data-m="autovetor">0,56</td></tr>
+          <tr><td>1 e 2</td><td class="n" data-m="grau">0,60</td><td class="n" data-m="intermediacao">0,00</td><td class="n" data-m="autovetor">0,52</td></tr>
+          <tr><td>6</td><td class="n" data-m="grau">0,60</td><td class="n" data-m="intermediacao">0,00</td><td class="n" data-m="autovetor">0,33</td></tr>
+          <tr><td>4 e 5</td><td class="n" data-m="grau">0,40</td><td class="n" data-m="intermediacao">0,00</td><td class="n" data-m="autovetor">0,15</td></tr>
+        </tbody>
+      </table>
+      <ul class="perguntas-cent">
+        <li data-passo="1"><b>Grau</b> — quantos vizinhos? O 3 se liga a todos.</li>
+        <li data-passo="2"><b>Intermediação</b> (Brandes, 2001) — quem é ponte? Só o 3: todo caminho até 4 e 5 passa por ele. É o <b>gargalo</b>.</li>
+        <li data-passo="3"><b>Autovetor</b> — quem está ligado a importantes? 1, 2 e 3 quase empatam: o bloco denso.</li>
+      </ul>
+    </div>
+    <svg class="diagrama-ex" data-exemplo="centralidade" role="img" aria-label="Centralidades da fixture tiny_v1"></svg>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> O último conceito é a <b>centralidade</b>: quão importante é um aluno na rede. Só que “importante” tem mais de um sentido. O tamanho de cada ponto é o valor da métrica; os valores estão na tabela.</p>
+    <p><b>Ação:</b> avance três vezes. <b>Grau</b>: o 3 se liga a todos. <b>Intermediação</b>: só o 3 é ponte — tire o 3 e os alunos 4 e 5 ficam isolados; é o que o objetivo chama de gargalo. <b>Autovetor</b>: 1, 2 e 3 quase empatam, porque estão no bloco mais denso.</p>
+    <p>Mesmo exemplo, três leituras diferentes — e é por isso que, nos resultados, as métricas vão discordar nas disciplinas reais.</p>
+    <p><b>Fonte:</b> grau e intermediação em <code>tiny_v1/expected/student_simple.centrality.csv</code> (derivados no papel); autovetor pela implementação da Frente C.</p>
+  </aside>
+</section>
+
+<section class="slide tinta divisor sem-rodape" id="sec-3" data-secao="3" data-titulo="3 · Metodologia">
+  <p class="div-num" data-entra><span>03</span></p>
+  <h2 class="div-titulo revela" data-entra>Metodologia</h2>
+  <p class="div-pergunta" data-entra>Como os resultados foram produzidos — e com que critério foram julgados.</p>
+  <ol class="div-mapa" data-entra></ol>
+  <aside class="notas"><p><b>Fala:</b> Com os conceitos no lugar, a metodologia: que tipo de pesquisa é, com que dados, e como cada resultado foi avaliado.</p></aside>
+</section>
+
+<section class="slide" id="metodo-caracterizacao" data-secao="3" data-titulo="Caracterização da pesquisa">
+  <p class="sobrelinha" data-entra>3 · Metodologia — Caracterização da pesquisa</p>
+  <h2 class="titulo revela" data-entra>Uma pesquisa aplicada e quantitativa, feita por experimentos computacionais reproduzíveis.</h2>
+  <div class="grade-4 corpo caracter">
+    <div class="cartao" data-passo="1"><span class="rotulo">Natureza</span><h3>Aplicada</h3><p>Produz um sistema voltado à gestão pedagógica.</p></div>
+    <div class="cartao" data-passo="1"><span class="rotulo">Abordagem</span><h3>Quantitativa</h3><p>Modularidade, NMI, pureza, centralidades e taxas de desfecho.</p></div>
+    <div class="cartao" data-passo="1"><span class="rotulo">Procedimento</span><h3>Experimental computacional</h3><p>Cada configuração é um arquivo; semente fixa; mesmo resultado em toda execução.</p></div>
+    <div class="cartao" data-passo="1"><span class="rotulo">Bases de dados</span><h3>Real e sintética</h3><p><b>OULAD</b>, pública, e um <b>gerador sintético</b> com grupos plantados, cuja resposta é conhecida.</p></div>
+  </div>
+  <table class="filetes criterios" data-passo="2">
+    <thead><tr><th>Pergunta de avaliação</th><th>Critério usado</th></tr></thead>
+    <tbody>
+      <tr><td>Existe estrutura de grupos?</td><td>Q real contra <b>réplicas nulas</b> (mesmos graus, ligações sorteadas): ao menos 5 réplicas e <b>z ≥ 3</b> (Guimerà; Sales-Pardo; Amaral, 2004)</td></tr>
+      <tr><td>Os grupos são os certos?</td><td><b>NMI</b> e <b>pureza</b> contra as áreas plantadas no sintético</td></tr>
+      <tr><td>Quanto custa?</td><td>Tempo de execução de Louvain × Girvan–Newman na mesma rede</td></tr>
+      <tr><td>Tem relação com o desempenho?</td><td>Taxa de não conclusão (reprovado + desistente), cruzada <b>só depois</b> do algoritmo</td></tr>
+      <tr><td>A implementação está certa?</td><td>Comparação numérica das partes feitas à mão com o NetworkX</td></tr>
+    </tbody>
+  </table>
+  <aside class="notas">
+    <p><b>Fala:</b> Metodologicamente, é uma pesquisa <b>aplicada</b>, porque produz um sistema; <b>quantitativa</b>, porque tudo é avaliado por métricas; e feita por <b>experimentos computacionais</b>: cada configuração é um arquivo, com semente fixa, e a mesma execução dá o mesmo resultado.</p>
+    <p>Usamos duas bases: a <b>OULAD</b>, real e pública, e um <b>gerador sintético</b> que planta grupos — ou seja, uma base em que sabemos a resposta certa.</p>
+    <p><b>Ação:</b> avance a tabela.</p>
+    <p>Cada pergunta de avaliação tem um critério explícito. Para saber se existe estrutura, comparamos o Q com redes sorteadas de mesmo grau e exigimos três desvios acima delas. Para saber se os grupos são os certos, usamos NMI e pureza no sintético. Medimos o custo, cruzamos com o desempenho só no fim e comparamos as implementações à mão com a biblioteca.</p>
+    <p><b>Observação para o grupo:</b> a classificação (aplicada, quantitativa, experimental) descreve o que o repositório faz; se o artigo usar outra terminologia, alinhe.</p>
+  </aside>
+</section>
+
+<section class="slide" id="pipeline" data-secao="3" data-titulo="O método em sequência">
+  <p class="sobrelinha" data-entra>3 · Metodologia — Etapas do método</p>
+  <h2 class="titulo revela" data-entra>Do dado ao resultado, uma etapa por vez.</h2>
+  <div class="filme-grade">
+    <div class="filme" data-seq="metodo" data-alvo-marcos="#pipeline .etapas-v li" data-entra>
+      <svg class="filme-tela" role="img" aria-label="Sequência animada do método com a fixture tiny_v1"></svg>
+    </div>
+    <ol class="etapas-v" data-entra>
+      <li><span>1</span><div><b>Dados</b><p>OULAD ou gerador sintético</p></div></li>
+      <li><span>2</span><div><b>Bipartido</b><p>aluno ↔ disciplina</p></div></li>
+      <li><span>3</span><div><b>Projeção</b><p>aluno ↔ aluno, com peso</p></div></li>
+      <li><span>4</span><div><b>Comunidades</b><p>Louvain · Girvan–Newman</p></div></li>
+      <li><span>5</span><div><b>Centralidade</b><p>grau · intermediação · autovetor</p></div></li>
+      <li class="extra"><span>6</span><div><b>Validação</b><p>só agora o desfecho entra</p></div></li>
+      <li class="extra"><span>7</span><div><b>API e interface</b><p>FastAPI · React</p></div></li>
+    </ol>
+  </div>
+  <aside class="notas">
+    <p><b>Ação:</b> a sequência começa sozinha (16 s). K pausa e retoma; J e L voltam e avançam 2 s.</p>
+    <p><b>Fala:</b> Este é o método inteiro em uma sequência, com o mesmo exemplo de seis alunos. Começa numa planilha de matrículas; cada matrícula vira uma ligação do grafo bipartido; a projeção liga os alunos que dividem disciplinas; o Louvain forma os grupos; e a centralidade aponta o aluno que faz ponte. À direita, as etapas acendem junto com a animação.</p>
+    <p>As etapas 6 e 7 — a validação, em que o desfecho dos alunos entra só no fim, e a API com a interface — completam o caminho. Cada etapa grava um arquivo que a próxima lê, e um comando roda tudo a partir de um arquivo de configuração: <code>python -m edugraph run configs/synthetic_v1.toml</code>.</p>
+    <p><b>Fonte:</b> fixture <code>tiny_v1</code> e rastro real de <code>edugraph.lab.trace</code>; a frase final cita os 22.425 alunos de <code>oulad_module_presentation</code>.</p>
+  </aside>
+</section>
+
+<section class="slide tinta divisor sem-rodape" id="sec-4" data-secao="4" data-titulo="4 · Desenvolvimento">
+  <p class="div-num" data-entra><span>04</span></p>
+  <h2 class="div-titulo revela" data-entra>Desenvolvimento</h2>
+  <p class="div-pergunta" data-entra>O sistema construído — e ele funcionando, ao vivo.</p>
+  <ol class="div-mapa" data-entra></ol>
+  <aside class="notas"><p><b>Fala:</b> Agora o que foi construído: como o trabalho foi conduzido, a arquitetura do sistema e uma demonstração ao vivo.</p></aside>
+</section>
+
+<section class="slide" id="desenvolvimento-processo" data-secao="4" data-opcional data-titulo="Como o trabalho foi conduzido">
+  <p class="sobrelinha" data-entra>4 · Desenvolvimento — Como o trabalho foi conduzido</p>
+  <h2 class="titulo revela" data-entra>Sete semanas, três frentes em paralelo — cada decisão registrada.</h2>
+  <ol class="linha-tempo corpo">
+    <li data-passo="1"><time>17/09/2026</time><b>Dia 0</b><p>Arquitetura, contratos dos dados e fixtures completas</p></li>
+    <li data-passo="1"><time>18/09</time><b>Dados e comunidades</b><p>Gerador, ETL do OULAD, projeções, modelo nulo, Louvain e Girvan–Newman</p></li>
+    <li data-passo="1"><time>26/09</time><b>Centralidade e aplicação</b><p>Métricas, disciplinas críticas, API e interface integradas</p></li>
+    <li data-passo="1"><time>20/10</time><b>Auditoria e redesenho</b><p>Pendências fechadas; identidade editorial da interface</p></li>
+    <li data-passo="1"><time>02/11</time><b>Laboratório ao vivo</b><p>A rede montada na hora, com o passo a passo dos algoritmos</p></li>
+    <li data-passo="1"><time>04/11</time><b>Entrega</b><p>Comando único de instalação e revisão final</p></li>
+  </ol>
+  <dl class="stats" data-passo="2">
+    <div><dt>Especificações</dt><dd><span data-contar="23">23</span> <small>fechadas</small></dd></div>
+    <div><dt>Decisões de arquitetura</dt><dd><span data-contar="14">14</span> <small>ADRs</small></dd></div>
+    <div><dt>Pull requests</dt><dd><span data-contar="16">16</span> <small>com CI verde</small></dd></div>
+    <div><dt>Testes automatizados</dt><dd><span data-contar="428">428</span> <small>+ 32 da interface</small></dd></div>
+  </dl>
+  <aside class="notas">
+    <p><b>Fala:</b> O desenvolvimento durou cerca de sete semanas, com as três frentes trabalhando ao mesmo tempo.</p>
+    <p><b>Ação:</b> avance a linha do tempo.</p>
+    <p>No dia zero entraram a arquitetura, os contratos dos dados e fixtures completas — o que permitiu que as frentes não esperassem umas pelas outras. Logo depois vieram os dados, os algoritmos de comunidade, a centralidade e a aplicação. Em outubro, uma auditoria e o redesenho da interface; no começo de novembro, o laboratório ao vivo e a revisão de entrega.</p>
+    <p><b>Ação:</b> avance os números.</p>
+    <p>Tudo foi guiado por 23 especificações, com 14 decisões de arquitetura registradas, entrando na branch principal só por pull request com a integração contínua verde.</p>
+    <p><b>Fonte:</b> histórico do git (109 commits entre 17/09 e 04/11/2026); <code>docs/specs/</code>, <code>docs/adr/</code>.</p>
+  </aside>
+</section>
+
+<section class="slide" id="arquitetura" data-titulo="Arquitetura" data-secao="4">
+  <p class="sobrelinha" data-entra>4 · Desenvolvimento — Arquitetura do sistema</p>
+  <h2 class="titulo revela" data-entra>A fronteira entre as frentes é o <i>disco</i>. Nenhuma frente importa outra.</h2>
+  <div class="arq-grade corpo">
+    <div class="arq">
+      <div class="arq-topo" data-passo="4"><code>__main__.py</code><span>a única composição das frentes · CLI <code>python -m edugraph</code></span></div>
+      <div class="arq-frentes">
+        <div class="bloco fa" data-passo="1"><span class="tag">Frente A</span><b>data</b><p>ETL do OULAD, gerador sintético, bipartido, projeções</p></div>
+        <div class="bloco fb" data-passo="1"><span class="tag">Frente B</span><b>community</b><p>Louvain, Girvan–Newman, Q, caracterização</p></div>
+        <div class="bloco fc" data-passo="1"><span class="tag">Frente C</span><b>centrality</b><p>grau, intermediação, autovetor, disciplinas críticas</p></div>
+        <div class="bloco fc" data-passo="1"><span class="tag">Frente C</span><b>api · frontend</b><p>FastAPI, React, Cytoscape.js</p></div>
+      </div>
+      <div class="arq-x" data-passo="3" aria-hidden="true"><span>✕</span><span>✕</span><span>✕</span></div>
+      <div class="arq-disco" data-passo="2"><b>Disco</b><code>&lt;raiz&gt;/&lt;dataset&gt;/&lt;camada&gt;/&lt;id&gt;/</code><span>CSV + <code>meta.json</code>, layout fixo e validado</span></div>
+      <div class="arq-base" data-passo="2"><b>contracts</b><span>tipos · leitura e escrita · validadores · registro</span></div>
+    </div>
+    <ul class="metodos">
+      <li data-passo="1"><span class="n">1</span><div><h3>Três frentes por assunto</h3><p>Dados, comunidades, centralidade e aplicação — cada uma num pacote.</p></div></li>
+      <li data-passo="2"><span class="n">2</span><div><h3>Contratos e fixtures primeiro</h3><p>O formato dos artefatos entrou no dia 0, com fixtures completas: B e C rodavam sem executar uma linha de A.</p></div></li>
+      <li data-passo="3"><span class="n">3</span><div><h3>A regra é testada</h3><p><code>test_import_boundaries.py</code> falha se aparecer import cruzado.</p></div></li>
+      <li data-passo="4"><span class="n">4</span><div><h3>Trocar de fonte é trocar <code>--root</code></h3><p>Do sintético ao OULAD, nenhuma linha de código muda.</p></div></li>
+    </ul>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> A decisão central de arquitetura: as três frentes não se importam no código; elas se comunicam por arquivos em disco, num formato fixo.</p>
+    <p><b>Ação:</b> avance os quatro passos.</p>
+    <p>Cada frente é um pacote Python. Os contratos dos dados e fixtures completas entraram no primeiro dia, então ninguém esperou ninguém. A regra é verificada por um teste que falha se aparecer import cruzado. E trocar os dados sintéticos pelo OULAD é trocar um argumento, sem mudar código.</p>
+    <p><b>Se perguntarem</b> sobre tecnologias: Python com NetworkX nos algoritmos, FastAPI na API, React com Cytoscape.js na interface — detalhes no apêndice (tecla A).</p>
+  </aside>
+</section>
+
+<section class="slide" id="clique" data-secao="4" data-titulo="Por dentro de um clique">
+  <p class="sobrelinha" data-entra>4 · Desenvolvimento — Comunicação entre os componentes</p>
+  <h2 class="titulo revela" data-entra>O que acontece quando se aperta ▶.</h2>
+  <div class="filme filme-largo" data-seq="clique" data-entra>
+    <svg class="filme-tela" role="img" aria-label="Sequência animada: o pedido do navegador passa pela API, pelo pacote lab e pelas três frentes e volta como animação"></svg>
+  </div>
+  <aside class="notas">
+    <p><b>Ação:</b> a sequência começa sozinha (15 s); K pausa.</p>
+    <p><b>Fala:</b> Antes de mostrar o sistema, vale ver o que acontece por trás de um clique. O navegador envia o pedido; a API confere os limites e chama o pacote <code>lab</code>. O <code>lab</code> não importa as frentes: chama cada uma pelo registro. A Frente A gera a turma e faz a projeção; a Frente B roda o Louvain guardando cada movimento — e a biblioteca oficial confere o resultado; a Frente C calcula as centralidades. Tudo volta numa única resposta, em cerca de 0,13 s, e o navegador transforma o rastro em animação. Ou seja: o que vocês vão ver na demonstração é exatamente o que o algoritmo fez.</p>
+    <p><b>Fontes:</b> <code>api/lab_routes.py</code>, <code>lab/service.py</code> (<code>PROJECTIONS</code>, <code>COMMUNITIES</code>, <code>CENTRALITIES</code>); números de <code>POST /lab/run</code> com os valores padrão (16/11/2026; o tempo varia com a máquina).</p>
+  </aside>
+</section>
+
+<section class="slide" id="interface" data-opcional data-titulo="A interface" data-secao="4">
+  <p class="sobrelinha" data-entra>4 · Desenvolvimento — O sistema edugraph</p>
+  <h2 class="titulo revela" data-entra>Duas telas: uma monta a rede ao vivo; a outra explora os resultados já calculados.</h2>
+  <div class="grade-2 corpo interface-grade">
+    <figure class="fig" data-passo="1">
+      <img class="captura" src="img/app/louvain-etapa-4.webp" alt="Captura real do Laboratório ao vivo: três grupos coloridos e a narração do resultado" loading="lazy" />
+      <figcaption><b>Laboratório ao vivo.</b> Gera uma turma, roda o algoritmo de verdade e anima as quatro etapas: matrículas, projeção, algoritmo e resultado.</figcaption>
+    </figure>
+    <figure class="fig" data-passo="2">
+      <img class="captura" src="img/app/explorar.webp" alt="Captura real do Explorar resultados: synthetic_v1 com três comunidades e Q = 0,4666" loading="lazy" />
+      <figcaption><b>Explorar resultados.</b> Os artefatos gravados em disco: comunidades com nome, tamanho por centralidade, painel de cada nó.</figcaption>
+    </figure>
+  </div>
+  <p class="fonte" data-entra>Capturas reais do sistema, servido sobre <code>data/fixtures</code> em 16/11/2026 (1600 × 900).</p>
+  <aside class="notas">
+    <p><b>Fala:</b> Para quem usa, o sistema tem duas telas: o <b>Laboratório ao vivo</b>, que monta uma rede na hora e anima o que o algoritmo fez, e o <b>Explorar resultados</b>, com os resultados já calculados sobre as bases completas. A identidade visual é a de uma página de periódico, com cores legíveis para quem tem daltonismo e uma forma para cada grupo.</p>
+  </aside>
+</section>
+
+<section class="slide" id="sinteticos" data-titulo="Os dados sintéticos" data-opcional data-secao="4">
+  <p class="sobrelinha" data-entra>4 · Desenvolvimento — Os dados da demonstração</p>
+  <h2 class="titulo revela" data-entra>Uma turma de Computação <i>fictícia</i>, gerada na hora — com a resposta certa guardada à parte.</h2>
+  <div class="grade-2-1 corpo">
+    <div class="areas">
+      <div class="area" data-passo="1"><svg class="glifo" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="var(--c1)" stroke="var(--text)"/></svg><div><b>Desenvolvimento de Software</b><p>Algoritmos · Estruturas de Dados · Programação Web</p></div></div>
+      <div class="area" data-passo="1"><svg class="glifo" viewBox="0 0 22 22"><path d="M11 2 20 19H2Z" fill="var(--c2)" stroke="var(--text)"/></svg><div><b>Infraestrutura e Redes</b><p>Redes · Sistemas Operacionais · Segurança da Informação</p></div></div>
+      <div class="area" data-passo="1"><svg class="glifo" viewBox="0 0 22 22"><rect x="2" y="2" width="18" height="18" rx="4" fill="var(--c3)" stroke="var(--text)"/></svg><div><b>Dados</b><p>Banco de Dados · Modelagem de Dados</p></div></div>
+      <ul class="metodos regras" data-passo="2">
+        <li><span class="n">·</span><div><p>Cada aluno cursa <b>2 ou 3 disciplinas da sua área</b> e, com a chance da <b>mistura</b>, uma de fora.</p></div></li>
+        <li><span class="n">·</span><div><p>A matrícula vira ligação com nota média <b>≥ 50</b>. Alguns alunos “em risco” recebem notas menores.</p></div></li>
+        <li><span class="n">·</span><div><p>A <b>área plantada</b> de cada aluno fica <b>fora do grafo</b> e só volta na revelação, para medir o acerto.</p></div></li>
+      </ul>
+    </div>
+    <dl class="stats stats-col" data-passo="3">
+      <div><dt>Turma padrão · semente 12</dt><dd>43 <small>alunos</small></dd></div>
+      <div><dt>Disciplinas</dt><dd>8</dd></div>
+      <div><dt>Matrículas (bipartido)</dt><dd>93</dd></div>
+      <div><dt>Ligações na projeção</dt><dd>337</dd></div>
+    </dl>
+  </div>
+  <p class="fonte" data-entra>Gerador: <code>src/edugraph/lab/demo.py</code> sobre a spec A-01 (<code>data/synthetic.py</code>). Nomes e desfechos inventados — nada é dado de aluno real.</p>
+  <aside class="notas">
+    <p><b>Fala:</b> A demonstração usa uma turma <b>fictícia</b> de Computação, gerada na hora: três áreas, oito disciplinas. Cada aluno cursa duas ou três disciplinas da sua área e, com a chance chamada <b>mistura</b>, uma de fora.</p>
+    <p>O ponto importante: a área verdadeira de cada aluno fica <b>fora do grafo</b>. No fim, revelamos a resposta e medimos o acerto — algo que a base real não permite.</p>
+  </aside>
+</section>
+
+<section class="slide" id="demo" data-titulo="Demonstração ao vivo" data-secao="4">
+  <div class="demo-grade">
+    <div class="coluna demo-texto">
+      <p class="sobrelinha" data-entra>4 · Desenvolvimento — Demonstração</p>
+      <h2 class="titulo revela" data-entra>O edugraph, rodando agora.</h2>
+      <ol class="roteiro-demo" data-entra>
+        <li><b>Tour</b> de boas-vindas — 9 passos</li>
+        <li><b>▶</b> matrículas → projeção → Louvain → resultado</li>
+        <li><b>Revelar</b> as áreas plantadas</li>
+        <li><b>Girvan–Newman</b> na mesma turma</li>
+        <li><b>Mistura 50%</b> e sortear outra turma</li>
+      </ol>
+      <div class="acoes-demo" data-entra>
+        <button type="button" class="botao" data-demo="entrar">Entrar na demonstração <span class="tecla">Enter</span></button>
+        <button type="button" class="botao sec" data-demo="reiniciar">Reiniciar <span class="tecla">R</span></button>
+      </div>
+      <p class="pequeno demo-ajuda" data-entra>Dentro do sistema, o teclado é dele (espaço, ← →, F). Para voltar, use o botão no topo da tela.<br/>Reserva: <button type="button" class="link" data-demo="capturas">capturas reais do sistema</button> · <a data-app-link target="_blank" rel="noopener">abrir em outra janela</a></p>
+    </div>
+    <div class="demo-direita" data-entra>
+    <div class="janela-app">
+      <div class="janela-barra">
+        <svg viewBox="0 0 32 16" width="40" height="20" aria-hidden="true"><circle cx="5" cy="8" r="4.5" fill="#56B4E9"/><path d="M16 3 21 12.5H11Z" fill="#E69F00"/><rect x="23" y="3.5" width="8.5" height="8.5" rx="2" fill="#009E73"/></svg>
+        <span class="url">127.0.0.1:8000/?tour</span>
+        <span class="estado"><i></i><span>Verificando…</span></span>
+      </div>
+      <div class="tela">
+        <img class="previa" src="img/app/tour-01.webp" alt="Captura real do tour de boas-vindas" />
+        <p class="aviso-fallback" hidden><b>Sistema fora do ar.</b> Mostrando <b>capturas reais</b> (16/11/2026) — não é execução ao vivo. Suba com <code>python apresentacao/servir.py</code> e aguarde: a janela reconecta sozinha.</p>
+      </div>
+    </div>
+    <p class="legenda-janela"><b>Figura.</b> O edugraph em execução neste computador, com a turma fictícia gerada pelo próprio servidor a cada ▶ — sem vídeo e sem simulação.</p>
+    </div>
+  </div>
+  <aside class="notas">
+    <p><b>Antes:</b> a barra da janela deve dizer “Ao vivo · sistema conectado”. Se não, use as capturas e diga que são capturas.</p>
+    <p><b>Ação 1 — Enter.</b> Faça o tour com a seta → (≈ 1 min), lendo só os títulos.</p>
+    <p><b>Ação 2 — ▶ com Louvain.</b> “Matrículas: 43 alunos e 8 disciplinas. Projeção: 337 ligações, as grossas dentro das áreas. Algoritmo: o Q sobe ao vivo até 0,53. Resultado: três grupos com nome.”</p>
+    <p><b>Ação 3 — Revelar</b> as áreas plantadas: “o algoritmo não sabia das áreas e acertou 100% dos alunos.”</p>
+    <p><b>Ação 4 (se houver tempo) — Girvan–Newman:</b> as pontes somem em vermelho; mesmos grupos, Q 0,49, muito mais lento.</p>
+    <p><b>Voltar:</b> botão “Voltar à apresentação” no topo. Orçamento: 4 minutos.</p>
+  </aside>
+</section>
+
+<section class="slide tinta divisor sem-rodape" id="sec-5" data-secao="5" data-titulo="5 · Resultados e discussão">
+  <p class="div-num" data-entra><span>05</span></p>
+  <h2 class="div-titulo revela" data-entra>Resultados e discussão</h2>
+  <p class="div-pergunta" data-entra>Primeiro onde existe resposta certa; depois na base real.</p>
+  <ol class="div-mapa" data-entra></ol>
+  <aside class="notas"><p><b>Fala:</b> Os resultados. Primeiro nos dados sintéticos, onde sabemos a resposta certa; depois na base real, onde a resposta honesta às vezes é “não há estrutura”.</p></aside>
+</section>
+
+<section class="slide" id="acaso" data-secao="5" data-titulo="O teste contra o acaso">
+  <p class="sobrelinha" data-entra>5 · Resultados — O teste contra o acaso</p>
+  <h2 class="titulo revela" data-entra>Antes de confiar num <i>Q</i>, comparamos com redes sorteadas.</h2>
+  <div class="filme filme-largo" data-seq="acaso" data-entra>
+    <svg class="filme-tela" role="img" aria-label="Sequência animada: a rede real se embaralha numa réplica nula e o Q cai; cinco réplicas mostram o Q do acaso"></svg>
+  </div>
+  <aside class="notas">
+    <p><b>Ação:</b> a sequência começa sozinha (15 s); K pausa.</p>
+    <p><b>Fala:</b> Este é o teste que sustenta todos os resultados. À esquerda, a rede real do conjunto sintético, com Q de 0,467. O modelo nulo sorteia de novo quem cursou o quê, mas mantém quantas disciplinas cada aluno e cada disciplina têm. Vejam as cores se misturarem: a estrutura some — e, mesmo assim, o Louvain encontra Q de 0,22. Esse é o Q do acaso.</p>
+    <p>Repetindo cinco vezes, o acaso fica entre 0,19 e 0,23, com média de 0,208. O Q real está 15,4 desvios acima. Por isso afirmamos que aqui há estrutura — e é esse mesmo teste que, no OULAD, vai dizer o contrário.</p>
+    <p><b>Fonte:</b> <code>null_replicas(synthetic_v1, n=5, seed=0)</code>, projeção simples, Louvain com semente 42 (<code>gerar_dados.py</code>); desvio populacional. A réplica desenhada é a nº 1. As cores dos alunos são as da rede real, mantidas para mostrar a mistura.</p>
+  </aside>
+</section>
+
+<section class="slide" id="val-sintetico" data-titulo="Validação no sintético" data-secao="5">
+  <p class="sobrelinha" data-entra>5 · Resultados — O método funciona (dados sintéticos)</p>
+  <h2 class="titulo revela" data-entra>No sintético, os grupos que o Louvain encontra são as áreas plantadas.</h2>
+  <dl class="stats corpo" data-passo="1">
+    <div><dt>Q real · Louvain</dt><dd><i>Q</i> <span data-contar="0.467" data-casas="3">0,467</span></dd></div>
+    <div><dt>Comunidades encontradas</dt><dd><span data-contar="3">3</span> <small>de 39, 30 e 29 alunos</small></dd></div>
+    <div><dt>Distância ao acaso</dt><dd>z = +<span data-contar="15.4" data-casas="1">15,4</span></dd></div>
+    <div><dt>NMI contra as áreas plantadas</dt><dd><span data-contar="0.819" data-casas="3">0,819</span></dd></div><div><dt>Pureza</dt><dd><span data-contar="0.949" data-casas="3">0,949</span></dd></div>
+  </dl>
+  <div class="grade-2 corpo-menor">
+    <div class="cartao" data-passo="2"><span class="rotulo">Louvain × Girvan–Newman · mesma projeção</span>
+      <div class="barras-tempo">
+        <div class="bt"><span>Louvain</span><div class="barra"><i style="--v:0.4%"></i></div><b>0,024 s</b></div>
+        <div class="bt"><span>Girvan–Newman</span><div class="barra"><i style="--v:100%" class="lenta"></i></div><b>34,4 s</b></div>
+      </div>
+      <p><b>1.453× mais lento</b>, com Q menor (0,417). As partições concordam (NMI 0,774): o achado é da estrutura, não do algoritmo.</p>
+    </div>
+    <div class="cartao cor-2" data-passo="3"><span class="rotulo">Quando 70% dos alunos têm uma só matrícula (synthetic_v2)</span>
+      <h3>A pureza quase não cai (0,864); o NMI cai pela metade (0,495).</h3>
+      <p>Os grupos continuam homogêneos, mas deixam de corresponder às áreas. É o mesmo mecanismo que vai aparecer no OULAD.</p>
+    </div>
+  </div>
+  <p class="fonte" data-entra><code>synthetic_v1</code> · 98 alunos, 7 disciplinas, 35% de ruído · projeção aluno ↔ aluno simples · Louvain com semente 42 · nulo: 5 réplicas (semente 0) · <code>docs/artigo/decisoes-metodologicas.md</code> (A-08, B-01 a B-07), reproduzido em 16/11/2026</p>
+  <aside class="notas">
+    <p><b>Fala:</b> Com o teste do acaso feito, a segunda pergunta: os grupos encontrados são os certos? No sintético sabemos a resposta, porque as áreas foram plantadas pelo gerador.</p>
+    <p><b>Ação:</b> avance — os números. O Louvain encontra três comunidades, de 39, 30 e 29 alunos, e elas coincidem com as áreas plantadas: NMI de 0,82 e pureza de 0,95, mesmo com 35% de ruído.</p>
+    <p><b>Ação:</b> avance — os tempos. Na mesma rede, o Girvan–Newman levou 34,4 s contra 0,024 s do Louvain — 1.453 vezes mais lento — e chegou à mesma estrutura (NMI 0,774 entre as duas partições). O achado é da estrutura dos dados, não de um algoritmo.</p>
+    <p><b>Ação:</b> avance — o cartão laranja. Quando 70% dos alunos ficam com uma única matrícula, a pureza quase não cai, mas o NMI cai pela metade: a esparsidade apaga a informação. É o mesmo mecanismo que aparece no OULAD.</p>
+    <p><b>Para leigos:</b> NMI mede, de 0 a 1, o quanto dois agrupamentos concordam; pureza é a fração de alunos que caiu no grupo certo.</p>
+  </aside>
+</section>
+
+<section class="slide" id="oulad" data-titulo="Base real: OULAD" data-secao="5">
+  <p class="sobrelinha" data-entra>5 · Resultados — A base real (OULAD)</p>
+  <h2 class="titulo revela" data-entra>Por matrícula, os “grupos” do OULAD são indistinguíveis do acaso. Pelo comportamento no ambiente virtual, a estrutura aparece.</h2>
+  <div class="oulad-grade corpo">
+    <div class="painel-q" data-passo="1">
+      <span class="rotulo">Aluno ↔ oferta de módulo · 22.425 alunos · amostra de 3.000</span>
+      <div class="barras-q">
+        <div class="bq"><div class="col real" style="--h:77.28%"><b>0,773</b></div><span>Q real</span></div>
+        <div class="bq"><div class="col nulo" style="--h:78.07%"><b>0,781</b></div><span>Q nulo</span></div>
+      </div>
+      <p class="veredito"><span class="tag alerta">Indistinguível do acaso</span> O Q alto vem da esparsidade: <b>91,8%</b> dos alunos cursam um módulo só.</p>
+    </div>
+    <div class="painel-q" data-passo="2">
+      <span class="rotulo">Aluno ↔ recurso do ambiente virtual · alocação de recursos · escala 0–0,1</span>
+      <div class="barras-q tres">
+        <div class="bq"><div class="par"><div class="col real" style="--h:82.5%"><b>0,083</b></div><div class="col nulo" style="--h:15.8%"><b>0,016</b></div></div><span>BBB 2013J<br/><b>5,2×</b></span></div>
+        <div class="bq"><div class="par"><div class="col real" style="--h:74.2%"><b>0,074</b></div><div class="col nulo" style="--h:8.1%"><b>0,008</b></div></div><span>FFF 2013J<br/><b>9,2×</b></span></div>
+        <div class="bq"><div class="par"><div class="col real" style="--h:51.1%"><b>0,051</b></div><div class="col nulo" style="--h:7.3%"><b>0,007</b></div></div><span>DDD 2014J<br/><b>7,0×</b></span></div>
+      </div>
+      <p class="veredito"><span class="tag ok">Estrutura real, fraca</span> Q absoluto baixo, mas 5 a 9 vezes o das redes sorteadas, em três coortes.</p>
+    </div>
+  </div>
+  <p class="pequeno oulad-achado" data-passo="3"><b>Achado de método:</b> sob o esqueleto, a ponderação <i>simples</i> cai abaixo do nulo (premia volume de cliques); a <i>alocação de recursos</i> se mantém acima. A escolha da ponderação decide se o sinal aparece.</p>
+  <p class="fonte" data-entra><code>docs/artigo/decisoes-metodologicas.md</code> · seções A-08 e “O critério de aresta muda de matrícula para interação no AVA” · <code>docs/orientador/nota-01-criterio-de-aresta.md</code></p>
+  <aside class="notas">
+    <p><b>Fala:</b> Na base real, o resultado tem duas partes — e a primeira é negativa.</p>
+    <p><b>Ação:</b> avance — painel da esquerda.</p>
+    <p>Ligando aluno à disciplina cursada, o Q é 0,77 — mas redes sorteadas dão 0,78. É indistinguível do acaso: 91,8% dos alunos cursam um módulo só, e não há informação entre eles. Dizer que achamos comunidades seria falso.</p>
+    <p><b>Ação:</b> avance — painel da direita.</p>
+    <p>Trocando o critério para a interação com o ambiente virtual, a estrutura aparece: Q baixo, mas de 5 a 9 vezes o do acaso, em três turmas.</p>
+    <p><b>Ação:</b> avance — achado de método. E a ponderação decide se o sinal aparece: a alocação de recursos se mantém acima do acaso; a simples, não.</p>
+  </aside>
+</section>
+
+<section class="slide" id="desfecho" data-titulo="O desfecho revelado" data-secao="5">
+  <p class="sobrelinha" data-entra>5 · Resultados — O que o grafo nunca viu</p>
+  <h2 class="titulo revela" data-entra>A posição do aluno na rede, obtida sem nenhum rótulo, separa quem conclui de quem não conclui.</h2>
+  <div class="grade-2-1 corpo">
+    <figure class="fig grafico-quartis" data-passo="1">
+      <span class="rotulo">Taxa de não conclusão (reprovado + desistente) por quartil de centralidade de autovetor · BBB 2013J · 1.870 alunos</span>
+      <div class="quartis">
+        <div class="qt"><span>Q1 · menor</span><div class="barra"><i style="--v:89.3%"></i><em style="--b:42.7%"></em></div><b>89,3%</b></div>
+        <div class="qt"><span>Q2</span><div class="barra"><i style="--v:52.6%"></i><em style="--b:42.7%"></em></div><b>52,6%</b></div>
+        <div class="qt"><span>Q3</span><div class="barra"><i style="--v:18.4%"></i><em style="--b:42.7%"></em></div><b>18,4%</b></div>
+        <div class="qt"><span>Q4 · maior</span><div class="barra"><i style="--v:10.5%"></i><em style="--b:42.7%"></em></div><b>10,5%</b></div>
+      </div>
+      <figcaption>A linha tracejada é a taxa da turma inteira: <b>42,7%</b>. Fonte: <code>results/tables/tab8b-desfecho-faixa-oulad_vle_bbb_2013j-eigenvector.csv</code></figcaption>
+    </figure>
+    <div class="coluna">
+      <div class="cartao" data-passo="2"><span class="rotulo">Nas comunidades (Explorar resultados)</span><h3>«Pouco engajados»: 69% de reprovados e desistentes</h3><p>contra 7% em «Engajamento moderado». O grupo foi encontrado pelo Louvain antes de qualquer cruzamento com o desfecho.</p></div>
+      <div class="cartao cor-6" data-passo="3"><span class="rotulo">O que isto <b>não</b> é</span><h3>Não é previsão</h3><p>Quem desiste para de acessar o ambiente — parte do sinal é mecânica. Para afirmar antecipação seria preciso usar só as primeiras semanas: fica como trabalho futuro.</p></div>
+    </div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Agora o que o grafo nunca viu: o desfecho dos alunos.</p>
+    <p><b>Ação:</b> avance — gráfico.</p>
+    <p>Dividimos os 1.870 alunos em quatro faixas de centralidade e só depois cruzamos com o desfecho. No quarto menos central, 89% não concluíram; no mais central, 10,5%. A turma toda tem 42,7%.</p>
+    <p><b>Ação:</b> avance — comunidades. O grupo “Pouco engajados” concentra 69% de reprovados e desistentes, contra 7%.</p>
+    <p><b>Ação:</b> avance — cartão vermelho. Mas isto <b>não é previsão</b>: quem desiste para de acessar, então parte do sinal é mecânica. Para falar em antecipação, seria preciso usar só as primeiras semanas.</p>
+  </aside>
+</section>
+
+<section class="slide" id="criticas" data-titulo="Disciplinas críticas" data-secao="5">
+  <p class="sobrelinha" data-entra>5 · Resultados — Disciplinas críticas no currículo</p>
+  <h2 class="titulo revela" data-entra>As três métricas apontam disciplinas diferentes — e a discordância é o achado.</h2>
+  <div class="grade-2 corpo">
+    <table class="filetes" data-passo="1">
+      <thead><tr><th>Métrica</th><th>Topo 3 · 22 ofertas de módulo</th></tr></thead>
+      <tbody>
+        <tr><td>Grau</td><td class="mono">DDD_2014J · FFF_2014J · CCC_2014B</td></tr>
+        <tr><td>Intermediação</td><td class="mono">FFF_2014B · DDD_2014J · FFF_2014J</td></tr>
+        <tr><td>Autovetor</td><td class="mono">CCC_2014J · CCC_2014B · DDD_2013J</td></tr>
+      </tbody>
+    </table>
+    <div class="spearman" data-passo="2">
+      <span class="rotulo">Correlação de Spearman entre os rankings</span>
+      <div class="sp"><span>grau × autovetor</span><div class="barra"><i style="--v:84%"></i></div><b>0,84</b></div>
+      <div class="sp"><span>grau × intermediação</span><div class="barra"><i style="--v:53%"></i></div><b>0,53</b></div>
+      <div class="sp"><span>intermediação × autovetor</span><div class="barra"><i style="--v:21%"></i></div><b>0,21</b></div>
+      <p class="pequeno">Ser ponte e estar num bloco central são dimensões diferentes. No top 5, <b>FFF_2014B, FFF_2013J e BBB_2014J</b> aparecem só na intermediação: pontes sem ser populares.</p>
+    </div>
+  </div>
+  <div class="cartao cor-5 criticas-validacao" data-passo="3">
+    <span class="rotulo">Validação a posteriori</span>
+    <p>A não conclusão nas 5 disciplinas de maior intermediação fica só <b>1,2 p.p.</b> acima da base (37,6%). <b>Um gargalo estrutural é um ponto de passagem no currículo, não uma disciplina difícil</b> — e a centralidade não é um disfarce da reprovação.</p>
+  </div>
+  <p class="fonte" data-entra><code>oulad_module_presentation</code> · <code>discipline_simple</code> · <code>results/tables/tab6-*</code>, <code>tab7-discordancia-*</code>, <code>tab8-reprovacao-*</code></p>
+  <aside class="notas">
+    <p><b>Fala:</b> Por fim, os gargalos do currículo: a rede de 22 ofertas de módulo do OULAD.</p>
+    <p><b>Ação:</b> avance tabela e correlações.</p>
+    <p>As três métricas apontam disciplinas diferentes. Grau e autovetor quase concordam; intermediação e autovetor, não — ser ponte e estar num bloco central são coisas diferentes.</p>
+    <p><b>Ação:</b> avance — validação. As disciplinas-ponte têm só 1,2 ponto acima da taxa de não conclusão da base: um gargalo estrutural é um ponto de passagem, não uma disciplina difícil.</p>
+  </aside>
+</section>
+
+<section class="slide tinta divisor sem-rodape" id="sec-6" data-secao="6" data-titulo="6 · Considerações finais">
+  <p class="div-num" data-entra><span>06</span></p>
+  <h2 class="div-titulo revela" data-entra>Considerações finais</h2>
+  <p class="div-pergunta" data-entra>A resposta à pergunta de pesquisa — e o que fica para depois.</p>
+  <ol class="div-mapa" data-entra></ol>
+  <aside class="notas"><p><b>Fala:</b> Para fechar, as considerações finais.</p></aside>
+</section>
+
+<section class="slide" id="conclusao" data-titulo="Conclusão" data-secao="6">
+  <p class="sobrelinha" data-entra>6 · Considerações finais — Conclusões</p>
+  <h2 class="titulo revela" data-entra>Teoria dos Grafos, sem IA, produz agrupamentos <i>interpretáveis e rastreáveis</i> — e também sabe dizer quando não há estrutura.</h2>
+  <p class="resposta" data-entra><span>Resposta à pergunta de pesquisa</span><b>Sim</b> — com uma condição: o sinal tem de existir nos dados. Onde existe, o método o encontra; onde não existe, o modelo nulo diz isso.</p>
+  <ol class="objetivos corpo conclusao-lista">
+    <li data-passo="1"><span class="n">1</span><b>Modelar e projetar</b><p>Bipartido e duas projeções implementados à mão, conferidos com o NetworkX — até em 1,45 milhão de arestas.</p></li>
+    <li data-passo="2"><span class="n">2</span><b>Agrupar</b><p>No sintético, o Louvain recupera as áreas plantadas (NMI 0,82; z = +15,4). Girvan–Newman confirma, 1.453× mais lento.</p></li>
+    <li data-passo="3"><span class="n">3</span><b>Medir</b><p>As métricas discordam de forma informativa; o gargalo estrutural não é a disciplina que mais reprova.</p></li>
+    <li data-passo="4"><span class="n">4</span><b>Dado real</b><p>O sinal está no <i>comportamento</i>, não na matrícula — e o método distingue estrutura de acaso.</p></li>
+  </ol>
+  <aside class="notas">
+    <p><b>Fala:</b> Voltando à pergunta de pesquisa: sim, é possível — com uma ressalva honesta.</p>
+    <p><b>Ação:</b> avance os quatro itens.</p>
+    <p>Modelamos e projetamos os dados com implementações próprias, conferidas com a biblioteca. No sintético, o método recupera a estrutura plantada. As métricas de centralidade discordam de forma informativa. E na base real o sinal está no <b>comportamento</b>, não na matrícula — e o método soube dizer quando não havia estrutura.</p>
+    <p>Essa é a contribuição: Teoria dos Grafos, sem IA, produz resultados interpretáveis e rastreáveis.</p>
+  </aside>
+</section>
+
+<section class="slide" id="limites-futuro" data-secao="6" data-titulo="Limitações e trabalhos futuros">
+  <p class="sobrelinha" data-entra>6 · Considerações finais — Limitações e trabalhos futuros</p>
+  <h2 class="titulo revela" data-entra>O que o trabalho não afirma — e o próximo passo para cada ponto.</h2>
+  <table class="filetes limites-tabela corpo">
+    <thead><tr><th>Limitação</th><th>Por quê</th><th>Trabalho futuro</th></tr></thead>
+    <tbody>
+      <tr data-passo="1"><td>Não é previsão de evasão</td><td>Quem desiste para de acessar o AVA: parte do sinal é mecânica</td><td>Medir a centralidade só com as primeiras semanas</td></tr>
+      <tr data-passo="2"><td>Sinal real fraco</td><td>Q de 0,05 a 0,08 no AVA: inequívoco contra o acaso, mas baixo</td><td>Outras granularidades e instituições, sempre com modelo nulo</td></tr>
+      <tr data-passo="3"><td>Girvan–Newman não escala</td><td>Custo O(m²n): na base real, só em amostras</td><td>Rodar na coorte com amostra menor</td></tr>
+      <tr data-passo="4"><td>Viés do limiar de nota</td><td>Nota mínima 40 deixa 3.674 alunos de fora do bipartido</td><td>Bipartido por matrícula, sem limiar</td></tr>
+      <tr data-passo="5"><td>Uso local, sem autenticação</td><td>A API foi feita para rodar na máquina da instituição</td><td>Versão online só com dados fictícios</td></tr>
+    </tbody>
+  </table>
+  <aside class="notas">
+    <p><b>Fala:</b> Preferimos mostrar os limites antes de sermos perguntados — e cada um aponta um próximo passo.</p>
+    <p><b>Ação:</b> avance linha por linha.</p>
+    <p>O principal: o resultado <b>não é previsão</b> de evasão, porque quem desiste para de acessar; o teste certo é medir a centralidade só com as primeiras semanas. O sinal real é fraco em valor absoluto. O Girvan–Newman não escala para a base inteira. O limiar de nota deixa de fora justamente quem mais reprova. E o sistema foi feito para uso local, sem autenticação.</p>
+    <p><b>Detalhes</b> no apêndice e em <code>observacoes/</code> (por exemplo, T-OBS-02 no executor do pipeline).</p>
+  </aside>
+</section>
+
+<section class="slide" id="referencias" data-titulo="Referências">
+  <p class="sobrelinha">Referências</p>
+  <ol class="referencias">
+    <li>BLONDEL, V. D. <i>et al.</i> Fast unfolding of communities in large networks. <b>Journal of Statistical Mechanics: Theory and Experiment</b>, [<i>s. l.</i>], v. 2008, n. 10, P10008, 2008. DOI: 10.1088/1742-5468/2008/10/P10008.</li>
+    <li>BRANDES, U. A faster algorithm for betweenness centrality. <b>The Journal of Mathematical Sociology</b>, [<i>s. l.</i>], v. 25, n. 2, p. 163-177, 2001. DOI: 10.1080/0022250X.2001.9990249.</li>
+    <li>GIRVAN, M.; NEWMAN, M. E. J. Community structure in social and biological networks. <b>Proceedings of the National Academy of Sciences</b>, Washington, DC, v. 99, n. 12, p. 7821-7826, 2002. DOI: 10.1073/pnas.122653799.</li>
+    <li>GUIMERÀ, R.; AMARAL, L. A. N. Functional cartography of complex metabolic networks. <b>Nature</b>, London, v. 433, p. 895-900, 2005. DOI: 10.1038/nature03288.</li>
+    <li>GUIMERÀ, R.; SALES-PARDO, M.; AMARAL, L. A. N. Modularity from fluctuations in random graphs and complex networks. <b>Physical Review E</b>, [<i>s. l.</i>], v. 70, n. 2, 025101, 2004. DOI: 10.1103/PhysRevE.70.025101.</li>
+    <li>HAGBERG, A. A.; SCHULT, D. A.; SWART, P. J. Exploring network structure, dynamics, and function using NetworkX. <i>In</i>: PYTHON IN SCIENCE CONFERENCE, 7., 2008, Pasadena. <b>Proceedings</b> [...]. Pasadena: SciPy, 2008. p. 11-15.</li>
+    <li>KUZILEK, J.; HLOSTA, M.; ZDRAHAL, Z. Open University Learning Analytics dataset. <b>Scientific Data</b>, [<i>s. l.</i>], v. 4, 170171, 2017. DOI: 10.1038/sdata.2017.171.</li>
+    <li>NEWMAN, M. E. J. Scientific collaboration networks. II. Shortest paths, weighted networks, and centrality. <b>Physical Review E</b>, [<i>s. l.</i>], v. 64, n. 1, 016132, 2001. DOI: 10.1103/PhysRevE.64.016132.</li>
+    <li>NEWMAN, M. E. J.; GIRVAN, M. Finding and evaluating community structure in networks. <b>Physical Review E</b>, [<i>s. l.</i>], v. 69, n. 2, 026113, 2004. DOI: 10.1103/PhysRevE.69.026113.</li>
+    <li>OKABE, M.; ITO, K. <b>Color Universal Design (CUD)</b>: how to make figures and presentations that are friendly to colorblind people. [<i>S. l.</i>]: J*Fly, 2008. Disponível em: https://jfly.uni-koeln.de/color/. Acesso em: 16 nov. 2026.</li>
+    <li>ZHOU, T. <i>et al.</i> Bipartite network projection and personal recommendation. <b>Physical Review E</b>, [<i>s. l.</i>], v. 76, n. 4, 046115, 2007. DOI: 10.1103/PhysRevE.76.046115.</li>
+  </ol>
+  <aside class="notas">
+    <p><b>Fala:</b> Estas são as referências citadas na apresentação, no formato da ABNT NBR 6023:2018; as citações nos slides seguem a NBR 10520:2023, no sistema autor-data.</p>
+    <p><b>Observação para o grupo:</b> confira a lista contra a seção de referências do artigo — a apresentação deve citar só o que o artigo cita.</p>
+  </aside>
+</section>
+
+<section class="slide tinta sem-rodape fim-anim" id="encerramento" data-titulo="Obrigado · Perguntas">
+  <canvas class="cena" data-cena="encerramento" aria-hidden="true"></canvas>
+  <div class="capa-texto">
+    <p class="sobrelinha" data-entra="0">Grupo 16 · UniAnchieta · 2026</p>
+    <h2 class="display revela" data-entra="1">Obrigado.</h2>
+    <p class="subtitulo" data-entra="2">Ficamos à disposição para as perguntas da banca.</p>
+    <div class="capa-autoria" data-entra="4">
+      <dl class="equipe">
+        <div><dt>Gabriel Luís Lopes</dt><dd>RA 2300873</dd></div>
+        <div><dt>Pedro Alexandre dos Santos Chaves</dt><dd>RA 2301503</dd></div>
+        <div><dt>Lucas Timponi Mercadante Castro</dt><dd>RA 2304913</dd></div>
+      </dl>
+      <p class="orientador"><span class="rotulo-tinta">Orientador</span> Prof. Me. Clayton Augusto Valdo</p>
+      <p class="orientador"><span class="rotulo-tinta">Repositório</span> <span class="mono">github.com/luctmc/TCC.bipartite-network-analysis</span></p>
+    </div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Agradecemos a atenção da banca e ao nosso orientador. Ficamos à disposição para as perguntas.</p>
+    <p><b>Durante as perguntas:</b> A abre o apêndice técnico; O mostra todos os slides; D volta à demonstração.</p>
+    <p><b>Perguntas prováveis:</b> o critério de aresta que usa o desfecho (ADR-0007); por que Louvain e Brandes não foram implementados à mão (ADR-0010); se o “risco de evasão” é aprendizado de máquina (não — apêndice A3); por que a intermediação ignora o peso (apêndice A2).</p>
+  </aside>
+</section>
+
+<section class="slide" id="stack" data-titulo="Tecnologias e porquês" data-apendice>
+  <p class="sobrelinha" data-entra>Apêndice · Tecnologias</p>
+  <h2 class="titulo revela" data-entra>Cada escolha tem um motivo registrado — e nenhuma é de aprendizado de máquina.</h2>
+  <table class="filetes stack-tabela corpo">
+    <thead><tr><th>Camada</th><th>Tecnologia</th><th>Por quê</th><th>Registro</th></tr></thead>
+    <tbody>
+      <tr data-passo="1"><td>Algoritmos</td><td>Python 3.11+ · NetworkX 3.6 · python-louvain · pandas · NumPy · SciPy</td><td>Referência acadêmica de grafos; as implementações à mão são comparadas com ela.</td><td class="mono">ADR-0010</td></tr>
+      <tr data-passo="2"><td>Armazenamento</td><td>CSV + <span class="mono">meta.json</span> por artefato, em disco</td><td>Legível, versionável, comparável byte a byte; não há banco de dados.</td><td class="mono">ADR-0001 · 0002</td></tr>
+      <tr data-passo="3"><td>API</td><td>FastAPI + Uvicorn</td><td>Esquemas tipados, documentação em <span class="mono">/docs</span>, serve a interface compilada.</td><td class="mono">ADR-0004 · 0013</td></tr>
+      <tr data-passo="4"><td>Interface</td><td>React 18 · TypeScript · Vite 5</td><td>Componentes tipados; o build vai para dentro do pacote Python.</td><td class="mono">ADR-0005</td></tr>
+      <tr data-passo="4"><td>Grafo na tela</td><td>Cytoscape.js (layout fCoSE) · Framer Motion</td><td>Desenho em canvas para milhares de arestas; animação que respeita “reduzir movimento”.</td><td class="mono">ADR-0005</td></tr>
+      <tr data-passo="5"><td>Qualidade</td><td>pytest · ruff · mypy · ESLint · GitHub Actions</td><td>CI em Python 3.11 e 3.13; <span class="mono">main</span> só recebe PR com CI verde.</td><td class="mono">ADR-0009 · 0011</td></tr>
+    </tbody>
+  </table>
+  <aside class="notas">
+    <p><b>Fala:</b> Cada tecnologia foi escolhida por um motivo, e cada motivo está registrado numa ADR — um registro de decisão de arquitetura. São quatorze no repositório.</p>
+    <p><b>Ação:</b> avance linha por linha.</p>
+    <p>Para os <b>algoritmos</b>, Python com NetworkX, que é a referência acadêmica de grafos; as partes que implementamos à mão são comparadas numericamente com ela. Para o <b>armazenamento</b>, arquivos CSV com um <code>meta.json</code> que diz quem gerou o artefato, com que parâmetros e quando — não há banco de dados, e isso foi deliberado: os artefatos são legíveis, versionáveis e podem ser comparados byte a byte. A <b>API</b> usa FastAPI. A <b>interface</b>, React com TypeScript e Vite; o grafo é desenhado com Cytoscape.js, que usa canvas e aguenta milhares de arestas. Na <b>qualidade</b>, testes, lint e checagem de tipos rodam a cada pull request, em duas versões do Python.</p>
+    <p><b>Se perguntarem</b> “por que não um banco de dados?”: os dados são lidos inteiros por algoritmos de grafo, não consultados por linha; arquivos com escrita canônica permitem provar reprodutibilidade (diff vazio). Um banco foi analisado e ficou como trabalho futuro em <code>docs/entrega.md</code>.</p>
+  </aside>
+</section>
+
+<section class="slide" id="dados-disco" data-titulo="Dados e contratos" data-apendice>
+  <p class="sobrelinha" data-entra>Apêndice · Modelagem dos dados</p>
+  <h2 class="titulo revela" data-entra>Cada etapa é uma pasta. O <i>meta.json</i> conta quem gerou, como e quando.</h2>
+  <div class="grade-2 corpo">
+    <pre class="arvore" data-entra><span class="d">data/fixtures/synthetic_v1/</span>
+<span data-passo="1">├─ <b>bipartite/</b>
+│   ├─ nodes.csv      <i>id, kind, label</i>
+│   ├─ edges.csv      <i>source, target, weight</i>
+│   ├─ <u>outcomes.csv</u>   <i>desfecho, à parte</i>
+│   └─ meta.json</span>
+<span data-passo="2">├─ <b>projections/</b>student_simple/
+│   ├─ nodes.csv · edges.csv · meta.json</span>
+<span data-passo="3">├─ <b>communities/</b>louvain__student_simple/
+│   ├─ membership.csv · meta.json</span>
+<span data-passo="4">└─ <b>centrality/</b>student_simple/
+    ├─ degree.csv · betweenness.csv
+    └─ eigenvector.csv · *.meta.json</span></pre>
+    <div class="coluna">
+      <div class="cartao" data-passo="1"><span class="rotulo">Entidades</span><h3>Aluno e disciplina são nós; a matrícula é aresta</h3><p><code>kind</code> marca o lado do bipartido. O “lado disciplina” também pode ser uma oferta, uma avaliação ou um recurso do ambiente virtual (ADR-0012).</p></div>
+      <div class="cartao" data-passo="2"><span class="rotulo">Rastreabilidade</span><h3><code>meta.json</code> em todo artefato</h3><p><code>schema_version</code>, a especificação que o gerou, os parâmetros (inclusive a semente) e quem o produziu.</p></div>
+      <div class="cartao" data-passo="4"><span class="rotulo">Validação</span><h3><code>python -m edugraph validate</code></h3><p>Confere layout, colunas e coerência entre camadas — por exemplo, se a partição cobre todos os nós da projeção.</p></div>
+    </div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Este é o modelo de dados na prática. Cada etapa do pipeline é uma pasta, sempre no mesmo lugar.</p>
+    <p><b>Ação:</b> avance as camadas da árvore.</p>
+    <p>No <b>bipartido</b>, os nós — com só três colunas: identificador, tipo e rótulo —, as arestas com peso e, separado, o arquivo de desfechos. Depois vêm as <b>projeções</b>, as <b>comunidades</b>, com a pertença de cada nó a um grupo, e as <b>centralidades</b>, uma por métrica.</p>
+    <p>Toda pasta tem um <code>meta.json</code> que diz qual versão do formato, qual especificação gerou, com que parâmetros e quem produziu. É isso que permite responder, para qualquer número do artigo, “de onde veio isto?”.</p>
+    <p>E há um comando que valida tudo: confere as colunas e a coerência entre as camadas.</p>
+    <p><b>Nível técnico:</b> a escrita é canônica — nós e arestas ordenados, floats no menor <code>repr</code> que retorna ao mesmo valor, UTF-8 e <code>\n</code> explícitos. Por isso as fixtures se regeneram byte a byte, e a CI confere isso num job próprio.</p>
+  </aside>
+</section>
+
+<section class="slide" id="laboratorio-api" data-titulo="Laboratório ao vivo: o fluxo" data-apendice>
+  <p class="sobrelinha" data-entra>Apêndice · Comunicação entre os componentes</p>
+  <h2 class="titulo revela" data-entra>Um clique em ▶ vira uma rede montada no servidor — e o <i>rastro</i> do algoritmo volta para ser animado.</h2>
+  <div class="seq corpo">
+    <div class="seq-col nav" data-entra><b>Navegador</b><span>React · Cytoscape.js</span></div>
+    <div class="seq-col srv" data-entra><b>API</b><span>FastAPI · <code>lab_routes.py</code></span></div>
+    <div class="seq-col lab" data-entra><b>edugraph.lab</b><span>compõe as frentes pelo registro</span></div>
+    <div class="seq-msg m1" data-passo="1"><span class="txt"><code>POST /lab/run</code> · turma, mistura, projeção, algoritmo</span></div>
+    <div class="seq-msg m2" data-passo="2"><span class="txt">valida limites · chama o serviço</span></div>
+    <ol class="seq-passos" data-passo="3">
+      <li>gera a turma fictícia (gerador da A-01)</li>
+      <li>bipartido → projeção (à mão)</li>
+      <li>Louvain <i>com cada movimento</i> ou Girvan–Newman <i>com cada corte</i></li>
+      <li>leitura: nomes dos grupos, papéis, sinais</li>
+    </ol>
+    <div class="seq-msg m3 volta" data-passo="4"><span class="txt">JSON: grafo + rastro + leitura + revelações</span></div>
+    <div class="seq-msg m4" data-passo="5"><span class="txt"><code>frames.ts</code> transforma o rastro em quadros · o canvas só liga e desliga classes</span></div>
+  </div>
+  <p class="pequeno seq-limites" data-passo="6">Limites que protegem o servidor: <b>24 a 75 alunos</b>, <b>4.000 ligações</b>, <b>1.500</b> no Girvan–Newman e <b>60 s</b>. O pesado (OULAD inteiro) continua só pela linha de comando.</p>
+  <aside class="notas">
+    <p><b>Fala:</b> Este slide mostra como os componentes conversam quando alguém aperta ▶ no laboratório.</p>
+    <p><b>Ação:</b> avance mensagem por mensagem.</p>
+    <p>O navegador envia um <code>POST /lab/run</code> com as escolhas da tela: tamanho da turma, mistura entre áreas, o que projetar, qual algoritmo. A API valida os limites e chama o pacote <code>lab</code>.</p>
+    <p>O <code>lab</code> gera a turma fictícia com o mesmo gerador sintético do trabalho, monta o bipartido e a projeção e roda o algoritmo <b>guardando o rastro</b>: cada movimento do Louvain ou cada corte do Girvan–Newman. Depois produz a leitura em português: nome dos grupos, papel de cada aluno, sinais de atenção.</p>
+    <p>Tudo volta num único JSON. No navegador, uma função pura transforma esse rastro em quadros de animação, e o canvas apenas liga e desliga estilos. Ou seja: <b>a animação não é encenação</b> — ela reproduz o que o algoritmo fez de fato.</p>
+    <p>Para proteger o servidor há limites de tamanho e de tempo; o cálculo pesado, sobre a base real inteira, continua só pela linha de comando.</p>
+    <p><b>Se perguntarem</b> “o Louvain da tela é o mesmo do artigo?”: não é o mesmo código — a biblioteca python-louvain não expõe os movimentos. Por isso um teste exige que o Q da nossa versão fique a menos de 0,02 da biblioteca, e a própria tela mostra os dois Q lado a lado. Na turma padrão, a partição é idêntica.</p>
+  </aside>
+</section>
+
+<section class="slide" id="verificacao" data-titulo="Verificação e reprodutibilidade" data-apendice>
+  <p class="sobrelinha" data-entra>Apêndice · Como sabemos que está certo</p>
+  <h2 class="titulo revela" data-entra>Três algoritmos foram escritos à mão — e cada um é conferido contra a biblioteca.</h2>
+  <table class="filetes corpo verif-tabela">
+    <thead><tr><th>Implementado pelo grupo</th><th>Comparado com</th><th>Resultado medido</th></tr></thead>
+    <tbody>
+      <tr data-passo="1"><td>Projeções simples e por alocação de recursos</td><td class="mono">nx.bipartite.*</td><td>diferença &lt; 10⁻⁹ nas fixtures; na coorte real (1,45 milhão de arestas), 1,7 × 10⁻¹⁸ — e <b>mais rápida</b>: 5,2 s contra 9,5 s e 22,5 s</td></tr>
+      <tr data-passo="2"><td>Modularidade Q (forma fechada)</td><td class="mono">nx.community.modularity</td><td>diferença máxima de 3,2 × 10⁻¹⁵ nas quatro projeções de <span class="mono">synthetic_v1</span></td></tr>
+      <tr data-passo="3"><td>Autovetor (iteração de potência sobre A + I)</td><td class="mono">nx.eigenvector_centrality</td><td>concordam abaixo de 10⁻⁶ com o mesmo critério de parada; em <span class="mono">tiny_v1</span>, bate a forma fechada λ = (3+√17)/2</td></tr>
+      <tr data-passo="4"><td>Louvain com rastro (laboratório)</td><td class="mono">python-louvain</td><td>teste exige |ΔQ| &lt; 0,02; na turma padrão, mesma partição e mesmo Q (0,528)</td></tr>
+    </tbody>
+  </table>
+  <div class="grade-3 verif-det" data-passo="5">
+    <div><b>Semente explícita</b><p>todo algoritmo estocástico grava a sua em <code>params</code></p></div>
+    <div><b>Fixtures byte a byte</b><p>regeneradas idênticas; um job da CI confere</p></div>
+    <div><b>Esperados no papel</b><p>os valores de <code>tiny_v1</code> foram derivados à mão, não copiados da biblioteca</p></div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Uma pergunta natural é: como sabemos que os resultados estão certos? A resposta tem duas partes.</p>
+    <p><b>Ação:</b> avance linha por linha.</p>
+    <p>Primeiro, as partes que implementamos à mão são comparadas com a biblioteca de referência. As <b>projeções</b> batem com diferença abaixo de um bilionésimo — e, na coorte real, com 1,45 milhão de arestas, a nossa foi até mais rápida que a do NetworkX, porque acumula os pares num único percurso. A <b>modularidade</b> difere em 3 × 10⁻¹⁵, que é ruído de ponto flutuante. O <b>autovetor</b> concorda com o mesmo critério de parada e bate uma forma fechada calculada no papel. E o <b>Louvain do laboratório</b> fica a menos de 0,02 da biblioteca por teste; na turma padrão, a partição é idêntica.</p>
+    <p><b>Ação:</b> avance a faixa de baixo.</p>
+    <p>Segundo, <b>reprodutibilidade</b>: toda aleatoriedade tem semente gravada, as fixtures se regeneram byte a byte, e os valores esperados do menor caso de teste foram derivados no papel — para que o teste não vire tautologia, comparando a biblioteca com ela mesma.</p>
+    <p><b>Fontes:</b> <code>docs/artigo/decisoes-metodologicas.md</code> (A-05, B-03, C-02) e ADR-0010, ADR-0011, ADR-0013.</p>
+  </aside>
+</section>
+
+<section class="slide" id="desafios" data-titulo="Decisões e desafios" data-apendice>
+  <p class="sobrelinha" data-entra>Apêndice · Decisões que os dados forçaram</p>
+  <h2 class="titulo revela" data-entra>Quatro problemas reais, e o que fizemos com cada um.</h2>
+  <div class="grade-2 corpo desafios">
+    <div class="cartao cor-6" data-passo="1"><span class="rotulo">Desempenho</span><h3>O Girvan–Newman não termina na base real</h3><p>Custo O(m²n). Roda com <b>orçamento de tempo</b> verificado a cada remoção e devolve <code>status = timeout</code> com a melhor partição vista — nunca uma exceção.</p></div>
+    <div class="cartao cor-2" data-passo="2"><span class="rotulo">Esparsidade</span><h3>91,8% dos alunos do OULAD cursam um só módulo</h3><p>A rede por matrícula quase não tem informação entre alunos. O critério de aresta passou a ser a <b>interação com o ambiente virtual</b>: o grau mediano do aluno vai de 1 para 40.</p></div>
+    <div class="cartao cor-5" data-passo="3"><span class="rotulo">Visualização</span><h3>1,75 milhão de arestas não se desenham</h3><p>As 5.000 mais pesadas tocavam só 193 de 1.870 alunos. A API envia o <b>esqueleto</b> — as k mais fortes de cada nó — e a tela avisa o corte.</p></div>
+    <div class="cartao cor-3" data-passo="4"><span class="rotulo">Método</span><h3>Q alto pode ser acaso</h3><p>Todo Q é comparado com <b>réplicas nulas</b> (mesmos graus, ligações sorteadas). O critério: ao menos 5 réplicas e <b>z ≥ 3</b>.</p></div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Quatro problemas reais apareceram durante o desenvolvimento, e cada um virou uma decisão registrada.</p>
+    <p><b>Ação:</b> avance um cartão por vez.</p>
+    <p><b>Desempenho:</b> o Girvan–Newman cresce com o quadrado do número de arestas e não termina na base completa. Ele roda com orçamento de tempo, verificado a cada remoção; se estourar, devolve a melhor partição vista e marca o status — o sistema nunca quebra por isso.</p>
+    <p><b>Esparsidade:</b> 91,8% dos alunos do OULAD cursaram um único módulo. Com a matrícula como ligação, quase não há informação entre alunos. Trocamos o critério para a interação com o ambiente virtual — os recursos que o aluno acessou —, e o grau mediano subiu de 1 para 40. Isso não muda o tema: o critério de aresta era parâmetro desde o primeiro dia.</p>
+    <p><b>Visualização:</b> a projeção do ambiente virtual tem 1,75 milhão de arestas. Mandar só as 5.000 mais pesadas mostraria 193 alunos ligados e o resto solto — uma estrutura que não existe. Por isso a API manda o esqueleto: as ligações mais fortes de cada nó, e a tela declara o corte.</p>
+    <p><b>Método:</b> como já adiantei, Q alto pode ser acaso. Todo Q é comparado com réplicas embaralhadas, e só afirmamos estrutura com z maior ou igual a 3.</p>
+  </aside>
+</section>
+
+<section class="slide" id="seguranca" data-titulo="Segurança e tratamento de dados" data-apendice>
+  <p class="sobrelinha" data-entra>Apêndice · Segurança e tratamento de dados</p>
+  <h2 class="titulo revela" data-entra>O que o sistema protege — e o que ele, honestamente, não se propõe a proteger.</h2>
+  <div class="grade-2 corpo">
+    <ul class="metodos">
+      <li data-passo="1"><span class="n">✓</span><div><h3>Dados públicos e anonimizados</h3><p>OULAD (Kuzilek; Hlosta; Zdrahal, 2017), licença CC BY 4.0. A turma do laboratório é fictícia: nomes e desfechos inventados.</p></div></li>
+      <li data-passo="2"><span class="n">✓</span><div><h3>Rótulos fora do grafo</h3><p>Desfecho só em <code>outcomes.csv</code>, lido apenas por <code>evaluate.py</code> (ADR-0008).</p></div></li>
+      <li data-passo="3"><span class="n">✓</span><div><h3>Sem exposição individual</h3><p>O relatório interno não publica perfis por aluno e é varrido atrás de ids antes de ser gravado.</p></div></li>
+      <li data-passo="4"><span class="n">✓</span><div><h3>Servidor protegido por limites</h3><p>Tamanho, número de ligações e tempo máximo no laboratório; erros viram respostas legíveis.</p></div></li>
+    </ul>
+    <div class="cartao cor-6 limite-seg" data-passo="5">
+      <span class="rotulo">Fora do escopo, declarado</span>
+      <h3>Não há autenticação</h3>
+      <p>A API foi feita para uso <b>local e interno</b>: roda em <code>127.0.0.1</code>, e o único <code>POST</code> é o do laboratório, limitado. Uma implantação pública exigiria autenticação e controle de acesso — está registrado como consequência na ADR-0013.</p>
+    </div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Sobre segurança e dados, prefiro separar o que o sistema garante do que ele não se propõe a fazer.</p>
+    <p><b>Ação:</b> avance os quatro itens e o cartão.</p>
+    <p>Os dados reais são públicos e anonimizados — a base OULAD, da Open University, sob licença CC BY 4.0. A turma do laboratório é inteiramente fictícia. Os rótulos ficam fora do grafo, como já vimos. O relatório interno não publica perfis de alunos individuais. E o laboratório tem limites para não ser usado para sobrecarregar o servidor.</p>
+    <p>O que <b>não</b> há é autenticação. O sistema foi feito para rodar localmente, num computador da instituição. Se um dia for publicado na internet, autenticação e controle de acesso precisam vir antes. Isso está registrado como consequência na decisão de arquitetura do laboratório.</p>
+    <p><b>Transição:</b> “Chega de slides sobre o sistema — vamos ver o sistema.”</p>
+  </aside>
+</section>
+
+<section class="slide" id="testes" data-titulo="Testes e evidências" data-apendice>
+  <p class="sobrelinha" data-entra>Apêndice · Evidências de implementação</p>
+  <h2 class="titulo revela" data-entra>O que foi entregue está coberto por testes — e a integração contínua não deixa quebrar.</h2>
+  <dl class="stats corpo" data-passo="1">
+    <div><dt>Testes Python · suíte completa</dt><dd>428 <small>passaram</small></dd></div>
+    <div><dt>Testes da interface</dt><dd>32 <small>passaram</small></dd></div>
+    <div><dt>Especificações fechadas</dt><dd>23 <small>de 23</small></dd></div>
+    <div><dt>Decisões registradas</dt><dd>14 <small>ADRs</small></dd></div>
+  </dl>
+  <div class="grade-2 corpo-menor">
+    <table class="filetes" data-passo="2">
+      <thead><tr><th>Camada</th><th>O que garante</th></tr></thead>
+      <tbody>
+        <tr><td>Contrato</td><td>sem ML · sem rótulo no grafo · sem import cruzado · escrita byte a byte</td></tr>
+        <tr><td>Unitários</td><td>pesos de <span class="mono">tiny_v1</span> derivados no papel; manual = NetworkX; Louvain recupera as áreas</td></tr>
+        <tr><td>API e laboratório</td><td>cada rota responde e valida no esquema; sinais e rastro do algoritmo</td></tr>
+        <tr><td>Interface</td><td>lógica da animação, do tour e do cliente da API</td></tr>
+      </tbody>
+    </table>
+    <div class="coluna" data-passo="3">
+      <p class="texto"><b>Lint, formatação e tipos:</b> <span class="mono">ruff</span>, <span class="mono">mypy</span> (estrito em <span class="mono">contracts</span>), <span class="mono">tsc</span> e ESLint sem nenhum aviso.</p>
+      <p class="texto"><b>CI:</b> Python 3.11 e 3.13, mais um job que regenera as fixtures e exige diff vazio.</p>
+      <p class="pequeno">Executado em 16/11/2026 numa cópia limpa do repositório (Linux, Python 3.13, Node 22): <span class="mono">pytest</span> completo — 428 passaram e 1 foi pulado por exigir o OULAD, ausente nas fixtures; 45 s.</p>
+    </div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Sobre validação da implementação: tudo o que mostramos está coberto por testes automáticos.</p>
+    <p><b>Ação:</b> avance — os números.</p>
+    <p>São 428 testes Python passando na suíte completa e 32 testes da interface. As 23 especificações do projeto estão fechadas, e as 14 decisões de arquitetura estão registradas.</p>
+    <p><b>Ação:</b> avance — as camadas.</p>
+    <p>Os testes estão em camadas. Os de <b>contrato</b> protegem as regras do trabalho: sem aprendizado de máquina, sem rótulo no grafo, sem import cruzado e escrita reproduzível. Os <b>unitários</b> conferem os valores — no menor caso, derivados no papel. Os da <b>API</b> conferem cada rota. Os da <b>interface</b>, a lógica da animação e do tour.</p>
+    <p><b>Ação:</b> avance — a coluna da direita.</p>
+    <p>Lint e checagem de tipos passam sem nenhum aviso, e a integração contínua roda em duas versões do Python, além de um job que regenera as fixtures e exige que nada mude.</p>
+    <p><b>Honestidade:</b> não há teste automatizado de navegador da interface; a spec C-05 trocou isso por um roteiro de verificação manual, documentado em <code>frontend/README.md</code>.</p>
+  </aside>
+</section>
+
+<section class="slide" id="limitacoes" data-titulo="Limitações" data-apendice>
+  <p class="sobrelinha" data-entra>Apêndice · Limitações conhecidas</p>
+  <h2 class="titulo revela" data-entra>O que o trabalho não afirma — e por quê.</h2>
+  <div class="grade-3 corpo limites">
+    <div class="cartao" data-passo="1"><span class="rotulo">Escala</span><h3>Girvan–Newman só em amostras</h3><p>Na coorte por avaliação, passa de 2 h; ficou só com Louvain e centralidade.</p></div>
+    <div class="cartao" data-passo="1"><span class="rotulo">Estrutura</span><h3>O sinal real é fraco</h3><p>Q de 0,05 a 0,08 no ambiente virtual: inequívoco contra o acaso, mas baixo.</p></div>
+    <div class="cartao" data-passo="1"><span class="rotulo">Causalidade</span><h3>Desfecho não é previsto</h3><p>Parte do sinal é mecânica; um desfecho por aluno; o limiar de nota 40 deixa 3.674 alunos de fora.</p></div>
+    <div class="cartao" data-passo="2"><span class="rotulo">Interpretação</span><h3>Papéis e sinais são descritivos</h3><p>Limiares de Guimerà–Amaral adaptados; “risco de evasão” é indicador estrutural, nome em discussão com o orientador.</p></div>
+    <div class="cartao" data-passo="2"><span class="rotulo">Generalização</span><h3>Uma instituição</h3><p>O OULAD é uma universidade aberta britânica, com perfil de aluno e currículo próprios.</p></div>
+    <div class="cartao" data-passo="2"><span class="rotulo">Engenharia</span><h3>Pendências registradas</h3><p>Sem autenticação; o pipeline pode misturar rodadas com raízes repetidas (T-OBS-02); sem teste de navegador.</p></div>
+  </div>
+  <aside class="notas">
+    <p><b>Fala:</b> Todo trabalho tem limites, e preferimos mostrá-los antes de sermos perguntados.</p>
+    <p><b>Ação:</b> avance duas vezes (três cartões por vez).</p>
+    <p><b>Escala:</b> o Girvan–Newman só roda em amostras; na coorte por avaliação ele passa de duas horas, então ela ficou só com Louvain e centralidade. <b>Estrutura:</b> o sinal na base real é fraco em valor absoluto, ainda que inequívoco contra o acaso. <b>Causalidade:</b> como vimos, a centralidade não prevê o desfecho; além disso, o ETL guarda um desfecho por aluno, e o limiar de nota deixa de fora justamente os alunos que mais reprovam.</p>
+    <p><b>Interpretação:</b> os papéis usam limiares adaptados do artigo original, e o “risco de evasão” é uma conta descritiva com pesos fixos — levamos ao orientador a pergunta se o nome deve mudar. <b>Generalização:</b> é uma instituição só. <b>Engenharia:</b> não há autenticação, há uma pendência conhecida no executor do pipeline quando a mesma base aparece em duas raízes, e a interface não tem teste automatizado de navegador. Tudo isso está registrado em <code>observacoes/</code> e nas ADRs.</p>
+  </aside>
+</section>
+
+<section class="slide" id="a-formulas" data-titulo="Fórmulas" data-apendice>
+  <p class="sobrelinha">Apêndice · As fórmulas, como estão no código</p>
+  <h2 class="titulo">Tudo o que o sistema calcula cabe em cinco expressões.</h2>
+  <table class="filetes corpo formulas">
+    <thead><tr><th>Grandeza</th><th>Definição</th><th>Onde</th></tr></thead>
+    <tbody>
+      <tr><td>Projeção simples</td><td class="f">w<sub>ij</sub> = Σ<sub>k ∈ N(i) ∩ N(j)</sub> 1 &nbsp;— a diagonal externa de B·Bᵀ</td><td class="mono">data/projection/manual.py</td></tr>
+      <tr><td>Alocação de recursos</td><td class="f">w<sub>ij</sub> = Σ<sub>k ∈ N(i) ∩ N(j)</sub> 1 / grau(k) &nbsp;(Zhou et al., 2007)</td><td class="mono">data/projection/manual.py</td></tr>
+      <tr><td>Modularidade</td><td class="f">Q = Σ<sub>c</sub> [ m<sub>c</sub>/m − γ (K<sub>c</sub>/2m)² ], &nbsp;γ = 1 · custo O(m + n)</td><td class="mono">community/modularity.py</td></tr>
+      <tr><td>Autovetor</td><td class="f">x<sub>t+1</sub> = (A + I) x<sub>t</sub> / ‖·‖₂, &nbsp;x₀ = 1/n, &nbsp;para quando ‖Δx‖₁ &lt; 10⁻⁸·n</td><td class="mono">centrality/eigenvector.py</td></tr>
+      <tr><td>Distância ao acaso</td><td class="f">z = (Q<sub>real</sub> − média Q<sub>nulo</sub>) / desvio Q<sub>nulo</sub>, &nbsp;≥ 5 réplicas, estrutura se z ≥ 3</td><td class="mono">data/nullmodel.py</td></tr>
+    </tbody>
+  </table>
+  <p class="pequeno" style="margin-top:28px">Intermediação: algoritmo de Brandes (NetworkX), com o peso tratado como caminho em saltos (<span class="mono">weight_mode = none</span>) em projeção esparsa e <span class="mono">inverse</span> em projeção quase completa, com amostragem k = 200. NMI e Rand ajustado: implementados à mão sobre a tabela de contingência.</p>
+  <aside class="notas">
+    <p>Use este slide se pedirem a definição formal. Destaque o <b>A + I</b>: somar a identidade não muda os autovetores, só desloca os autovalores em uma unidade; num grafo bipartido, A tem −λ com o mesmo módulo de λ, e a iteração pura oscila sem parar (há um teste que mostra isso numa estrela).</p>
+    <p>Na alocação de recursos, o NetworkX não tem função pronta: <code>collaboration_weighted_projected_graph</code> é a de Newman (1/(grau−1)). A referência usada é <code>generic_weighted_projected_graph</code> com a fórmula de Zhou fornecida pelo grupo.</p>
+  </aside>
+</section>
+
+<section class="slide" id="a-gn" data-titulo="Girvan–Newman: escolhas" data-apendice>
+  <p class="sobrelinha">Apêndice · Duas escolhas do Girvan–Newman</p>
+  <h2 class="titulo">Ponte escolhida sem peso; Q reportado com peso; orçamento checado a cada corte.</h2>
+  <div class="grade-3 corpo">
+    <div class="cartao"><span class="rotulo">1</span><h3>Intermediação não ponderada</h3><p>No NetworkX, peso em caminho mínimo é <i>distância</i>; nas projeções, peso alto é <i>afinidade</i>. Usá-lo inverteria o critério de remoção.</p></div>
+    <div class="cartao"><span class="rotulo">2</span><h3>Q ponderado</h3><p>Para ser comparável com o do Louvain. As duas escolhas ficam gravadas em <span class="mono">params</span>.</p></div>
+    <div class="cartao"><span class="rotulo">3</span><h3>Orçamento por remoção</h3><p>O primeiro corte de <span class="mono">synthetic_v1</span> custa 15 s dos 34 s. Estourou: <span class="mono">status = timeout</span> e a melhor partição vista.</p></div>
+  </div>
+  <p class="texto" style="margin-top:44px">Rodando sobre amostra, o artefato ganha o sufixo <span class="mono">__sample&lt;N&gt;</span>, para que a partição de 400 alunos nunca seja lida como a da projeção inteira. <b>Consequência visível no laboratório:</b> com muita mistura entre áreas, ele corta ligações de dentro dos grupos e fragmenta (mistura 100%: 28 grupos, Q 0,02, contra 3 grupos e Q 0,19 do Louvain).</p>
+  <aside class="notas">
+    <p>Fonte: <code>docs/artigo/decisoes-metodologicas.md</code>, “Duas escolhas do Girvan-Newman” (B-02) e ADR-0006. Os números da mistura 100% foram conferidos via <code>POST /lab/run</code> (semente 12, 45 alunos) em 16/11/2026.</p>
+  </aside>
+</section>
+
+<section class="slide" id="a-sinais" data-titulo="Sinais por aluno" data-apendice>
+  <p class="sobrelinha">Apêndice · “Quem merece atenção” e “possíveis talentos”</p>
+  <h2 class="titulo">Uma média ponderada fixa, sem treino — indicador estrutural, não previsão.</h2>
+  <div class="grade-2 corpo">
+    <div>
+      <p class="formula" style="margin-top:0">risco = 0,35 · carga + 0,35 · intensidade + 0,30 · vínculo</p>
+      <ul class="metodos">
+        <li><span class="n">·</span><div><h3>Carga</h3><p>nº de disciplinas, em desvios-padrão contra a turma</p></div></li>
+        <li><span class="n">·</span><div><h3>Intensidade</h3><p>nota ou atividade de cada matrícula frente à média da disciplina</p></div></li>
+        <li><span class="n">·</span><div><h3>Vínculo com o grupo</h3><p>o <i>z</i> dentro do módulo, de Guimerà e Amaral</p></div></li>
+      </ul>
+    </div>
+    <div class="coluna">
+      <div class="cartao"><span class="rotulo">Cortes fixados antes de olhar o desfecho</span><p><b>≥ 0,25</b> atenção · <b>≥ 0,50</b> alto. Talento: intensidade ≥ 1 desvio acima, destaque numa disciplina (z ≥ 1,5) ou ponte sem perder desempenho.</p></div>
+      <div class="cartao cor-5"><span class="rotulo">Conferência a posteriori</span><p>No AVA (BBB 2013J), dos 197 alunos com risco alto, <b>94%</b> reprovaram ou desistiram — contra 43% da turma. A conferência fica em <span class="mono">community/evaluate.py</span> (taxa por faixa e AUC).</p></div>
+      <p class="pequeno">Pergunta levada ao orientador (T-OBS-05): manter o nome “risco de evasão”, renomear ou deixar como trabalho futuro.</p>
+    </div>
+  </div>
+  <aside class="notas">
+    <p>Fonte: ADR-0013, item 4; <code>src/edugraph/lab/signals.py</code> (W_LOAD = 0,35, W_INTENSITY = 0,35, W_GROUP = 0,30, RISK_ATENCAO = 0,25, RISK_ALTO = 0,50, Z_ESPECIALISTA = 1,5). O número de 94% vem de <code>docs/orientador/estudo-apresentacao-11-2026.md</code>, seção 5 (exige o ZIP de resultados do OULAD).</p>
+    <p><b>Resposta curta</b> para “isso é aprendizado de máquina?”: não há treino nem parâmetro ajustado aos dados de desfecho; os pesos e os cortes foram fixados antes; o desfecho só aparece na conferência.</p>
+  </aside>
+</section>
+
+<section class="slide" id="a-papeis" data-titulo="Papéis dos nós" data-apendice>
+  <p class="sobrelinha">Apêndice · Papel de cada nó no resultado</p>
+  <h2 class="titulo">Quatro papéis, a partir de Guimerà e Amaral — com limiares adaptados e declarados.</h2>
+  <table class="filetes corpo">
+    <thead><tr><th>Papel</th><th>Ligações dentro do grupo</th><th>Ligações para outros grupos</th><th>Leitura</th></tr></thead>
+    <tbody>
+      <tr><td>Referência do grupo</td><td>muitas (z ≥ 1)</td><td>poucas</td><td>muito ligado no próprio grupo</td></tr>
+      <tr><td>Conector</td><td>muitas (z ≥ 1)</td><td>espalhadas</td><td>central no grupo e ligado a outros</td></tr>
+      <tr><td>Ponte</td><td>poucas</td><td>espalhadas</td><td>pouco central no grupo, mas liga grupos</td></tr>
+      <tr><td>Periférico</td><td>poucas</td><td>poucas</td><td>poucas ligações, quase todas dentro</td></tr>
+    </tbody>
+  </table>
+  <p class="texto" style="margin-top:36px">“Espalhadas”: coeficiente de participação <i>P</i> acima do típico do próprio grupo, com margem de 0,05. <b>Por que adaptar:</b> com os limiares originais (z ≥ 2,5 e <i>P</i> fixo), numa projeção densa, 1.585 dos 1.870 alunos do AVA viravam “ponte”.</p>
+  <aside class="notas"><p>Fonte: <code>src/edugraph/lab/insight.py</code> e ADR-0013 (alternativas consideradas e consequências). Na turma padrão do laboratório: 6 referências, 0 conectores, 6 pontes e 31 periféricos.</p></aside>
+</section>
+
+<section class="slide" id="a-datasets" data-titulo="Conjuntos de dados" data-apendice>
+  <p class="sobrelinha">Apêndice · Os conjuntos de dados</p>
+  <h2 class="titulo">Do caso feito no papel à turma real com 320 recursos.</h2>
+  <table class="filetes corpo datasets">
+    <thead><tr><th>Dataset</th><th>Como foi montado</th><th>Para quê</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">tiny_v1</td><td>6 alunos, 3 disciplinas, desenhado à mão</td><td>valores esperados derivados no papel</td></tr>
+      <tr><td class="mono">synthetic_v1</td><td>98 alunos, 7 disciplinas, 3 áreas, 35% de mistura, nota ≥ 60</td><td>fixture completa; validação do método</td></tr>
+      <tr><td class="mono">synthetic_v2</td><td>o v1 com 70% dos alunos reduzidos a uma matrícula</td><td>efeito da esparsidade</td></tr>
+      <tr><td>Turma de Computação</td><td>gerada a cada ▶, 24 a 75 alunos, 8 disciplinas, mistura ajustável</td><td>laboratório ao vivo</td></tr>
+      <tr><td class="mono">oulad_module_presentation</td><td>22.425 alunos × 22 ofertas de módulo, nota ≥ 40</td><td>disciplinas críticas; resultado negativo das comunidades</td></tr>
+      <tr><td class="mono">oulad_bbb_2013j</td><td>1.706 alunos × 11 avaliações</td><td>coorte por avaliação</td></tr>
+      <tr><td class="mono">oulad_vle_bbb_2013j</td><td>1.870 alunos × 320 recursos do AVA, cliques como peso</td><td>comunidades por comportamento; desfecho</td></tr>
+    </tbody>
+  </table>
+  <aside class="notas"><p>Os datasets do OULAD ficam fora do git (<code>data/processed/</code>), entregues como um ZIP de resultados de ~32 MB, instalado com <code>python scripts/iniciar.py --oulad &lt;zip&gt;</code>. Fonte: <code>docs/orientador/estudo-apresentacao-11-2026.md</code>, seção 4.</p></aside>
+</section>
+
+<section class="slide" id="a-api" data-titulo="Rotas da API" data-apendice>
+  <p class="sobrelinha">Apêndice · A API</p>
+  <h2 class="titulo">Leitura de artefatos em disco, mais um único <span class="mono">POST</span> limitado.</h2>
+  <table class="filetes corpo api-tabela">
+    <thead><tr><th>Rota</th><th>O que devolve</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">GET /health</td><td>estado e raízes de artefatos em uso</td></tr>
+      <tr><td class="mono">GET /datasets</td><td>o que existe em disco, por dataset</td></tr>
+      <tr><td class="mono">GET /datasets/{d}/bipartite</td><td>o grafo bipartido</td></tr>
+      <tr><td class="mono">GET /datasets/{d}/projections/{p}</td><td>a projeção, cortada pelo esqueleto (máx. 5.000 arestas por padrão)</td></tr>
+      <tr><td class="mono">GET /datasets/{d}/communities/{id}</td><td>a partição, com Q e status</td></tr>
+      <tr><td class="mono">GET …/communities/{id}/insight · /outcomes</td><td>nomes, papéis, sinais · cruzamento com o desfecho</td></tr>
+      <tr><td class="mono">GET /datasets/{d}/centrality/{p}/{métrica}</td><td>grau, intermediação ou autovetor</td></tr>
+      <tr><td class="mono">GET /datasets/{d}/metrics/{nome}</td><td>tabelas de métricas agregadas</td></tr>
+      <tr><td class="mono">GET /lab/options · POST /lab/run</td><td>limites e fontes · a rede montada na hora, com o rastro</td></tr>
+    </tbody>
+  </table>
+  <aside class="notas"><p>Fonte: <code>src/edugraph/api/routes.py</code> e <code>lab_routes.py</code>. Documentação interativa em <code>http://127.0.0.1:8000/docs</code> — pode ser aberta durante as perguntas. Erro de contrato vira 409; artefato ausente, 404.</p></aside>
+</section>
+
+<section class="slide" id="a-rodar" data-titulo="Como executar" data-apendice>
+  <p class="sobrelinha">Apêndice · Executar e recuperar</p>
+  <h2 class="titulo">Um comando sobe o sistema; outro sobe esta apresentação junto.</h2>
+  <div class="grade-2 corpo">
+    <pre class="arvore cmds"><span class="d"># o sistema (instala, testa, compila, abre)</span>
+python scripts/iniciar.py
+
+<span class="d"># a apresentação + o sistema</span>
+python apresentacao/servir.py
+
+<span class="d"># só a API, à mão</span>
+python -m edugraph api serve --root data/fixtures
+
+<span class="d"># conferir tudo</span>
+python -m edugraph validate --root data/fixtures
+pytest -m "not slow"</pre>
+    <table class="filetes">
+      <thead><tr><th>Se acontecer</th><th>Faça</th></tr></thead>
+      <tbody>
+        <tr><td>Janela da demo “não respondeu”</td><td>suba a API; reconecta em até 5 s</td></tr>
+        <tr><td>A página do sistema mostra só JSON</td><td>falta compilar o front: <span class="mono">iniciar.py</span> com Node 20+</td></tr>
+        <tr><td>Porta ocupada</td><td><span class="mono">--porta 8001</span> e <span class="mono">--app-url</span></td></tr>
+        <tr><td>Primeiro ▶ demora</td><td>aqueça antes: aperte ▶ uma vez</td></tr>
+        <tr><td>Nada funciona</td><td>tecla D → capturas reais, rotuladas</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <aside class="notas"><p>Detalhes em <code>apresentacao/README.md</code> e <code>docs/orientador/estudo-apresentacao-11-2026.md</code>, seção 7.</p></aside>
+</section>
+
+</div>
+</main>
+
+<div id="camada-demo" aria-hidden="false"></div>
+<button type="button" id="sair-demo"><span aria-hidden="true">←</span> Voltar à apresentação</button>
+<div id="galeria" role="dialog" aria-modal="true" aria-label="Capturas reais do sistema">
+  <div class="g-topo"><span class="tag alerta">Capturas — não é execução ao vivo</span><span>Imagens reais do edugraph, gravadas em 16/11/2026 sobre <code>data/fixtures</code></span><span class="g-contador" style="margin-left:auto"></span><button type="button" data-g="fechar">Fechar (Esc)</button></div>
+  <div class="g-imagem"><img alt="" /></div>
+  <div class="g-pe"><button type="button" data-g="ant">← Anterior</button><span class="g-legenda"></span><button type="button" data-g="prox">Próxima →</button></div>
+</div>
+
+<nav class="controles" aria-label="Controles da apresentação">
+  <button type="button" data-acao="anterior" title="Anterior (←)" aria-label="Slide anterior">←</button>
+  <span class="contador" aria-live="off"></span>
+  <button type="button" data-acao="proximo" title="Próximo (→ ou espaço)" aria-label="Próximo slide">→</button>
+  <span class="sep"></span>
+  <button type="button" data-acao="visao" title="Visão geral (O)">Visão geral</button>
+  <button type="button" data-acao="notas" title="Notas na tela (N)">Notas</button>
+  <button type="button" data-acao="apresentador" title="Modo apresentador (P)">Apresentador</button>
+  <button type="button" data-acao="tela-cheia" title="Tela cheia (F)">Tela cheia</button>
+</nav>
+<div class="progresso" aria-hidden="true"></div>
+<div id="visao-geral" role="dialog" aria-modal="true" aria-label="Visão geral dos slides"></div>
+<aside id="notas-inline" aria-label="Notas do apresentador"></aside>
+<div id="ir-para" aria-live="polite"></div>
+<div id="cortina" aria-hidden="true"></div>
+
+<script src="js/config.js"></script>
+<script src="js/dados.js"></script>
+<script src="js/diagramas.js"></script>
+<script src="js/motion.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/deck.js"></script>
+</body>
+</html>

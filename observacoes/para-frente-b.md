@@ -31,6 +31,12 @@ Ver as regras em [`README.md`](README.md).
   `synthetic_v1`. O z = +15,4 veio de uma rodada da Frente A.
 - **Como resolver:** dizer de onde veio o número e como regenerá-lo (quais
   réplicas, com que comando).
+- **Atualização:** 16/11/2026, revisão para a apresentação da defesa — o número
+  se reproduz: `null_replicas(load_bipartite(["data/fixtures"], "synthetic_v1"),
+  n=5, seed=0)`, projeção aluno↔aluno simples (`SimpleProjection`) e Louvain
+  com `random_state=42` dão Q real 0,4666 e nulo 0,2079 ± 0,0168 com **desvio
+  populacional** (z = +15,4); com desvio amostral, ± 0,0187 e z = +13,8. Falta
+  só registrar a receita na B-06 e dizer qual desvio foi usado.
 
 ### B-OBS-04 · Comandos do README gravam em `data/processed` sem avisar
 
