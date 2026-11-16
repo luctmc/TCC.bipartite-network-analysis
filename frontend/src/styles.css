@@ -343,7 +343,7 @@ code { font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
 .lab-etapas { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 14px 0 12px; border-bottom: 1px solid var(--rule); }
 .lab-etapa-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 5px; border: 1px solid var(--rule-2); border-radius: 999px; background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 500; transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease; }
 .lab-etapa-chip span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--hover); font: 600 12.5px var(--sans); }
-.lab-etapa-chip:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text); }
+.lab-etapa-chip:hover:not(:disabled):not(.ativa) { border-color: var(--text-muted); color: var(--text); }
 .lab-etapa-chip.ativa { background: var(--text); border-color: var(--text); color: var(--paper); }
 .lab-etapa-chip.ativa span { background: var(--paper); color: var(--text); }
 .lab-etapa-chip:disabled { opacity: 0.5; }
@@ -482,34 +482,50 @@ code { font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
 .sinal-risco-barra span { display: block; height: 100%; background: var(--text-2); }
 
 /* Tour de boas-vindas (ADR-0013) */
-.tour { position: fixed; inset: 0; z-index: 1000; }
-.tour-fundo { position: absolute; inset: 0; }
-.tour-fundo.escuro { background: rgba(14, 13, 10, 0.62); }
-.tour-luz { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(14, 13, 10, 0.62), 0 0 0 2px var(--sheet); pointer-events: none; transition: left 220ms ease, top 220ms ease, width 220ms ease, height 220ms ease; }
-.tour-luz.pulsa { animation: tour-pulsa 1.4s ease-in-out infinite; }
-@keyframes tour-pulsa {
-  0%, 100% { box-shadow: 0 0 0 9999px rgba(14, 13, 10, 0.62), 0 0 0 2px var(--sheet), 0 0 0 4px var(--focus); }
-  50% { box-shadow: 0 0 0 9999px rgba(14, 13, 10, 0.62), 0 0 0 2px var(--sheet), 0 0 0 10px transparent; }
+.tour { position: fixed; inset: 0; z-index: 1000; --tour-veu: rgba(22, 21, 18, 0.56); }
+.tour-fundo { position: absolute; inset: 0; animation: tour-veu 240ms ease-out both; }
+.tour-fundo.escuro { background: var(--tour-veu); }
+@keyframes tour-veu { from { opacity: 0; } }
+/* O recorte: um véu enorme em volta do alvo, com anel de papel e um halo discreto. */
+.tour-luz {
+  position: fixed; border-radius: 12px; pointer-events: none;
+  box-shadow: 0 0 0 9999px var(--tour-veu), 0 0 0 2px var(--sheet), 0 0 0 7px rgba(251, 250, 247, 0.16), 0 0 28px 8px rgba(251, 250, 247, 0.1);
+  transition: left 260ms cubic-bezier(0.2, 0.7, 0.1, 1), top 260ms cubic-bezier(0.2, 0.7, 0.1, 1), width 260ms cubic-bezier(0.2, 0.7, 0.1, 1), height 260ms cubic-bezier(0.2, 0.7, 0.1, 1);
 }
-.tour-balao { position: fixed; display: flex; flex-direction: column; gap: 8px; max-width: calc(100vw - 24px); padding: 16px 18px 14px; border: 1px solid var(--rule-2); border-radius: 8px; background: var(--sheet); color: var(--text); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28); }
-.tour-balao.abertura { padding: 22px 24px 18px; }
-.tour-balao.abertura h2 { font-size: 22px; }
+.tour-luz.pulsa { animation: tour-pulsa 1.6s ease-in-out infinite; }
+@keyframes tour-pulsa {
+  0%, 100% { box-shadow: 0 0 0 9999px var(--tour-veu), 0 0 0 2px var(--sheet), 0 0 0 5px var(--focus); }
+  50% { box-shadow: 0 0 0 9999px var(--tour-veu), 0 0 0 2px var(--sheet), 0 0 0 12px transparent; }
+}
+.tour-balao {
+  position: fixed; display: flex; flex-direction: column; max-width: calc(100vw - 24px);
+  padding: 18px 20px 16px; border: 1px solid var(--rule); border-radius: 14px; background: var(--sheet); color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 10px 24px -8px rgba(0, 0, 0, 0.18), 0 32px 64px -24px rgba(0, 0, 0, 0.42);
+  transition: left 260ms cubic-bezier(0.2, 0.7, 0.1, 1), top 260ms cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.tour-conteudo { display: flex; flex-direction: column; gap: 9px; animation: tour-entra 300ms cubic-bezier(0.2, 0.7, 0.1, 1) both; }
+@keyframes tour-entra { from { opacity: 0; transform: translateY(5px); } }
+.tour-balao.abertura { padding: 26px 28px 20px; }
+.tour-balao.abertura h2 { font-size: 26px; letter-spacing: -0.012em; }
+.tour-balao.abertura .tour-texto { font-size: 16px; }
 .tour-balao.folha { left: 12px; right: 12px; bottom: 12px; width: auto; max-height: 62vh; overflow-y: auto; }
-.tour-progresso { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-muted); font-size: 12.5px; }
-.tour-pontos { display: inline-flex; gap: 4px; }
-.tour-pontos i { width: 6px; height: 6px; border-radius: 50%; background: var(--rule-2); }
+.tour-marca { display: inline-flex; align-items: center; gap: 8px; font: 600 15px/1 var(--serif); color: var(--text-2); margin-bottom: 2px; }
+.tour-progresso { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-muted); font: 600 11.5px/1.2 var(--sans); letter-spacing: 0.07em; text-transform: uppercase; }
+.tour-pontos { display: inline-flex; gap: 5px; }
+.tour-pontos i { width: 14px; height: 3px; border-radius: 2px; background: var(--rule); transition: background-color 200ms ease, width 200ms ease; }
 .tour-pontos i.feito { background: var(--text-muted); }
-.tour-pontos i.atual { background: var(--text); }
-.tour-balao h2 { font: 600 18px/1.25 var(--serif); }
-.tour-texto { color: var(--text-2); font-size: 14.5px; line-height: 1.5; }
+.tour-pontos i.atual { background: var(--text); width: 22px; }
+.tour-balao h2 { font: 600 20px/1.22 var(--serif); letter-spacing: -0.006em; margin-top: 2px; text-wrap: balance; }
+.tour-texto { color: var(--text-2); font-size: 15px; line-height: 1.55; text-wrap: pretty; }
 .tour-texto b { color: var(--text); font-weight: 600; }
-.tour-acoes { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
-.tour-acoes button { padding: 7px 14px; border: 1px solid var(--rule-control); border-radius: 4px; background: transparent; font-size: 14px; font-weight: 500; transition: background-color 150ms ease, transform 120ms ease-out; }
+.tour-acoes { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.tour-acoes button { padding: 8px 16px; border: 1px solid var(--rule-control); border-radius: 999px; background: transparent; font-size: 14px; font-weight: 500; transition: background-color 150ms ease, transform 120ms ease-out; }
 .tour-acoes button:hover { background: var(--hover); }
 .tour-acoes button:active { transform: scale(0.97); }
-.tour-acoes .tour-principal { background: var(--text); border-color: var(--text); color: var(--paper); }
+.tour-acoes .tour-principal { background: var(--text); border-color: var(--text); color: var(--paper); font-weight: 600; padding-inline: 18px; }
 .tour-acoes .tour-principal:hover { background: var(--text-2); }
-.tour-acoes .tour-pular { margin-right: auto; border-color: transparent; color: var(--text-muted); }
+.tour-acoes .tour-pular { margin-right: auto; border-color: transparent; color: var(--text-muted); padding-inline: 4px; }
+.tour-acoes .tour-pular:hover { background: transparent; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 .tour-acoes .tour-secundario { margin-right: 0; }
 
 /* Cabeçalho: botão do tour */

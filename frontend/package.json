@@ -11,7 +11,7 @@
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint src --max-warnings 0",
     "capture": "node scripts/capture.mjs",
-    "test": "node --test tests/"
+    "test": "node --test"
   },
   "dependencies": {
     "cytoscape": "^3.30.2",

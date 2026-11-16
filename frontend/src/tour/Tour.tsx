@@ -26,7 +26,9 @@ import type { Passo } from "./passos";
 
 /** Abaixo disto o balão vira folha no pé da tela. */
 const LARGURA_CELULAR = 700;
-const LARGURA_BALAO = 350;
+const LARGURA_BALAO = 372;
+/** O cartão de abertura (sem alvo) é mais largo: é a capa do tour. */
+const LARGURA_ABERTURA = 452;
 /** Respiro entre o contorno e o elemento destacado. */
 const RESPIRO = 7;
 
@@ -158,10 +160,15 @@ export function Tour({ passos, onFechar }: Props) {
         height: alvo.height + 2 * RESPIRO,
       }
     : undefined;
+  const abertura = !passo.alvo;
   const estiloBalao: CSSProperties | undefined = celular
     ? undefined
-    : { left: posicao?.left ?? 0, top: posicao?.top ?? 0, width: LARGURA_BALAO, visibility: posicao ? "visible" : "hidden" };
-  const abertura = !passo.alvo;
+    : {
+        left: posicao?.left ?? 0,
+        top: posicao?.top ?? 0,
+        width: abertura ? LARGURA_ABERTURA : LARGURA_BALAO,
+        visibility: posicao ? "visible" : "hidden",
+      };
 
   return (
     <div className="tour" data-lado={posicao?.lado}>
@@ -175,20 +182,33 @@ export function Tour({ passos, onFechar }: Props) {
         aria-modal="true"
         aria-labelledby={titulo}
       >
-        <p className="tour-progresso">
-          {abertura && indice === 0 ? "Tour" : `${indice + 1} de ${lista.length}`}
-          <span className="tour-pontos" aria-hidden="true">
-            {lista.map((_, i) => (
-              <i key={i} className={i === indice ? "atual" : i < indice ? "feito" : ""} />
-            ))}
-          </span>
-        </p>
-        <h2 id={titulo}>{passo.titulo}</h2>
-        {passo.corpo.map((paragrafo) => (
-          <p key={paragrafo} className="tour-texto">
-            <Texto texto={paragrafo} />
+        {/* A chave refaz a entrada do conteúdo a cada passo; o balão em si só desliza. */}
+        <div className="tour-conteudo" key={indice}>
+          {abertura && indice === 0 && (
+            <p className="tour-marca" aria-hidden="true">
+              <svg viewBox="0 0 32 16" width="30" height="15">
+                <circle cx="5" cy="8" r="4.5" fill="#56B4E9" />
+                <path d="M16 3 21 12.5H11Z" fill="#E69F00" />
+                <rect x="23" y="3.5" width="8.5" height="8.5" rx="2" fill="#009E73" />
+              </svg>
+              edugraph
+            </p>
+          )}
+          <p className="tour-progresso">
+            <span>{abertura && indice === 0 ? "Tour de boas-vindas" : `Passo ${indice + 1} de ${lista.length}`}</span>
+            <span className="tour-pontos" aria-hidden="true">
+              {lista.map((_, i) => (
+                <i key={i} className={i === indice ? "atual" : i < indice ? "feito" : ""} />
+              ))}
+            </span>
           </p>
-        ))}
+          <h2 id={titulo}>{passo.titulo}</h2>
+          {passo.corpo.map((paragrafo) => (
+            <p key={paragrafo} className="tour-texto">
+              <Texto texto={paragrafo} />
+            </p>
+          ))}
+        </div>
         <div className="tour-acoes">
           {indice > 0 ? (
             <button type="button" className="tour-secundario" onClick={voltar}>
