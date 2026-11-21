@@ -115,6 +115,43 @@ uma frente ou precisa de decisão conjunta.
   release com o ZIP entra na entrega (e depende de A-OBS-11); a (2), se
   alguém prepara a hospedagem; a (3) pode virar ADR (muda a ADR-0013).
 
+### T-OBS-06 · "Ficou num grupo só dele" aparece para grupos de dois alunos
+
+- **De:** preparação da apresentação (contexto) · **Data:** 21/11/2026
+- **Onde:** `src/edugraph/lab/signals.py:195` (`alone = group_size <= 2`)
+  e `:221` (o texto); teste em `tests/lab/test_signals.py:98`.
+- **O quê:** o sinal de vínculo trata grupos de até **dois** alunos como
+  "sozinho", mas o motivo escrito diz "ficou num grupo só dele: ninguém
+  com o mesmo perfil de matrículas". Em `tiny_v1`, Diego e Elisa (S4 e
+  S5) formam um grupo de dois e recebem esse texto:
+  `run_lab(source="tiny_v1", students=6)` → `insight.signals.students.S4.why`.
+  O texto está errado para o grupo de dois e é justamente o exemplo que
+  a apresentação usa.
+- **Como resolver:** separar as duas frases (grupo de um: "ficou num grupo
+  só dele"; grupo de dois: "ficou num grupo de só dois alunos, quase
+  isolado do resto da turma", ou parecido) e ajustar o teste. Não muda o
+  cálculo do risco, só o texto. Enquanto não for resolvido, a apresentação
+  não mostra esse texto (ver `apresentacao/PLANO-AJUSTE.md`, 4.11).
+
+### T-OBS-07 · Documentos dizem que "sem IA" foi exigência do orientador
+
+- **De:** preparação da apresentação (contexto) · **Data:** 21/11/2026
+- **Onde:** `README.md:217`, `CLAUDE.md:65`,
+  `docs/adr/ADR-0008-rotulos-fora-do-grafo.md:13`,
+  `tests/contract/test_no_ml.py:5`,
+  `docs/orientador/estudo-apresentacao-11-2026.md:13` e a nota do slide
+  `objetivos` em `apresentacao/index.html:119` (repetida no
+  `apresentacao/ROTEIRO.md:62`, que é gerado).
+- **O quê:** todos dizem que não usar inteligência artificial nem
+  aprendizado de máquina foi exigência do orientador. Segundo o grupo, a
+  escolha foi do próprio grupo. A nota do slide seria dita em voz alta na
+  defesa.
+- **Como resolver:** trocar por "escolha do grupo" (ou só dizer que o
+  sistema não usa aprendizado de máquina, sem atribuir a decisão). A regra
+  em si não muda. A ADR-0008 é registro histórico: corrigir com uma nota
+  datada em vez de reescrever. A parte da apresentação entra no ajuste de
+  `apresentacao/PLANO-AJUSTE.md`; regenerar o `ROTEIRO.md` depois.
+
 ## Resolvidas
 
 ### T-OBS-03 · Informativo: CI do frontend executa lint e testes
