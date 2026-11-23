@@ -139,9 +139,9 @@ uma frente ou precisa de decisão conjunta.
 - **Onde:** `README.md:217`, `CLAUDE.md:65`,
   `docs/adr/ADR-0008-rotulos-fora-do-grafo.md:13`,
   `tests/contract/test_no_ml.py:5`,
-  `docs/orientador/estudo-apresentacao-11-2026.md:13` e a nota do slide
-  `objetivos` em `apresentacao/index.html:119` (repetida no
-  `apresentacao/ROTEIRO.md:62`, que é gerado).
+  `docs/orientador/estudo-apresentacao-11-2026.md:13`. (A nota do slide
+  `objetivos` e o `ROTEIRO.md` gerado já foram corrigidos; ver a
+  atualização abaixo.)
 - **O quê:** todos dizem que não usar inteligência artificial nem
   aprendizado de máquina foi exigência do orientador. Segundo o grupo, a
   escolha foi do próprio grupo. A nota do slide seria dita em voz alta na
@@ -151,6 +151,12 @@ uma frente ou precisa de decisão conjunta.
   em si não muda. A ADR-0008 é registro histórico: corrigir com uma nota
   datada em vez de reescrever. A parte da apresentação entra no ajuste de
   `apresentacao/PLANO-AJUSTE.md`; regenerar o `ROTEIRO.md` depois.
+- **Atualização (22/11/2026, Frente C, branch `c/apresentacao-contexto`):**
+  a parte da apresentação está resolvida — a nota do slide `objetivos` não
+  atribui mais a decisão a ninguém, o slide `solucao` diz "uma escolha do
+  grupo" e o `ROTEIRO.md` foi regenerado sem a frase. Continuam abertos
+  `README.md`, `CLAUDE.md`, a ADR-0008, `tests/contract/test_no_ml.py` e o
+  estudo da apresentação.
 
 ## Resolvidas
 

@@ -123,6 +123,8 @@
     const T = D.tiny;
     svg.setAttribute("viewBox", "0 0 1040 560");
     const ALUNOS = ["S1", "S2", "S3", "S4", "S5", "S6"];
+    // Nomes e disciplinas do exemplo (escolha de desenho, js/dados.js → contexto).
+    const NOME = D.contexto.nomes, DISC_CURTA = Object.fromEntries(Object.entries(D.contexto.disciplinas).map(([k, v]) => [k, v[1]]));
     const yA = (i) => 70 + i * 82;
     const POS_B = Object.fromEntries(ALUNOS.map((a, i) => [a, [470, yA(i)]]));
     const POS_D = { DA: [800, 150], DB: [800, 280], DC: [800, 410] };
@@ -137,8 +139,8 @@
     const linhas = T.matriculas.map((m, i) => {
       const g = el("g", { class: "m-linha" }, tab);
       el("rect", { x: 20, y: 64 + i * 46, width: 300, height: 38, rx: 6, class: "m-linha-fundo" }, g);
-      el("text", { x: 34, y: 89 + i * 46, class: "m-cel" }, g).textContent = `Aluno ${m.aluno.slice(1)}`;
-      el("text", { x: 150, y: 89 + i * 46, class: "m-cel" }, g).textContent = `Disc. ${m.disciplina.slice(1)}`;
+      el("text", { x: 34, y: 89 + i * 46, class: "m-cel" }, g).textContent = NOME[m.aluno];
+      el("text", { x: 150, y: 89 + i * 46, class: "m-cel" }, g).textContent = DISC_CURTA[m.disciplina];
       el("text", { x: 300, y: 89 + i * 46, class: "m-cel n", "text-anchor": "end" }, g).textContent = String(m.nota);
       return g;
     });
@@ -146,13 +148,13 @@
     const gb = el("g", {}, svg);
     const mats = T.matriculas.map((m) => {
       const [x1, y1] = POS_B[m.aluno], [x2, y2] = POS_D[m.disciplina];
-      return el("line", { x1: x1 + 20, y1, x2: x2 - 24, y2, class: "m-mat", pathLength: 1 }, gb);
+      return el("line", { x1: x1 + 20, y1, x2: x2 - 62, y2, class: "m-mat", pathLength: 1 }, gb);
     });
     // Disciplinas.
     const discs = Object.entries(POS_D).map(([d, [x, y]]) => {
       const g = el("g", { transform: `translate(${x} ${y})` }, svg);
-      el("rect", { x: -24, y: -24, width: 48, height: 48, rx: 10, fill: COR[1], stroke: TINTA, "stroke-width": 1.6 }, g);
-      el("text", { y: 8, class: "m-num", "text-anchor": "middle" }, g).textContent = d.slice(1);
+      el("rect", { x: -62, y: -24, width: 124, height: 48, rx: 10, fill: "#fdf1d8", stroke: TINTA, "stroke-width": 1.6 }, g);
+      el("text", { y: 7, class: "m-disc", "text-anchor": "middle" }, g).textContent = DISC_CURTA[d];
       return g;
     });
     // Ligações da projeção.
@@ -167,7 +169,7 @@
       const anel = el("circle", { r: 34, class: "m-anel" }, g);
       const c = el("circle", { r: 20, fill: PAPEL, stroke: TINTA, "stroke-width": 1.6 }, g);
       const tri = forma(g, 1, 19, COR[1], TINTA, 1.6);
-      el("text", { y: 7, class: "m-num", "text-anchor": "middle" }, g).textContent = a.slice(1);
+      el("text", { y: 7, class: "m-num", "text-anchor": "middle" }, g).textContent = NOME[a][0];
       return [a, { g, c, tri, anel }];
     }));
     const placar = el("text", { x: 1010, y: 540, class: "m-placar", "text-anchor": "end" }, svg);
@@ -180,7 +182,7 @@
         [2.8, "Cada matrícula vira uma <b>ligação</b> entre aluno e disciplina: o <b>grafo bipartido</b>."],
         [5.6, "Na <b>projeção</b>, ligam-se os alunos que dividem disciplinas; quanto mais em comum, mais grossa a linha."],
         [8.6, "O <b>Louvain</b> move um aluno por vez para o grupo em que <i>Q</i> mais sobe: dois grupos, <i>Q</i> = 0,111."],
-        [12, "A <b>intermediação</b> aponta o aluno 3: todo caminho até 4 e 5 passa por ele."],
+        [12, "A <b>intermediação</b> aponta a Carla: todo caminho até Diego e Elisa passa por ela."],
         [14.4, "É o mesmo caminho que o edugraph percorre — com 6 alunos ou com 22.425."],
       ],
       marcos: [[0, 0], [2.8, 1], [5.6, 2], [8.6, 3], [12, 4]],
@@ -239,7 +241,7 @@
         // Placar de Q (rastro do Louvain)
         const feitos = tMov.filter((x) => t >= x).length;
         placar.textContent = t < 8.6 ? "" : feitos === 0 ? "6 grupos" : `movimento ${feitos} de 4 · Q = ${num(T.louvain.movimentos[feitos - 1].q, 3)}`;
-        if (t >= 12) placar.textContent = `intermediação do aluno 3 = ${num(T.centralidade.intermediacao.S3, 2)}`;
+        if (t >= 12) placar.textContent = `intermediação da Carla = ${num(T.centralidade.intermediacao.S3, 2)}`;
       },
     };
   }
@@ -510,7 +512,8 @@
   window.iniciarMotion = function iniciarMotion(deck) {
     const estatico = deck.embutido || reduzido();
     const filmes = [];
-    const fabricas = { metodo: seqMetodo, clique: seqClique, acaso: seqAcaso };
+    // As sequências da Introdução vêm de contexto.js (window.EDUGRAPH_SEQS).
+    const fabricas = { metodo: seqMetodo, clique: seqClique, acaso: seqAcaso, ...(window.EDUGRAPH_SEQS || {}) };
     document.querySelectorAll(".filme[data-seq]").forEach((raiz) => {
       const svg = raiz.querySelector("svg");
       const seq = fabricas[raiz.dataset.seq](svg);

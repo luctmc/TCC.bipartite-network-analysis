@@ -1,5 +1,19 @@
 # Plano de ajuste da apresentação: contexto primeiro
 
+> **Situação (22/11/2026): aplicado** no branch `c/apresentacao-contexto`,
+> **e depois enxugado para 15 a 20 minutos** a pedido do grupo: dos 46
+> slides principais da seção 3, ficaram 33. "Ligação" e "força" viraram um
+> slide; "comunidades" e "papéis", outro; "grafo" absorveu o "bipartido".
+> Foram para o apêndice: `por-que-comunidade`, `escore-z`, `dicionario`,
+> `bipartido`, `girvan-newman`, `pipeline`, `sinteticos`, `arquitetura`,
+> `clique`, `interface` e `desenvolvimento-processo`. Opcionais
+> (`--curta`): `aluno-some` e `val-sintetico`. A fala nova está no
+> `ENREDO.md` (≈ 17 min).
+> O que foi conferido e os desvios deste plano (a posição da referência do
+> Inep, "desfecho" no lugar de "notas finais", a ressalva do *Q* > 0,3, a
+> nuance dos papéis e o cuidado na revelação da demonstração) estão em
+> [`VERIFICACAO.md`](VERIFICACAO.md), seção 0.
+
 > **Para quem é este arquivo:** para a conversa (e para quem do grupo)
 > que vai **alterar a apresentação** em `apresentacao/`. Ele diz o que
 > mudar, em que ordem, com que dados e como conferir. O **conteúdo** vem

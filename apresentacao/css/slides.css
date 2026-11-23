@@ -292,7 +292,7 @@ pre.arvore span[data-passo] { transform: none; }
 .grafico-quartis .rotulo { font-size: 20px; }
 #desfecho .cartao h3 { font-size: 28px; }
 #desfecho .cartao p { font-size: 22px; }
-#desfecho .coluna { gap: 30px; }
+#desfecho .coluna { gap: 18px; }
 
 .spearman { display: flex; flex-direction: column; gap: 16px; }
 .sp { display: grid; grid-template-columns: 300px 1fr 70px; gap: 16px; align-items: center; font-size: 21px; }
@@ -769,3 +769,251 @@ ol.etapas-v li.extra { opacity: 0.55; }
 #acaso .filme-tela { height: 520px; max-height: none; }
 #acaso .titulo, #pipeline .titulo { font-size: 58px; }
 .filme-legenda { min-height: 70px; font-size: 25px; }
+
+/* ═════════════ Introdução em linguagem simples (contexto) e slides novos ═════════════
+ * Prefixo ctx-. Mesma identidade: papel, tinta, Source, filetes, Okabe & Ito,
+ * forma junto com a cor. Ver PLANO-AJUSTE.md, seção 5. */
+.ctx-duas { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 64px; align-items: start; height: 780px; }
+.ctx-duas > .coluna { gap: 22px; }
+.ctx-duas .titulo { font-size: 54px; }
+.ctx-cena { width: 100%; height: auto; max-height: 720px; overflow: visible; margin-top: 24px; }
+.ctx text { font-family: var(--sans); }
+.ctx-frase { font: italic 400 30px/1.35 var(--serif); color: var(--text); margin-top: 14px; }
+.ctx-fonte { position: absolute; left: 128px; bottom: 100px; margin: 0; }
+.ctx-simples { font: 400 34px/1.35 var(--serif); color: var(--text-2); max-width: 1560px; margin-top: 22px; }
+.ctx-simples span, .em-palavras span { display: block; font: 600 15px/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+#problema-pesquisa blockquote.pergunta { font-size: 44px; margin-top: 34px; }
+#problema-pesquisa .justificativa { margin-top: 40px; }
+.em-palavras { font: 400 26px/1.35 var(--serif); color: var(--text); border-left: 4px solid var(--c3); padding: 6px 0 6px 22px; margin-top: 18px; max-width: 1600px; }
+.em-palavras span { display: inline-block; margin: 0 16px 0 0; vertical-align: 3px; }
+.ctx-dica { font-family: var(--serif); color: var(--text-muted); }
+.analogia.cor-b { border-left-color: var(--c2); }
+.analogia.cor-c { border-left-color: var(--c6); }
+
+/* Pílulas do slide "Os dados já existem". */
+.ctx-pilulas { list-style: none; display: flex; gap: 14px; margin-top: 22px; flex-wrap: wrap; }
+.ctx-pilulas li { font-size: 22px; color: var(--text-2); border: 1px solid var(--rule-control); border-radius: 999px; padding: 6px 18px; }
+.ctx-filme { margin-top: 22px; }
+#aluno-some .filme-tela { height: 330px; }
+#contexto .filme-tela { height: 430px; }
+#contexto .titulo { font-size: 58px; }
+.ctx-cel { font-size: 24px; }
+#solucao .ctx-cel { font-size: 22px; }
+#solucao .filme-tela { height: 360px; }
+#evasao-inep .filme-tela { height: 400px; }
+#evasao-inep .titulo { font-size: 58px; }
+
+/* Inep: filme à esquerda, cartões à direita. */
+.ctx-grade-filme { display: grid; grid-template-columns: 1fr 470px; gap: 48px; margin-top: 26px; align-items: start; }
+.ctx-lado { gap: 34px; padding-top: 12px; }
+.ctx-modal .rotulo { display: block; margin-bottom: 14px; }
+.ctx-modal .bt { grid-template-columns: 130px 1fr 70px; margin-bottom: 12px; }
+.ctx-modal .barra i { background: var(--c6); }
+.ctx-modal .bt:last-child .barra i { background: var(--c5); }
+
+/* Tabela dos seis alunos. */
+.ctx-tabela { font-size: 22px; }
+.ctx-tabela td, .ctx-tabela th { padding: 6px 14px 6px 0; }
+#ligacao .titulo { font-size: 48px; }
+#ligacao .texto { font-size: 24px; }
+#ligacao .fonte { margin-top: 4px; }
+.ctx-tabela td.disc { font-size: 20px; color: var(--text-2); }
+
+/* Cartões de texto do sistema (sempre entre aspas: é o que o sistema escreve). */
+.ctx-pilha { display: grid; }
+.ctx-pilha > * { grid-area: 1 / 1; align-self: start; }
+.ctx-sistema { background: var(--sheet); border: 1px solid var(--rule-2); border-left: 4px solid var(--c6); border-radius: 6px; padding: 16px 22px; }
+.ctx-sistema.atencao { border-left-color: var(--c2); }
+.ctx-sistema.talento { border-left-color: var(--c3); margin-top: 12px; }
+.ctx-sistema .rotulo { display: block; margin-bottom: 8px; font-size: 19px; }
+.ctx-sistema p { font-size: 23px; line-height: 1.4; color: var(--text-2); }
+.ctx-sistema > b { font: 600 24px var(--serif); }
+.ctx-why span { display: block; font: italic 400 24px/1.4 var(--serif); color: var(--text); }
+.ctx-talentos > .rotulo { display: block; font-size: 19px; }
+.ctx-perguntas { list-style: none; counter-reset: q; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--rule); padding-top: 12px; }
+.ctx-perguntas li { counter-increment: q; font: 400 26px/1.3 var(--serif); }
+.ctx-perguntas li::before { content: counter(q) "  "; font-weight: 600; color: var(--text-muted); }
+
+/* Carla × Felipe. */
+.ctx-compara { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.ctx-compara > div { border-top: 2px solid var(--text); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+.ctx-compara b { font: 400 40px/1.1 var(--serif); }
+.ctx-compara small { font-size: 22px; color: var(--text-muted); }
+.ctx-papeis li { padding: 14px 0; }
+.ctx-motivos li { padding: 16px 0; }
+.ctx-motivos h3 { font-size: 30px; }
+.ctx-quem { margin-top: 60px; font-size: 24px; }
+.ctx-semml { display: flex; align-items: baseline; gap: 26px; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--rule-2); }
+.ctx-semml ul { list-style: none; display: flex; gap: 30px; flex-wrap: wrap; }
+.ctx-semml li { font-size: 22px; color: var(--text-2); }
+.ctx-semml li::before { content: "✓ "; color: var(--ok); font-weight: 600; }
+.ctx-dic { font-size: 26px; margin-top: 24px; }
+.ctx-nao-grafico { margin-top: 6px; }
+.ctx-nao-grafico p { font-size: 23px; }
+
+/* ——— Os seis alunos em SVG ——— */
+.ctx-a { transition: transform 1000ms var(--ease-io), opacity 600ms ease; }
+.ctx-a > * { transition: opacity 500ms ease, fill 600ms ease; }
+.ctx-a.oculto { opacity: 0; }
+.ctx-a.apagado { opacity: 0.14; }
+.ctx-f1 { opacity: 0; }
+.ctx-a.g0 .ctx-f0 { fill: var(--c1); }
+.ctx-a.g1 .ctx-f0 { opacity: 0; }
+.ctx-a.g1 .ctx-f1 { opacity: 1; }
+.ctx-a.neutro .ctx-f0 { fill: var(--sheet); }
+.ctx-ini { font: 700 21px var(--sans); fill: var(--text); pointer-events: none; }
+.ctx-nome, .ex-a-nome { font: 600 21px var(--sans); fill: var(--text); paint-order: stroke; stroke: var(--paper); stroke-width: 7px; stroke-linejoin: round; }
+.ctx-halo { fill: none; stroke: var(--text); stroke-width: 2.4; stroke-dasharray: 5 6; opacity: 0; }
+.ctx-a.halo .ctx-halo { opacity: 1; animation: ex-pulsa 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.ctx-curso { opacity: 0; transition: opacity 500ms ease; }
+.ctx-curso rect { fill: var(--sheet); stroke: var(--rule-2); stroke-width: 1.4; transition: fill 400ms ease, stroke 400ms ease; }
+.ctx-curso-t { font: 600 16px var(--sans); fill: var(--text-2); }
+.ctx-a.com-curso-on .ctx-curso { opacity: 1; }
+.ctx-a.curso-destaque .ctx-curso rect { fill: #fdf1d8; stroke: var(--c6); stroke-width: 2.4; }
+.ctx-a.curso-destaque .ctx-curso-t { fill: var(--text); }
+.ctx-lig { stroke: var(--text); stroke-opacity: 0.55; stroke-linecap: round; stroke-width: var(--w); stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-width 800ms var(--ease), stroke-dashoffset 900ms var(--ease), stroke-opacity 500ms ease, opacity 500ms ease, stroke 400ms ease; }
+.ctx-lig.on { stroke-dashoffset: 0; }
+.ctx-lig.filme { transition: none; }
+.ctx-lig.realce { stroke: var(--c5); stroke-opacity: 0.9; }
+.ctx-lig.so-sc { stroke: var(--c6); stroke-opacity: 0.85; }
+.ctx-lig.some { opacity: 0.05; }
+.ctx-lig.pulsa { stroke: var(--c6); stroke-opacity: 1; animation: ex-ponte 1.1s ease-in-out infinite; }
+.ctx-mancha { fill: none; stroke-linejoin: round; stroke-linecap: round; opacity: 0; transition: opacity 700ms ease; }
+.ctx-mancha.m0 { stroke: var(--c1); fill: var(--c1); }
+.ctx-mancha.m1 { stroke: var(--c2); fill: var(--c2); }
+.ctx-mancha.on { opacity: 0.16; }
+.ctx-mancha.on.pulsa { animation: ctx-mancha 1.4s ease-in-out infinite; }
+@keyframes ctx-mancha { 50% { opacity: 0.36; } }
+.ctx-ilha { transition: transform 1000ms var(--ease-io); }
+.ctx-ilha.afastada { transform: translateX(60px); }
+.ctx-pil { opacity: 0; transition: opacity 450ms ease; }
+.ctx-pil.on { opacity: 1; }
+.ctx-pil rect { fill: var(--text); }
+.ctx-pil-t { font: 600 19px var(--sans); fill: var(--paper); letter-spacing: 0.02em; }
+.ctx-pil-disc rect, .ctx-pil-peso rect { fill: #fdf1d8; stroke: var(--c2); stroke-width: 1.6; }
+.ctx-pil-disc .ctx-pil-t, .ctx-pil-peso .ctx-pil-t { fill: var(--text); }
+.ctx-nota { font: 400 18px var(--sans); fill: var(--text-muted); }
+.ctx-cab { font: 600 16px var(--sans); fill: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.ctx-mat { stroke: var(--text); stroke-opacity: 0.5; stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 700ms var(--ease); }
+.ctx-mat.on { stroke-dashoffset: 0; transition-delay: 600ms; }
+.ctx-caixa { transition: transform 1000ms var(--ease-io), opacity 600ms ease; }
+.ctx-caixa rect { fill: #fdf1d8; stroke: var(--text); stroke-width: 1.6; }
+.ctx-caixa-t { font: 600 24px var(--sans); fill: var(--text); text-anchor: middle; }
+.ctx-caixa.rebaixada { opacity: 0.85; }
+
+/* Turmas lotada × pequena. */
+.ctx-turmas { width: 100%; height: auto; margin-top: 10px; overflow: visible; }
+.ctx-ponto { fill: var(--rule-2); }
+.ctx-ponto.par { fill: var(--text); }
+.ctx-par { stroke: var(--text); stroke-linecap: round; }
+
+/* Réguas (atenção). */
+.ctx-vista { opacity: 0; transition: opacity 600ms ease; }
+.ctx-vista.on { opacity: 1; }
+.ctx-regua { stroke: var(--text); stroke-width: 2; }
+.ctx-regua.grossa { stroke-width: 3; }
+.ctx-regua-t { font: 600 22px var(--sans); fill: var(--text); }
+.ctx-media-l { stroke: var(--text-muted); stroke-width: 2.5; stroke-dasharray: 5 4; }
+.ctx-media-l.forte { stroke: var(--text); stroke-dasharray: none; stroke-width: 3; }
+.ctx-media-t { font: 400 18px var(--sans); fill: var(--text-muted); text-anchor: middle; }
+.ctx-marcador { opacity: 0; transition: transform 1200ms var(--ease-io), opacity 400ms ease; }
+.ctx-marcador.on { opacity: 1; }
+.ctx-marcador-c { fill: var(--c6); stroke: var(--text); stroke-width: 1.6; }
+.ctx-marcador-i { font: 700 17px var(--sans); fill: var(--sheet); text-anchor: middle; }
+
+/* Por que dentro da comunidade. */
+.ctx-nota66 { transform: translate(640px, 60px); transition: transform 1300ms var(--ease-io) 300ms; }
+.ctx-nota66.pousou { transform: translate(150px, 232px); }
+.ctx-nota66 rect { fill: var(--sheet); stroke: var(--c6); stroke-width: 2; }
+.ctx-nota66-t { font: 600 22px var(--serif); fill: var(--text); text-anchor: middle; }
+.ctx-ilu-l { stroke: var(--text); stroke-opacity: 0.35; stroke-width: 3; transition: opacity 900ms ease; }
+.ctx-ilu-p { fill: var(--c1); stroke: var(--text); stroke-width: 1.4; }
+.ctx-sai { transition: transform 1600ms var(--ease-io) 300ms; }
+.ctx-sai.longe { transform: translateX(-250px); }
+.ctx-sai.longe .ctx-ilu-l { opacity: 0.08; }
+.ctx-sai .ctx-ilu-p { fill: var(--sheet); }
+.ctx-barra-t { font: 600 24px var(--sans); fill: var(--text); }
+.ctx-barra-n { font: 400 40px var(--serif); fill: var(--text); }
+.ctx-barra-fundo { fill: var(--hover); }
+.ctx-barra { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); transition: transform 1100ms var(--ease) 200ms; }
+.cresce .ctx-barra { transform: scaleX(1); }
+.ctx-barra.b-alto { fill: var(--c6); }
+.ctx-barra.b-baixo { fill: var(--c5); }
+.ctx-seta { stroke: var(--text); stroke-width: 2.4; }
+.some-tudo { opacity: 0; transition: opacity 500ms ease; }
+
+/* Filmes da Introdução. */
+.ctx-ev-l { stroke: var(--rule-control); stroke-width: 1.6; stroke-dasharray: 4 4; }
+.ctx-ev-p { fill: var(--c6); stroke: var(--text); stroke-width: 1.4; }
+.ctx-ev-t { font: 400 22px var(--sans); fill: var(--text); text-anchor: middle; }
+.ctx-fim-p { fill: var(--text); }
+.ctx-fim-t { font: 600 22px var(--sans); fill: var(--text); }
+.ctx-aluno { fill: var(--c1); stroke: var(--text); stroke-width: 1.6; }
+.ctx-sinais { fill: rgba(240, 228, 66, 0.28); stroke: #b8a600; stroke-width: 1.6; stroke-dasharray: 6 5; }
+.ctx-sinais-t { font: italic 600 26px var(--serif); fill: var(--text); text-anchor: middle; }
+.ctx-pct { fill: var(--rule-2); stroke: none; transition: none; }
+.ctx-pct.saiu { fill: var(--sheet); stroke: var(--c6); stroke-width: 3; }
+.ctx-pct.concluiu { fill: var(--c5); }
+.ctx-pct.cursa { fill: var(--c4); stroke: var(--text); stroke-width: 1.4; }
+.ctx-ano { font: 600 24px var(--sans); fill: var(--text-muted); letter-spacing: 0.02em; }
+.ctx-grande { font: 400 150px/1 var(--serif); fill: var(--c6); letter-spacing: -0.02em; }
+.ctx-grande-sub { font: 400 32px var(--serif); fill: var(--text); }
+.ctx-grande-sub2 { font: 400 26px var(--sans); fill: var(--text-2); }
+.ctx-tag { fill: var(--sheet); stroke: var(--rule-control); }
+.ctx-tag-t { font: 600 21px var(--sans); fill: var(--text); }
+.ctx-selo { fill: var(--text); }
+.ctx-selo-t { font: italic 400 22px var(--serif); fill: var(--paper); text-anchor: middle; }
+
+/* Grafo: metrô → pontos e linhas → bipartido. */
+.ctx-trilho { stroke: var(--cor); stroke-width: 13; stroke-linecap: round; transition: stroke 700ms ease, stroke-width 700ms ease, opacity 600ms ease; }
+.ctx.abstrato .ctx-trilho { stroke: var(--text); stroke-width: 3; stroke-opacity: 0.6; }
+.ctx.bip .ctx-trilho, .ctx.vazio .ctx-trilho { opacity: 0; }
+.ctx-est { transition: transform 1200ms var(--ease-io), opacity 500ms ease; }
+.ctx.vazio .ctx-est { opacity: 0; }
+.ctx-est > *, .ctx-est-vira { transition: opacity 600ms ease; }
+.ctx-est-metro { fill: var(--sheet); stroke: var(--text); stroke-width: 3.5; }
+.ctx-est-no { fill: var(--text); opacity: 0; }
+.ctx-est-vira { opacity: 0; }
+.ctx.abstrato .ctx-est-metro { opacity: 0; }
+.ctx.abstrato .ctx-est-no { opacity: 1; }
+.ctx.bip .ctx-est-metro, .ctx.bip .ctx-est-no { opacity: 0; }
+.ctx.bip .ctx-est-vira { opacity: 1; transition-delay: 700ms; }
+.ctx-bipg, .ctx-cab-bip { opacity: 0; transition: opacity 700ms ease; }
+.ctx.bip .ctx-bipg, .ctx.bip .ctx-cab-bip { opacity: 1; transition-delay: 900ms; }
+.ctx-mat-bip { stroke: var(--text); stroke-opacity: 0.5; stroke-width: 3; }
+.ctx-disc { fill: #fdf1d8; stroke: var(--text); stroke-width: 1.6; }
+.ctx-disc-t { font: 600 19px var(--sans); fill: var(--text); text-anchor: middle; }
+
+/* Escore z. */
+.ctx-zp { opacity: 0; transition: opacity 600ms ease; }
+.ctx-zp.on { opacity: 1; }
+.ctx-faixa.f1 { fill: rgba(86, 180, 233, 0.22); }
+.ctx-faixa.f2 { fill: rgba(86, 180, 233, 0.1); }
+.ctx-z { font: 600 20px var(--sans); fill: var(--text); text-anchor: middle; }
+.ctx-z.leve { font-weight: 400; fill: var(--text-muted); }
+.ctx-zm-t { font: 600 21px var(--sans); fill: var(--text); text-anchor: middle; paint-order: stroke; stroke: var(--paper); stroke-width: 6px; }
+.ctx-peso-b { fill: color-mix(in srgb, var(--cor) 30%, white); stroke: var(--cor); stroke-width: 2; }
+.ctx-peso-t { font: 600 21px var(--sans); fill: var(--text); text-anchor: middle; }
+.ctx-risco.f0 { fill: var(--hover); }
+.ctx-risco.f1 { fill: rgba(230, 159, 0, 0.3); }
+.ctx-risco.f2 { fill: rgba(213, 94, 0, 0.3); }
+.ctx-risco-t { font: 600 20px var(--sans); fill: var(--text); text-anchor: middle; }
+
+/* Ajustes nos slides técnicos (nomes no lugar de números). */
+.m-disc { font: 600 17px var(--sans); fill: var(--text); }
+.ex-d-forma { fill: #fdf1d8; }
+.ex-d-letra { font: 600 19px var(--sans); }
+.painel-louvain .q-quem-l { grid-column: 1 / -1; margin-top: 10px; font: italic 400 24px/1.3 var(--serif); color: var(--text); min-height: 32px; }
+.painel-louvain .q-quem { font: inherit; }
+
+@media (prefers-reduced-motion: reduce) { .barra i, .ctx-barra, .ctx-a, .ctx-ilha, .ctx-est, .ctx-marcador, .ctx-nota66, .ctx-sai { transition-duration: 1ms !important; transition-delay: 0ms !important; } }
+#desfecho .cartao { padding-top: 14px; }
+#desfecho .cartao h3 { font-size: 26px; margin-bottom: 6px; }
+#ligacao .em-palavras { margin-top: 0; }
+#modularidade .ctx-pilha { margin-top: 4px; }
+
+/* Grafo: no passo 4, as três matrículas da Carla e a disciplina mais cheia. */
+.ctx-mat-bip { transition: stroke 500ms ease, stroke-opacity 500ms ease, stroke-width 500ms ease; }
+.ctx.destaca .ctx-mat-bip { stroke-opacity: 0.16; }
+.ctx.destaca .ctx-mat-bip.a-S3 { stroke: var(--c5); stroke-opacity: 1; stroke-width: 5; }
+.ctx.destaca .ctx-est[data-para="DA"] .ctx-disc { stroke-width: 4; }

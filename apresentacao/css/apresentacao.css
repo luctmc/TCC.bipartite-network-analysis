@@ -407,7 +407,7 @@ body.embutido .slide [data-entra] { opacity: 1 !important; transform: none !impo
 
 @media (prefers-reduced-motion: reduce) {
   :root { --t-entra: 1ms; --t-slide: 1ms; }
-  .slide, .slide [data-passo], .slide [data-entra], .desenha, #camada-demo .moldura, .slide svg * { transition-duration: 1ms !important; transition-delay: 0ms !important; animation: none !important; }
+  .slide, .slide [data-passo], .slide [data-sai], .slide [data-entra], .desenha, #camada-demo .moldura, .slide svg * { transition-duration: 1ms !important; transition-delay: 0ms !important; animation: none !important; }
 }
 .janela-app .tela .aviso-fallback b, .janela-app .tela .aviso-fallback code { color: #fff; }
 #galeria .g-imagem img { max-height: calc(100vh - 150px); }

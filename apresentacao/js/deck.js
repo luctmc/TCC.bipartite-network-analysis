@@ -401,6 +401,8 @@ document.addEventListener("keydown", aoTeclar);
 /* ——— Início ——— */
 escalar();
 iniciarDiagramas(deck);
+window.preencherSistema?.();
+window.iniciarContexto?.(deck);
 window.iniciarMotion?.(deck);
 if (!EMBUTIDO) iniciarDemo(deck, CONFIG);
 else iniciarDemo(deck, CONFIG, { estatico: true });
