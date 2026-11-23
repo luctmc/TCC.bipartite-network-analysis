@@ -1,5 +1,88 @@
 # Relatório de verificação da apresentação
 
+## 0. Ajuste “contexto primeiro” (22/11/2026)
+
+Aplicação do [`PLANO-AJUSTE.md`](PLANO-AJUSTE.md) sobre `main` (`757bb69`),
+com o sistema rodado pela `.venv` do projeto e a apresentação aberta no
+Chromium do Playwright, a partir do disco (`file://`).
+
+**Estrutura (versão para 15–20 min):** 33 slides principais (6 aberturas
+de capítulo) e 26 de apêndice. Do plano, ficaram na fala: `aluno-some`
+(opcional), `evasao-inep`, `contexto` reescrito, `ligacao` (com a força da
+ligação), `comunidades-ctx` (com os papéis), `atencao-talento`, `solucao`
+e `grafo` (com o bipartido). Foram para o apêndice, sem perder conteúdo:
+`por-que-comunidade`, `escore-z`, `dicionario`, `bipartido`,
+`girvan-newman`, `pipeline`, `sinteticos`, `arquitetura`, `clique`,
+`interface` e `desenvolvimento-processo`. `val-sintetico` é opcional
+(`--curta`, 31 slides).
+
+**Tempo:** a fala do `ENREDO.md` tem 1.610 palavras, das quais ≈ 1.500
+fora a demonstração (`aplicar_enredo.py --contar`): ≈ 11 min a 140
+palavras por minuto. Somando os avanços, a espera das animações e ≈ 3 min
+de demonstração, a estimativa é **≈ 17 min** (≈ 16 com `--curta`). É
+estimativa de papel: o tempo real só o ensaio mede. As notas do
+apresentador saem do `ENREDO.md` por `aplicar_enredo.py` (rodar duas
+vezes dá o mesmo arquivo).
+
+| Afirmação nova | Como foi conferida | Resultado |
+|---|---|---|
+| Notas dos seis alunos; média da turma 74 (73,7); 1,67 disciplina por aluno; Carla 68,7 | `gerar_dados.py` → `contexto.alunos`/`turma`, das matrículas de `tiny_v1` | ok |
+| Felipe “Risco alto”, risco 0,642, “nota média 66, abaixo da turma (74)” · “pouco ligado ao próprio grupo” | `run_lab(source="tiny_v1", students=6)`; texto lido de `dados.js`, não digitado | ok |
+| Diego 0,463 e Elisa 0,483 “Em atenção” | idem; o texto que o sistema escreve para eles **não** é mostrado (T-OBS-06) | ok |
+| Carla = “ponte”; os outros cinco “periféricos”; Felipe com o menor vínculo (z = −1,73) | `insight.roles` | ok |
+| Turma padrão: 43 alunos, *Q* = 0,528, 3 grupos; 8 risco alto, 4 em atenção, 12 talentos | `run_lab(demo, 45, semente 12, mistura 0,2)` | ok |
+| Alice T. (apoio) e Larissa J. (liga grupos): textos | idem; regra fixa: 1º talento com selo `apoio`, 1º com `polimata` | ok |
+| 1º da lista de atenção na demonstração: Carla N., “nota média 52…” | idem (`signals.attention[0]`) | ok — é outra pessoa; o aviso está na fala de `sinteticos` e da demo |
+| NMI = 1,00 contra as áreas plantadas, na turma padrão | calculado à mão sobre `result.membership` e `reveal.planted.node_area` | ok |
+| Louvain ≈ 1 ms × Girvan–Newman ≈ 0,4 s, na turma padrão | `result.runtime_s`: 0,0008 s e 0,386 s (22/11/2026; varia com a máquina) | ok; a tabela do slide passou de “≈ 0,5 s” a “≈ 0,4 s” |
+| Pesos 35/35/30, cortes 0,25 e 0,50, talento z ≥ 1 / 1,5, disciplina com ≥ 6 alunos | `src/edugraph/lab/signals.py:45-60` | ok |
+| Teste contra o acaso: ≥ 5 réplicas, z ≥ 3 | spec B-06 (`Z_THRESHOLD = 3.0`) | ok |
+| Inep: 13% / 29% / 40% / 60%; 39% concluíram, 1% cursando; 65% × 59% | relatório do Inep, Gráf. 15 e 18 (p. 33 e 36), conferido pelo grupo em 20/11/2026 (NARRATIVA, seção 2) | **conferido no relatório, não gerado**; aqui não foi possível abrir o PDF (o site recusa acesso automático). Uma reportagem do Correio Braziliense (23/09/2025) traz os mesmos 65% para o ensino a distância |
+| 69% × 7% e 197 / 94% / 43% (Open University) | `docs/orientador/estudo-apresentacao-11-2026.md`, seção 5 | exige o ZIP de resultados do OULAD; não se reproduz só com o repositório |
+
+**Ilustrativo, e avisado na tela:** os nomes e cursos dos seis alunos, a
+linha do tempo do slide `aluno-some`, o desenho do motivo 2 de
+`por-que-comunidade`, as duas turmas (300 × 15) do slide `forca`, o metrô
+genérico do slide `grafo` e o exemplo de conta (média 70, passo 10) do
+slide `escore-z`.
+
+**Varreduras do plano (seção 8):** nenhum “exigência do orientador” no
+`index.html`; “prevê” só em frase negativa; nenhum “aluno 1…6”,
+“disciplina A/B/C” ou “3–4” fora das linhas de fonte; nomes de integrantes
+só na capa e no encerramento; siglas (ADS, Inep, OULAD, NMI, AVA) por
+extenso na primeira vez ou trocadas por palavras.
+
+**Técnica:** os 59 slides percorridos em todos os passos (com e sem
+“reduzir movimento”) sem erro de JavaScript no console (o único aviso é o
+da verificação de saúde quando o sistema está desligado, esperado);
+`gerar_dados.py` determinístico (duas execuções, mesmo MD5); `ruff check`
+e `ruff format --check` limpos.
+
+**Desvios do plano, decididos na aplicação:**
+
+- **Referência do Inep:** o plano a punha entre HAGBERG e KUZILEK, mas pela
+  NBR 6023 a entrada começa por “BRASIL.”; ficou logo depois de BRANDES.
+- **“Notas finais ficam fora do mapa”** virou “o desfecho do aluno
+  (aprovou, reprovou, desistiu) fica fora do mapa”: a nota de cada
+  disciplina entra como força da matrícula, e o slide mostra “nota média
+  66”. Dita do outro jeito, a banca veria uma contradição.
+- **Modularidade:** a regra “acima de 0,3” passou a ser dita como regra
+  prática, com a ressalva de que quem decide é o teste contra o acaso (na
+  base real, *Q* = 0,77 falha e *Q* = 0,08 passa).
+- **Papéis:** a centralidade diz que “espalhar-se para outros grupos” é
+  comparado com os colegas do próprio grupo; é o que faz Diego e Elisa,
+  com metade das ligações para fora, serem “periféricos”.
+- **Demonstração:** a nota pede para **não** revelar sinais × desfecho na
+  turma inventada: o gerador sorteia nota e desfecho do mesmo perfil de
+  risco (`data/synthetic.py:186-190`), então a coincidência é de
+  construção.
+- **Solução:** “73% de chance de evadir” virou “tantos por cento”, para
+  ninguém tomar o número como resultado.
+
+---
+
+## Revisão anterior (16/11/2026)
+
 Revisão de 16/11/2026, numa cópia limpa do repositório no commit `2ff819b`
 (Linux, Python 3.13, Node 22.23, Chromium do Playwright), com o sistema
 servido sobre `data/fixtures`.

@@ -9,8 +9,9 @@
  *    disciplinas), cujos valores o grupo derivou no papel. O Louvain e o
  *    Girvan–Newman mostrados são o rastro real de `edugraph.lab.trace`.
  *
- * Só as POSIÇÕES dos nós são escolhas de desenho; nós, arestas, pesos,
- * grupos, Q e centralidades vêm dos artefatos.
+ * Só as POSIÇÕES dos nós (js/desenho.js) e os NOMES do exemplo (Ana a
+ * Felipe; js/dados.js → contexto) são escolhas de desenho; nós, arestas,
+ * pesos, grupos, Q e centralidades vêm dos artefatos.
  */
 (() => {
   const NS = "http://www.w3.org/2000/svg";
@@ -62,10 +63,11 @@
 
   /* ——— 2. O exemplo tiny_v1 ——— */
   const T = D.tiny;
-  const ALUNOS = ["S6", "S1", "S2", "S3", "S4", "S5"];
-  const DISC = { DA: [730, 160], DB: [730, 310], DC: [730, 460] };
-  const POS_BIP = Object.fromEntries(ALUNOS.map((a, i) => [a, [190, 70 + i * 96]]));
-  const POS_PROJ = { S1: [250, 140], S2: [250, 480], S6: [86, 310], S3: [470, 310], S4: [720, 160], S5: [720, 460] };
+  const DES = window.EDUGRAPH_DESENHO;
+  const ALUNOS = DES.ALUNOS_BIP;
+  const { DISC, POS_BIP, POS_PROJ } = DES;
+  const NOME = D.contexto.nomes;
+  const DISCN = D.contexto.disciplinas;
   const nDisc = {};
   T.matriculas.forEach((m) => { nDisc[m.disciplina] = (nDisc[m.disciplina] || 0) + 1; });
   const final = T.louvain.membership;
@@ -75,7 +77,7 @@
     const ord = Object.keys(tam).sort((a, b) => tam[b] - tam[a] || a - b);
     return Object.fromEntries(ord.map((c, i) => [c, i]));
   })();
-  const largura = (w, modo) => (modo === "s" ? (w >= 2 ? 9 : 3.4) : 2 + 9 * w);
+  const largura = (w, modo) => (modo === "s" ? DES.larguraSimples(w) : DES.larguraRA(w));
 
   function exemplo(svg) {
     const modo = svg.dataset.exemplo;
@@ -88,14 +90,13 @@
       T.matriculas.forEach((m, k) => {
         const [x1, y1] = POS_BIP[m.aluno];
         const [x2, y2] = DISC[m.disciplina];
-        el("line", { x1: x1 + 24, y1, x2: x2 - 26, y2, pathLength: 1, class: `ex-mat d-${m.disciplina} a-${m.aluno}`, style: `--k:${k}` }, camadas.bip);
+        el("line", { x1: x1 + 24, y1, x2: x2 - 60, y2, pathLength: 1, class: `ex-mat d-${m.disciplina} a-${m.aluno}`, style: `--k:${k}` }, camadas.bip);
       });
       Object.entries(DISC).forEach(([d, [x, y]]) => {
         const g = el("g", { class: `ex-d ex-d-${d}`, transform: `translate(${x} ${y})` }, camadas.disc);
-        el("rect", { x: -26, y: -26, width: 52, height: 52, rx: 10, class: "ex-d-forma" }, g);
-        el("text", { y: 9, class: "ex-d-letra", "text-anchor": "middle" }, g).textContent = d.slice(1);
-        el("text", { x: 42, y: -4, class: "ex-rot" }, g).textContent = `Disciplina ${d.slice(1)}`;
-        el("text", { x: 42, y: 22, class: "ex-rot2" }, g).textContent = `${nDisc[d]} alunos`;
+        el("rect", { x: -60, y: -24, width: 120, height: 48, rx: 10, class: "ex-d-forma" }, g);
+        el("text", { y: 7, class: "ex-d-letra", "text-anchor": "middle" }, g).textContent = DISCN[d][1];
+        el("text", { y: 50, class: "ex-rot2", "text-anchor": "middle" }, g).textContent = `${DISCN[d][0]} · ${nDisc[d]} alunos`;
       });
     }
     // Ligações da projeção (aluno ↔ aluno)
@@ -127,7 +128,8 @@
       c.classList.add("ex-f0");
       const t = forma(g, 1, 22, "#E69F00", "#1a1915", 1.6);
       t.classList.add("ex-f1");
-      el("text", { y: 8, class: "ex-a-num", "text-anchor": "middle" }, g).textContent = a.slice(1);
+      el("text", { y: 8, class: "ex-a-num", "text-anchor": "middle" }, g).textContent = NOME[a][0];
+      el("text", { y: 54, class: "ex-a-nome", "text-anchor": "middle" }, g).textContent = NOME[a];
     });
     if (modo === "bipartido") {
       el("text", { x: 190, y: 26, class: "ex-cab", "text-anchor": "middle" }, camadas.extra).textContent = "alunos";
@@ -200,12 +202,19 @@
         painel.querySelector(".q-mov").textContent = `${k} de ${movs.length}`;
         painel.querySelector(".q-grupos").textContent = String(new Set(Object.values(membros)).size);
         painel.querySelector(".q-barra i").style.transform = `scaleX(${q === null ? 0 : Math.max(0, (q + 0.15) / 0.3)})`;
+        const quem = painel.querySelector(".q-quem");
+        if (quem) {
+          const m = k ? movs[k - 1] : null;
+          quem.textContent = passo === 0 ? "Cada aluno começa sozinho no próprio grupo."
+            : m && passo <= movs.length ? `${NOME[m.no]} vai para o grupo de ${NOME[m.para]}.`
+            : "Ninguém mais quer mudar: dois grupos.";
+        }
       }
       return;
     }
     if (modo === "gn") {
       const rem = T.girvan_newman.removidas;
-      // Passo 1: a ponte mais usada (3–4) em vermelho. Passo 2: 3–4 e 3–5 saem e a
+      // Passo 1: a ponte mais usada (Carla–Diego) em vermelho. Passo 2: Carla–Diego e Carla–Elisa saem e a
       // rede se parte. Passo 3: os cortes seguem até o fim, e a curva mostra o Q.
       const n = passo >= 3 ? rem.length : passo === 2 ? 2 : 0;
       svg.querySelectorAll(".ex-lig").forEach((l) => {

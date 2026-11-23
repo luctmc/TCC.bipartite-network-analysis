@@ -9,7 +9,12 @@ Lê só ``data/fixtures`` (versionado):
   (``edugraph.lab.trace``) e as centralidades das implementações
   registradas da Frente C;
 - ``synthetic_v1``, a rede da capa e da modularidade, como a própria API a
-  serve (esqueleto de arestas, partição Louvain e centralidades).
+  serve (esqueleto de arestas, partição Louvain e centralidades);
+- o bloco ``contexto``: os textos e números que o próprio sistema produz
+  sobre os seis alunos de ``tiny_v1`` e sobre a turma padrão do laboratório
+  (``edugraph.lab.service.run_lab``), para os slides da Introdução.
+
+Os nomes e cursos dos seis alunos são escolha de desenho, como as posições.
 
 Só as posições dos nós da rede grande são escolha de desenho
 (``spring_layout`` com semente fixa). Rodar de novo dá o mesmo arquivo.
@@ -188,8 +193,91 @@ def _nulo() -> dict[str, Any]:
     }
 
 
+#: Escolha de desenho (NARRATIVA.md, seção 3): alunos 1 a 6 de tiny_v1 = Ana a
+#: Felipe; disciplinas A, B e C = as três abaixo. Não é dado do sistema.
+NOMES = {"S1": "Ana", "S2": "Bruno", "S3": "Carla", "S4": "Diego", "S5": "Elisa", "S6": "Felipe"}
+CURSOS = {
+    "S1": "ADS",
+    "S2": "ADS",
+    "S3": "Engenharia Elétrica",
+    "S4": "Engenharia Elétrica",
+    "S5": "Engenharia Elétrica",
+    "S6": "ADS",
+}
+DISCIPLINAS = {
+    "DA": ["Sistemas de Computação", "Sist. Comp."],
+    "DB": ["Algoritmos e Programação", "Algoritmos"],
+    "DC": ["Circuitos Elétricos", "Circuitos"],
+}
+
+
+def _contexto() -> dict[str, Any]:
+    """O que o sistema diz dos seis alunos e da turma padrão do laboratório."""
+    from edugraph.contracts.paths import ArtifactRoots
+    from edugraph.lab.service import run_lab
+
+    raizes = ArtifactRoots(FIXTURES)
+    tiny = run_lab(roots=raizes, source="tiny_v1", students=6)
+    sinais = tiny["insight"]["signals"]
+    papeis = tiny["insight"]["roles"]
+    bip = cio.load_bipartite(FIXTURES, "tiny_v1")
+    notas: dict[str, list[float]] = {}
+    for u, v, d in bip.graph.edges(data=True):
+        aluno = u if str(u).startswith("S") else v
+        notas.setdefault(aluno, []).append(float(d["weight"]))
+    todas = [n for lista in notas.values() for n in lista]
+    alunos = {
+        a: {
+            "nome": NOMES[a],
+            "curso": CURSOS[a],
+            "n_disciplinas": len(notas[a]),
+            "nota_media": round(sum(notas[a]) / len(notas[a]), 1),
+            "papel": papeis[a]["role"],
+            "z_grupo": papeis[a]["z"],
+            "tier": sinais["students"][a]["tier"],
+            "risco": round(sinais["students"][a]["risk"], 3),
+            "why": sinais["students"][a].get("why", []),
+        }
+        for a in sorted(NOMES)
+    }
+
+    # Valores padrão do laboratório (frontend/src/components/LabView.tsx).
+    demo = run_lab(roots=raizes, source="demo", students=45, seed=12, noise=0.2)
+    ds = demo["insight"]["signals"]
+    rotulo = {n["id"]: n["label"] for n in demo["bipartite"]["students"]}
+
+    def cartao(sid: str) -> dict[str, Any]:
+        return {"id": sid, "nome": rotulo[sid], "why": ds["students"][sid].get("why", [])}
+
+    # Regra fixa (PLANO-AJUSTE.md, seção 6): o primeiro da lista de atenção da
+    # tela; o primeiro talento com selo de apoio; o primeiro que liga grupos.
+    talentos = ds["talents"]
+    apoio = next(t for t in talentos if "apoio" in ds["students"][t].get("tags", []))
+    ponte = next(t for t in talentos if "polimata" in ds["students"][t].get("tags", []))
+    return {
+        "fonte": "run_lab(tiny_v1) e run_lab(demo, 45 alunos, semente 12, mistura 0,2)",
+        "nomes": NOMES,
+        "cursos": CURSOS,
+        "disciplinas": DISCIPLINAS,
+        "alunos": alunos,
+        "turma": {
+            "nota_media": round(sum(todas) / len(todas), 1),
+            "disciplinas_por_aluno": round(len(todas) / len(notas), 2),
+        },
+        "rotulos": {"tier": sinais["tier_labels"], "perfil": sinais["profile_labels"]},
+        "demo": {
+            "contagens": ds["counts"],
+            "q": round(demo["result"]["q"], 3),
+            "grupos": [c["name"] for c in demo["insight"]["communities"]],
+            "risco": cartao(ds["attention"][0]),
+            "apoio": cartao(apoio),
+            "ponte": cartao(ponte),
+        },
+    }
+
+
 def main() -> None:
-    dados = {"tiny": _tiny(), "synthetic": _synthetic(), "nulo": _nulo()}
+    dados = {"tiny": _tiny(), "synthetic": _synthetic(), "nulo": _nulo(), "contexto": _contexto()}
     corpo = json.dumps(dados, ensure_ascii=False, separators=(",", ":"))
     cabecalho = "/* Gerado por gerar_dados.py a partir do repositório; não edite à mão. */"
     texto = f"{cabecalho}\nwindow.EDUGRAPH_DADOS = {corpo};\n"

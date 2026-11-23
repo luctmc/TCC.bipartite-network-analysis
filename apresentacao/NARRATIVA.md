@@ -384,9 +384,11 @@ própria turma.
   ou conferir.
 - **Dá para refazer a conta à mão.** Foi o que o grupo fez com o exemplo
   dos seis alunos, e o sistema é testado contra essas contas.
-- **O resultado do aluno fica fora do mapa.** Notas finais e desistências
-  ficam guardadas à parte e só entram no fim, para conferir se o mapa
-  acertou. Se entrassem antes, o sistema estaria "colando".
+- **O desfecho do aluno fica fora do mapa.** Se ele aprovou, reprovou ou
+  desistiu fica guardado à parte e só entra no fim, para conferir se o
+  mapa acertou. Se entrasse antes, o sistema estaria "colando". (A nota de
+  cada disciplina entra, como força da matrícula, e é por isso que o
+  alerta pode dizer "nota média 66"; o que fica fora é o desfecho final.)
 
 ---
 
@@ -522,7 +524,9 @@ faz sentido. Se as pessoas conversam com qualquer mesa igualmente, as
 mesas não querem dizer nada. *Q* é a nota dessa divisão.
 
 **Como ler o número:** perto de 0, a divisão não é melhor que sortear;
-acima de 0,3, costuma indicar grupos bem definidos. No exemplo, a divisão
+acima de 0,3, costuma indicar grupos bem definidos. É uma **regra
+prática**: quem decide é o teste contra o acaso (9.6). Na base real, um
+*Q* de 0,77 não passou nesse teste e um de 0,08 passou. No exemplo, a divisão
 {Ana, Bruno, Carla, Felipe} e {Diego, Elisa} tem *Q* = 0,11 (com seis
 alunos, o número fica baixo mesmo). Na turma da demonstração, 0,53.
 
@@ -593,7 +597,9 @@ de Guimerà e Amaral (2005):
 
 - o quanto o aluno está ligado **dentro do próprio grupo**, comparado com
   os colegas do grupo;
-- o quanto as ligações dele se **espalham por outros grupos**.
+- o quanto as ligações dele se **espalham por outros grupos**, comparado
+  com os colegas do próprio grupo (por isso Diego e Elisa, com metade das
+  ligações para fora, mas iguais um ao outro, não contam como "espalhados").
 
 | Papel no sistema | Dentro do grupo | Para fora | No exemplo |
 |---|---|---|---|
@@ -739,8 +745,10 @@ explicação funciona com qualquer resposta.
    mostrar o tamanho real do problema; não precisa entrar no artigo. A
    referência entra no slide de Referências, e a regra "a apresentação só
    cita o que o artigo cita" tem essa exceção declarada.
-3. **Tamanho do contexto:** o contexto vem **antes** do sistema e fica
-   inteiro, como está (seções 2 a 8). Na fala do `ENREDO.md`, com a
+3. **Tamanho do contexto:** o contexto vem **antes** do sistema. *(Revisto
+   em 22/11/2026: com a defesa de 15 a 20 minutos, a fala foi enxugada e
+   parte dele foi para o apêndice; ver `ENREDO.md` e `PLANO-AJUSTE.md`.)*
+   Na versão original, ficava inteiro (seções 2 a 8). Na fala do `ENREDO.md`, com a
    solução, dá ≈ 11 minutos; enxuto, ≈ 7. Quando o grupo souber o tempo
    da defesa, os cortes começam pela parte de engenharia, não pelo
    contexto.
